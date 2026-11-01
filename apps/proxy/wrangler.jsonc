@@ -1,0 +1,41 @@
+// Configuración del Worker `transportate-proxy`.
+// Secrets (GCBA_CLIENT_ID, GCBA_CLIENT_SECRET): en local van en `.dev.vars` (ver
+// `.dev.vars.example` en la raíz); en producción, con `wrangler secret put`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "transportate-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  // Privacidad: el Worker no loguea requests (ni IP, ni User-Agent, ni URLs upstream,
+  // que llevan el secret en la query). Solo logs propios y sin datos identificables,
+  // muestreados al 10 %. Los invocation logs (metadatos de cada request) quedan apagados.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+    },
+  },
+  // Rate limiting nativo de Workers: contadores en memoria por colo, no persiste IPs.
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 60, "period": 60 },
+    },
+  ],
+  // Paquete estático versionado (paradas, estaciones, líneas) generado por tools/gtfs.
+  "r2_buckets": [
+    {
+      "binding": "STATIC",
+      "bucket_name": "transportate-static",
+      "preview_bucket_name": "transportate-static-preview",
+    },
+  ],
+  "vars": {
+    "FEED_TTL_SECONDS": "20",
+    "STATIC_TTL_SECONDS": "86400",
+    "ENVIRONMENT": "dev",
+  },
+}

@@ -1,0 +1,25 @@
+{
+  "name": "transportate-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Proxy/BFF de Transportate sobre Cloudflare Workers (Hono).",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types --env-interface CloudflareBindings",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@transportate/contracts": "workspace:*",
+    "hono": "4.13.16"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.4.12",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5",
+    "wrangler": "4.156.1"
+  }
+}
