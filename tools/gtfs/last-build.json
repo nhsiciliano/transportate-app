@@ -1,0 +1,158 @@
+{
+  "inicio": "2026-11-01T23:51:16.743Z",
+  "pasos": [
+    "paradas",
+    "lineas",
+    "equivalencias",
+    "subte",
+    "recorridos"
+  ],
+  "paradas": {
+    "filas": 7027,
+    "paradas": 6961,
+    "duplicadasFusionadas": 66,
+    "sinCoordenadas": 0,
+    "textosReparados": 0,
+    "sinLineas": 0,
+    "lineasDistintas": 132,
+    "sentidosDesconocidos": 1,
+    "barriosDesconocidos": 0,
+    "comunasCorregidas": 1
+  },
+  "paradasBytes": 1696448,
+  "lineas": {
+    "vehiculos": 3073,
+    "routeIds": 936,
+    "numerosDistintos": 216,
+    "empresas": 124,
+    "empresasReparadas": 79,
+    "sinNumero": 0,
+    "enCaba": 379
+  },
+  "lineasBytes": 162149,
+  "capturas": {
+    "archivos": [
+      "posiciones-2026-11-01.csv.gz"
+    ],
+    "filas": 100607,
+    "filasUsables": 64002,
+    "snapshots": 18,
+    "desde": "2026-11-01T23:31:07.000Z",
+    "hasta": "2026-11-01T23:50:20.000Z",
+    "vehiculos": 4148,
+    "transiciones": 34154,
+    "transicionesMultiples": 15641,
+    "transicionesDescartadas": 1915,
+    "descartesPorMotivo": {
+      "saltoDeSecuencia": 1783,
+      "huecoDeTiempo": 21,
+      "tramoLargo": 111
+    },
+    "lecturasStoppedAt": 1878,
+    "stopIds": 22154,
+    "stopIdsAprendidos": 1497,
+    "stopIdsConParada": 887
+  },
+  "equivalencias": {
+    "stopIdsTiempoReal": 35447,
+    "numericos": 31710,
+    "numericosEnGtfs2021": 14187,
+    "descartadosLejosDeVehiculos": 371,
+    "descartadosFueraDeCaba": 9279,
+    "validadosConVehiculo": 2248,
+    "porOrigen": {
+      "gtfs2021": 1275,
+      "aprendida": 135,
+      "ajustada-ba": 3709
+    },
+    "conParada": 3709,
+    "semillaConfirmadaPorCapturas": 480,
+    "semillaCorregidaPorCapturas": 12,
+    "aprendidasComparablesConSemilla": 553,
+    "pctAcuerdoAprendidaVsSemilla": 86.8,
+    "aprendidasSinSemilla": 582,
+    "coberturaTripUpdates": {
+      "stopIds": 35037,
+      "stopIdsConCoordenada": 5007,
+      "stopIdsConParada": 3636,
+      "predicciones": 105325,
+      "prediccionesConCoordenada": 23012,
+      "prediccionesConParada": 17174,
+      "pctStopIdsConParada": 10.4,
+      "pctPrediccionesConParada": 16.3,
+      "pctPrediccionesConCoordenada": 21.8,
+      "prediccionesFueraDeCaba": 22574,
+      "prediccionesSinUbicar": 59739,
+      "pctPrediccionesEnCabaConParada": 74.6
+    }
+  },
+  "equivalenciasBytes": 1251483,
+  "subte": {
+    "lineas": 8,
+    "estaciones": 108,
+    "andenes": 214,
+    "coloresDistintosDelGtfs": [],
+    "feedEndDate": "20261231",
+    "puntosShapes": 1192,
+    "puntosRed": 259
+  },
+  "subteBytes": {
+    "lineas": 4823,
+    "estaciones": 17379,
+    "red": 7260
+  },
+  "recorridos": {
+    "shapes": 2143,
+    "puntosOriginales": 784032,
+    "shapesEnCaba": 1362,
+    "lineas": 170,
+    "tramos": 905,
+    "puntosFinales": 30348,
+    "bytes": 742203
+  },
+  "manifest": {
+    "version": "de43720f858b",
+    "archivos": {
+      "paradas.json": {
+        "bytes": 1696448,
+        "sha256": "54861be40833d013d3f41c171a29f8d0bf884a4d7c8bde1ee0c396d50cb8336b"
+      },
+      "lineas-colectivos.json": {
+        "bytes": 162149,
+        "sha256": "1e4398945d0536532e5870237170cb7ff72c1df869f0c90043a5ba8c56185553"
+      },
+      "equivalencias-paradas.json": {
+        "bytes": 1251483,
+        "sha256": "7abe911c2555598d3e8de0b754f35df0ff74e55d649c9c5f9bc72b8d356c1395"
+      },
+      "subte-lineas.json": {
+        "bytes": 4823,
+        "sha256": "f06c97764b42c68b0d1fd9595c1c803588cc47160c515ef48418a823a056ad27"
+      },
+      "subte-estaciones.json": {
+        "bytes": 17379,
+        "sha256": "2c66e11fef175ef1a8032a479f85d0fc2c04a8bd9cab51e8725d9c01f0794a57"
+      },
+      "subte-red.geojson": {
+        "bytes": 7260,
+        "sha256": "633d3d06982c4fbfd98f9944c1cef52e876fb4e7c367137a6ac155fbdf8945fc"
+      },
+      "recorridos-colectivos.geojson": {
+        "bytes": 742203,
+        "sha256": "cf885a1a565ff1598b2f407e23ffbd3656c9155aeac6c609b0a810a31cf9fac9"
+      }
+    },
+    "omitidos": {}
+  },
+  "tiempos": {
+    "paradas": 83,
+    "lineas": 15,
+    "equivalencias: stops.txt 2021": 61,
+    "equivalencias: capturas": 1385,
+    "equivalencias": 120,
+    "subte": 7,
+    "recorridos": 1051,
+    "manifest": 45
+  },
+  "fin": "2026-11-01T23:51:19.596Z"
+}
