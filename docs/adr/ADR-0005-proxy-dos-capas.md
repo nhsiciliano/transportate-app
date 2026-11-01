@@ -5,7 +5,7 @@
 
 ## Contexto
 
-El upstream (API Transporte del GCBA) exige credenciales, tiene límites no documentados y está bajo aviso oficial de suspensión/revisión (junio de 2026). La app **no puede** hablarle directo: filtraría credenciales y cada usuario sumaría carga al upstream. Además los feeds son grandes (por ejemplo `vehiclePositionsSimple` ronda 1,1 MB y ~3.200 vehículos) y cambian cada ~15–30 s.
+El upstream (API Transporte del GCBA) exige credenciales, no documenta límites de tasa en su spec RAML (`docs/fuentes/api-transporte-v1.raml`) y está bajo aviso oficial de suspensión/revisión (junio de 2026). La app **no puede** hablarle directo: filtraría credenciales y cada usuario sumaría carga al upstream. Además los feeds son grandes (por ejemplo `vehiclePositionsSimple` ronda 1,1 MB y ~3.200 vehículos) y cambian cada ~15–30 s.
 
 Se necesita un diseño que **empiece barato para cientos de usuarios** y **escale a millones sin reescribirse**, de modo que la carga sobre el upstream **no dependa de la cantidad de usuarios**.
 
