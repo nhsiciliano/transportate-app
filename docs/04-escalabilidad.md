@@ -132,3 +132,44 @@ La escalada se hace por **configuración**, en este orden:
 | CPU real por request (hit y miss) | Métricas de Workers (sin identificadores) | 2 y 5 |
 | Requests reales por pantalla y por tick | Instrumentación local en desarrollo, **sin telemetría en producción** (ver `05-privacidad.md`) | 4 |
 | Tiempo de residencia y GB-s del DO | Panel de Cloudflare | 5 (5.5) |
+
+## 9. Límites de CPU y memoria de Workers
+
+Verificados con Context7 el 2026-11-01 (fuente: `developers.cloudflare.com/workers/platform/limits`, `/workers/runtime-apis/cache`, `/workers/wrangler/configuration`, `developers.cloudflare.com/r2/pricing`). Complementa la sección 5; reverificar antes de elegir plan.
+
+| Límite | Workers **Free** | Workers **Paid** | Impacto en Transportate |
+|---|---|---|---|
+| CPU por request HTTP | **10 ms** | 30 s por defecto, configurable hasta 5 min (`limits.cpu_ms`) | Es la restricción que manda en Free: ver cálculo más abajo |
+| CPU por Cron Trigger | 10 ms | 30 s (intervalo < 1 h) / 15 min (≥ 1 h) | Un cron en Free no alcanza para procesar feeds grandes |
+| Qué cuenta como CPU | Solo tiempo de CPU; **esperar un `fetch()` no cuenta** | ídem | La latencia del upstream (1–5 s) no consume CPU; sí la decodificación y el JSON |
+| Memoria por isolate | 128 MB | 128 MB | `tripUpdates` de 3,6 MB expande a decenas de MB de objetos al decodificar; no retener copias ni procesar varios feeds en paralelo en un isolate |
+| Tamaño del Worker | 64 MiB | 64 MiB | Sin problema: Hono + `gtfs-realtime-bindings` pesan unos cientos de KB |
+| Tiempo de arranque | 1 s | 1 s | Evitar parsear datos estáticos en el scope global |
+| Subrequests por invocación | 50 | 10.000 (máximo configurable 10 M) | Alcanza: 1 fetch upstream + operaciones de caché por request |
+| Conexiones salientes simultáneas | 6 | 6 | No abrir más de 6 `fetch()` en paralelo por request |
+| Cache API: llamadas por request | 50 (`put`/`match`/`delete`, **comparten cuota con los subrequests**) | 1.000 | 1–3 llamadas por request en el diseño; sobra |
+| Cache API: tamaño máximo de objeto | 512 MB | 512 MB | Sin problema |
+| Cache API: alcance | Local al centro de datos; **no replica**; incompatible con tiered cache | ídem | Caché frío por colo (ya considerado en ADR-0005) |
+| Rate Limiting binding | `period` 10 o 60 s; contadores por ubicación; permisivo y eventualmente consistente | ídem | Frena ráfagas, no es contabilidad exacta (ver `05-privacidad.md`) |
+| Variables de entorno | 64 por Worker, 5 KB cada una | 128 por Worker | Los secrets (`GCBA_CLIENT_ID`/`SECRET`) entran de sobra |
+| **R2** (plan gratuito) | 10 GB-mes, 1 M operaciones Class A/mes, 10 M Class B/mes; egress sin cargo | USD 0,015/GB-mes; Class A USD 4,50/M; Class B USD 0,36/M | El JSON estático (unos MB) y sus lecturas entran en el gratuito; no hay que pagar R2 en el MVP |
+
+### Medición local de decodificación (orden de magnitud)
+
+CPU de `FeedMessage.decode` (`gtfs-realtime-bindings` 2.2.0, Node 24 en una Mac, fixtures del 2026-11-01), 5 corridas tibias más una en frío. **No es workerd** (otro motor y otro hardware): sirve para el orden de magnitud, no como garantía; hay que medir en Workers reales en la Fase 2 (sección 8).
+
+| Feed | Tamaño | CPU por decodificación |
+|---|---:|---|
+| `vehiclePositions` (protobuf) | 590 KB | ≈ 4 ms tibio, hasta 16 ms en frío |
+| `tripUpdates` (protobuf) | 3,6 MB | ≈ 14–86 ms (muy variable por el GC), 67 ms en frío |
+
+Esto **no incluye** filtrar, mapear al contrato, serializar ni comprimir la respuesta.
+
+### Qué implica
+
+1. **Decodificar `tripUpdates` completo en un Worker Free probablemente excede los 10 ms de CPU** (la medición local da entre 1,4 y 8,6 veces el límite). Un Worker que lo intente va a terminar con error de límite de CPU. En Paid (30 s por defecto) entra sin problema, pero cada miss cuesta CPU facturada (USD 0,02/M ms; un miss de ~50 ms cuesta ≈ USD 0,000001, irrelevante frente a las requests).
+2. **Por eso el proxy filtra por `route_id` upstream** en vez de bajar el feed completo: `vehiclePositions?route_id=1858` devuelve 826 B contra 575 KB, y los filtros funcionan también en `tripUpdates` (`docs/01-api-transporte.md`, "Filtros upstream"). Decodificar unos pocos KB cuesta una fracción de milisegundo. Para el mapa de una línea se usa además `vehiclePositionsSimple` (JSON, sin protobuf).
+3. **El feed completo se procesa solo en la capa B** (Durable Object con alarm, ADR-0005) o en un job offline, nunca en el camino de la request de un cliente. En Paid el DO tiene 30 s de CPU por alarm.
+4. **Caché de decodificados:** guardar en la Cache API el resultado ya filtrado y mapeado (lo que se le sirve a la app), no el protobuf crudo: un hit no vuelve a decodificar nada (el costo de CPU de un hit hay que medirlo en la Fase 2).
+5. **Presupuesto de CPU** a vigilar en las pruebas de la Fase 2: hit < 2 ms, miss con filtro por línea < 10 ms. Si el miss no entra, el endpoint exige Paid o capa B.
+6. **Qué cambia al pasar a Paid:** desaparece el límite de 10 ms (pasa a 30 s) pero no el de 128 MB de memoria; tampoco baja el costo de las requests facturadas (sección 4).

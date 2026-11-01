@@ -1,0 +1,15 @@
+{
+  "name": "@transportate/captura-posiciones",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Captura continua de vehiclePositions (y muestras de tripUpdates) de colectivos para medir cobertura de stop_id (Fase 2, tarea 2.0).",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "captura": "node captura.mjs",
+    "start": "./start.sh",
+    "stop": "./stop.sh",
+    "status": "./status.sh"
+  },
+  "dependencies": { "gtfs-realtime-bindings": "2.2.0" }
+}
