@@ -1,0 +1,656 @@
+{
+  "generado": "2026-11-01T23:11:01.048Z",
+  "duracion_s": 1.9,
+  "cache": "~/.cache/transportate/gtfs",
+  "tiempoReal": {
+    "fixtures": "apps/proxy/test/fixtures/colectivos/{vehiclePositions.pb,tripUpdates.pb,vehiclePositionsSimple.json}",
+    "vehiclePositions": 5839,
+    "tripUpdates": 3904,
+    "simple": 3073,
+    "routeIds": 1357,
+    "tripIds": 3276,
+    "stopIds": 35447,
+    "stopIdsSoloTU": 35037,
+    "stopIdsSoloVP": 3366,
+    "predicciones": 105325,
+    "shortNames": 538,
+    "agencyIds": 140,
+    "agencyNames": 124,
+    "shortNamesConVehiculosEnCABA": 249,
+    "stopIdPorFormato": {
+      "numérico": 31636,
+      "S + dígitos": 3613,
+      "otro": 198
+    },
+    "muestras": {
+      "routeId": [
+        "2136",
+        "2123",
+        "2132",
+        "1553"
+      ],
+      "tripId": [
+        "359284-1",
+        "359020-1",
+        "359242-1"
+      ],
+      "stopId": [
+        "S00085138",
+        "6371109213",
+        "6441112620",
+        "6441118075"
+      ],
+      "shortName": [
+        "228B",
+        "10",
+        "204AESZA",
+        "130",
+        "247-5"
+      ]
+    },
+    "stopIdsTUconVehiculo": 8.4
+  },
+  "candidatos": [
+    {
+      "id": "api-feed-gtfs",
+      "tipo": "gtfs",
+      "archivo": "colectivos_feed-gtfs.zip",
+      "nombre": "API GCBA /colectivos/feed-gtfs",
+      "estado": "ok",
+      "bytes": 209488251,
+      "mtime": "2026-11-01T17:10:18.068Z",
+      "archivos": [
+        "agency.txt",
+        "calendar_dates.txt",
+        "routes.txt",
+        "shapes.txt",
+        "stops.txt",
+        "stop_times.txt",
+        "trips.txt"
+      ],
+      "feedInfo": null,
+      "rangoServicio": {
+        "desde": "20201221",
+        "hasta": "20210621"
+      },
+      "conteos": {
+        "agency": 193,
+        "routes": 1076,
+        "stops": 43201,
+        "trips": 453075,
+        "routeShortNames": 1074,
+        "stopsEnCABA": 11331
+      },
+      "bbox": {
+        "minLat": -35.182685,
+        "maxLat": -34.042402,
+        "minLon": -60.97663,
+        "maxLon": -57.730345
+      },
+      "mojibake": {
+        "agency": 0,
+        "routes": 0,
+        "stops": 0
+      },
+      "muestras": {
+        "agencyId": [
+          "82",
+          "14",
+          "20"
+        ],
+        "routeId": [
+          "4167",
+          "4168",
+          "4169",
+          "4170"
+        ],
+        "stopId": [
+          "6574104006",
+          "6441111945",
+          "6441122443",
+          "6441129547"
+        ],
+        "tripId": [
+          "1-1",
+          "2-1",
+          "3-1"
+        ]
+      },
+      "cruce": {
+        "routeId": {
+          "ok": 422,
+          "total": 1357,
+          "pct": 31.1
+        },
+        "tripId": {
+          "ok": 3276,
+          "total": 3276,
+          "pct": 100,
+          "nota": "Los trip_id del RT y de los GTFS son secuenciales \"<n>-1\": un match no implica el mismo viaje."
+        },
+        "stopId": {
+          "ok": 14137,
+          "total": 35447,
+          "pct": 39.9
+        },
+        "prediccionesConStop": {
+          "ok": 42650,
+          "total": 105325,
+          "pct": 40.5
+        },
+        "stopIdPorFormato": {
+          "numérico": {
+            "ok": 14137,
+            "total": 31636,
+            "pct": 44.7
+          },
+          "S + dígitos": {
+            "ok": 0,
+            "total": 3613,
+            "pct": 0
+          },
+          "otro": {
+            "ok": 0,
+            "total": 198,
+            "pct": 0
+          }
+        },
+        "routeIdMismoShortName": {
+          "ok": 0,
+          "total": 252,
+          "pct": 0,
+          "nota": "De los route_id que cruzan y tienen nombre en vehiclePositionsSimple: cuántos son la misma línea. 0 % = ids reasignados, el cruce por id es casual."
+        },
+        "distanciaVehiculoAStopId_m": {
+          "n": 1941,
+          "p50": 234,
+          "p90": 3729,
+          "max": 63039
+        },
+        "vehiculosConStopIdAMenosDe1km": {
+          "ok": 1532,
+          "total": 1941,
+          "pct": 78.9
+        },
+        "agencyName": {
+          "ok": 111,
+          "total": 124,
+          "pct": 89.5
+        },
+        "shortName": {
+          "ok": 322,
+          "total": 538,
+          "pct": 59.9
+        },
+        "shortNameEnCABAPorNumero": {
+          "ok": 233,
+          "total": 249,
+          "pct": 93.6
+        },
+        "routeIdsSinMatchRescatadosPorNombre": {
+          "ok": 380,
+          "total": 684,
+          "pct": 55.6
+        }
+      }
+    },
+    {
+      "id": "api-feed-gtfs-frequency",
+      "tipo": "gtfs",
+      "archivo": "colectivos_feed-gtfs-frequency.zip",
+      "nombre": "API GCBA /colectivos/feed-gtfs-frequency",
+      "estado": "ok",
+      "bytes": 13670441,
+      "mtime": "2026-11-01T17:10:20.711Z",
+      "archivos": [
+        "agency.txt",
+        "calendar.txt",
+        "calendar_dates.txt",
+        "feed_info.txt",
+        "frequencies.txt",
+        "routes.txt",
+        "shapes.txt",
+        "stop_times.txt",
+        "stops.txt",
+        "trips.txt"
+      ],
+      "feedInfo": {
+        "feed_publisher_name": "NSSA",
+        "feed_publisher_url": "https://www.argentina.gob.ar/sube",
+        "feed_lang": "ES",
+        "feed_start_date": "20180101",
+        "feed_end_date": "20211231",
+        "feed_version": "v1.0"
+      },
+      "rangoServicio": {
+        "desde": "20180101",
+        "hasta": "20211231"
+      },
+      "conteos": {
+        "agency": 192,
+        "routes": 1076,
+        "stops": 43213,
+        "trips": 7173,
+        "routeShortNames": 1074,
+        "stopsEnCABA": 11342
+      },
+      "bbox": {
+        "minLat": -35.182686,
+        "maxLat": -34.042403,
+        "minLon": -60.97663,
+        "maxLon": -57.730346
+      },
+      "mojibake": {
+        "agency": 7,
+        "routes": 0,
+        "stops": 0
+      },
+      "muestras": {
+        "agencyId": [
+          "73",
+          "74",
+          "75"
+        ],
+        "routeId": [
+          "241",
+          "238",
+          "482",
+          "1670"
+        ],
+        "stopId": [
+          "6756132718",
+          "691128052",
+          "6441112737",
+          "2032857"
+        ],
+        "tripId": [
+          "311DI1",
+          "311FI1",
+          "311HI1"
+        ]
+      },
+      "cruce": {
+        "routeId": {
+          "ok": 422,
+          "total": 1357,
+          "pct": 31.1
+        },
+        "tripId": {
+          "ok": 0,
+          "total": 3276,
+          "pct": 0,
+          "nota": "Los trip_id del RT y de los GTFS son secuenciales \"<n>-1\": un match no implica el mismo viaje."
+        },
+        "stopId": {
+          "ok": 14137,
+          "total": 35447,
+          "pct": 39.9
+        },
+        "prediccionesConStop": {
+          "ok": 42650,
+          "total": 105325,
+          "pct": 40.5
+        },
+        "stopIdPorFormato": {
+          "numérico": {
+            "ok": 14137,
+            "total": 31636,
+            "pct": 44.7
+          },
+          "S + dígitos": {
+            "ok": 0,
+            "total": 3613,
+            "pct": 0
+          },
+          "otro": {
+            "ok": 0,
+            "total": 198,
+            "pct": 0
+          }
+        },
+        "routeIdMismoShortName": {
+          "ok": 0,
+          "total": 252,
+          "pct": 0,
+          "nota": "De los route_id que cruzan y tienen nombre en vehiclePositionsSimple: cuántos son la misma línea. 0 % = ids reasignados, el cruce por id es casual."
+        },
+        "distanciaVehiculoAStopId_m": {
+          "n": 1941,
+          "p50": 234,
+          "p90": 3729,
+          "max": 63039
+        },
+        "vehiculosConStopIdAMenosDe1km": {
+          "ok": 1531,
+          "total": 1941,
+          "pct": 78.9
+        },
+        "agencyName": {
+          "ok": 116,
+          "total": 124,
+          "pct": 93.5
+        },
+        "shortName": {
+          "ok": 322,
+          "total": 538,
+          "pct": 59.9
+        },
+        "shortNameEnCABAPorNumero": {
+          "ok": 233,
+          "total": 249,
+          "pct": 93.6
+        },
+        "routeIdsSinMatchRescatadosPorNombre": {
+          "ok": 380,
+          "total": 684,
+          "pct": 55.6
+        }
+      }
+    },
+    {
+      "id": "ba-cdn-colectivos-gtfs",
+      "tipo": "gtfs",
+      "archivo": "ba-cdn/colectivos-gtfs.zip",
+      "nombre": "BA Data colectivos-gtfs (CDN) = Mobility Database mdb-1220",
+      "estado": "ok",
+      "bytes": 209195824,
+      "mtime": "2026-11-01T23:01:55.443Z",
+      "archivos": [
+        "agency.txt",
+        "calendar_dates.txt",
+        "routes.txt",
+        "shapes.txt",
+        "stops.txt",
+        "stop_times.txt",
+        "trips.txt"
+      ],
+      "feedInfo": null,
+      "rangoServicio": {
+        "desde": "20190928",
+        "hasta": "20191231"
+      },
+      "conteos": {
+        "agency": 192,
+        "routes": 1052,
+        "stops": 43594,
+        "trips": 436407,
+        "routeShortNames": 1052,
+        "stopsEnCABA": 11493
+      },
+      "bbox": {
+        "minLat": -35.182685,
+        "maxLat": -34.042402,
+        "minLon": -60.97663,
+        "maxLon": -57.730347
+      },
+      "mojibake": {
+        "agency": 0,
+        "routes": 0,
+        "stops": 0
+      },
+      "muestras": {
+        "agencyId": [
+          "82",
+          "14",
+          "20"
+        ],
+        "routeId": [
+          "4167",
+          "4168",
+          "4169",
+          "4170"
+        ],
+        "stopId": [
+          "691100952",
+          "628117050",
+          "6490106165",
+          "691134825"
+        ],
+        "tripId": [
+          "1-1",
+          "2-1",
+          "3-1"
+        ]
+      },
+      "cruce": {
+        "routeId": {
+          "ok": 412,
+          "total": 1357,
+          "pct": 30.4
+        },
+        "tripId": {
+          "ok": 3276,
+          "total": 3276,
+          "pct": 100,
+          "nota": "Los trip_id del RT y de los GTFS son secuenciales \"<n>-1\": un match no implica el mismo viaje."
+        },
+        "stopId": {
+          "ok": 4987,
+          "total": 35447,
+          "pct": 14.1
+        },
+        "prediccionesConStop": {
+          "ok": 20661,
+          "total": 105325,
+          "pct": 19.6
+        },
+        "stopIdPorFormato": {
+          "numérico": {
+            "ok": 4987,
+            "total": 31636,
+            "pct": 15.8
+          },
+          "S + dígitos": {
+            "ok": 0,
+            "total": 3613,
+            "pct": 0
+          },
+          "otro": {
+            "ok": 0,
+            "total": 198,
+            "pct": 0
+          }
+        },
+        "routeIdMismoShortName": {
+          "ok": 0,
+          "total": 252,
+          "pct": 0,
+          "nota": "De los route_id que cruzan y tienen nombre en vehiclePositionsSimple: cuántos son la misma línea. 0 % = ids reasignados, el cruce por id es casual."
+        },
+        "distanciaVehiculoAStopId_m": {
+          "n": 890,
+          "p50": 247,
+          "p90": 3547,
+          "max": 63039
+        },
+        "vehiculosConStopIdAMenosDe1km": {
+          "ok": 737,
+          "total": 890,
+          "pct": 82.8
+        },
+        "agencyName": {
+          "ok": 111,
+          "total": 124,
+          "pct": 89.5
+        },
+        "shortName": {
+          "ok": 322,
+          "total": 538,
+          "pct": 59.9
+        },
+        "shortNameEnCABAPorNumero": {
+          "ok": 230,
+          "total": 249,
+          "pct": 92.4
+        },
+        "routeIdsSinMatchRescatadosPorNombre": {
+          "ok": 379,
+          "total": 684,
+          "pct": 55.4
+        }
+      }
+    },
+    {
+      "id": "ba-colectivos-paradas",
+      "tipo": "paradas-csv",
+      "archivo": "ba-paradas/paradas-de-colectivo.csv",
+      "nombre": "BA Data colectivos-paradas (CSV)",
+      "estado": "ok",
+      "bytes": 826120,
+      "mtime": "2026-11-01T23:01:27.353Z",
+      "columnas": [
+        "CALLE",
+        "ALT PLANO",
+        "DIRECCION",
+        "coord_X",
+        "coord_Y",
+        "COMUNA",
+        "BARRIO",
+        "L1",
+        "l1_sen",
+        "L2",
+        "l2_sen",
+        "L3",
+        "l3_sen",
+        "L4",
+        "l4_sen",
+        "L5",
+        "l5_sen",
+        "L6",
+        "l6_sen"
+      ],
+      "conteos": {
+        "paradas": 7027,
+        "lineasDistintas": 132,
+        "paradasEnCABA": 7027
+      },
+      "bbox": {
+        "minLat": -34.7006587,
+        "maxLat": -34.53648,
+        "minLon": -58.5304892,
+        "maxLon": -58.34234
+      },
+      "mojibake": {
+        "calles": 0
+      },
+      "muestras": {
+        "lineas": [
+          "22",
+          "53",
+          "29",
+          "105",
+          "7",
+          "93",
+          "70",
+          "74"
+        ]
+      },
+      "cruce": {
+        "stopId": {
+          "ok": 0,
+          "total": 35447,
+          "pct": 0,
+          "nota": "El dataset no tiene stop_id: solo calle, altura, coordenadas y hasta 6 líneas con sentido."
+        },
+        "shortNameExacto": {
+          "ok": 28,
+          "total": 538,
+          "pct": 5.2
+        },
+        "shortNamePorNumero": {
+          "ok": 245,
+          "total": 538,
+          "pct": 45.5,
+          "nota": "Compara solo la parte numérica (\"228B\" → \"228\"); el RT trae ramal con letra."
+        },
+        "shortNameEnCABAPorNumero": {
+          "ok": 196,
+          "total": 249,
+          "pct": 78.7,
+          "nota": "Solo líneas con al menos un vehículo dentro del bbox de CABA en el fixture."
+        },
+        "coberturaEspacial": {
+          "radio_m": 40,
+          "stopIdsRTubicadosEnCABA": 5425,
+          "conParadaCerca": 3768,
+          "pct": 69.5,
+          "distancia_m": {
+            "n": 3768,
+            "p50": 8,
+            "p90": 17,
+            "max": 40
+          },
+          "ubicadosCon": "api-feed-gtfs"
+        }
+      }
+    },
+    {
+      "id": "nacion-recorridos-kml",
+      "tipo": "kml",
+      "archivo": "nacion/lineas_jn_rmba_cnrt.kml",
+      "nombre": "Nación: Recorridos de servicios de colectivos AMBA (KML, CNRT)",
+      "estado": "ok",
+      "bytes": 9609740,
+      "mtime": "2026-11-01T23:08:49.704Z",
+      "conteos": {
+        "recorridos": 1128,
+        "conGeometria": 1128,
+        "lineasDistintas": 138,
+        "empresas": 90
+      },
+      "cruce": {
+        "stopId": {
+          "ok": 0,
+          "pct": 0,
+          "nota": "Sin paradas: solo trazados por línea, ramal y sentido."
+        },
+        "shortNameEnCABAPorNumero": {
+          "ok": 196,
+          "total": 249,
+          "pct": 78.7,
+          "nota": "Solo cubre líneas de jurisdicción nacional (las que cruzan CABA ↔ provincia)."
+        },
+        "agencyName": {
+          "ok": 27,
+          "total": 124,
+          "pct": 21.8
+        }
+      }
+    },
+    {
+      "id": "osm-bus-stop",
+      "tipo": "osm",
+      "archivo": "osm/bus_stops.json",
+      "nombre": "OpenStreetMap highway=bus_stop (Overpass, bbox CABA)",
+      "estado": "ok",
+      "bytes": 2345625,
+      "mtime": "2026-11-01T23:05:28.001Z",
+      "conteos": {
+        "paradas": 8687,
+        "conNombre": 8666,
+        "conRef": 26,
+        "conRouteRef": 1
+      },
+      "cruce": {
+        "stopId": {
+          "ok": 0,
+          "pct": 0,
+          "nota": "OSM no tiene los stop_id del RT; ref/route_ref casi no se usan en CABA."
+        },
+        "coberturaEspacial": {
+          "radio_m": 40,
+          "stopIdsRTubicadosEnCABA": 5425,
+          "conParadaCerca": 4275,
+          "pct": 78.8,
+          "distancia_m": {
+            "n": 4275,
+            "p50": 11,
+            "p90": 23,
+            "max": 40
+          },
+          "ubicadosCon": "api-feed-gtfs"
+        }
+      }
+    }
+  ]
+}
