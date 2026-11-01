@@ -1,0 +1,38 @@
+{
+  "name": "@transportate/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contratos JSON v1 (esquemas Zod y tipos) compartidos entre el proxy y la app.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./upstream": {
+      "types": "./dist/upstream/index.d.ts",
+      "import": "./dist/upstream/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.9.2",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}
