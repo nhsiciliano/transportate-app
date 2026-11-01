@@ -1,0 +1,11 @@
+# Fixture de error capturado por tools/api-probe/probe.mjs
+# endpoint: GET /subtes/tripUpdates  params: {}
+# capturado: 2026-11-01T17:09:03.860Z
+# status: 404 Not Found
+# content-type: application/json; charset=UTF-8
+# bytes: 72
+# ---- cuerpo crudo ----
+{
+  "error": "No listener endpoint for: /tripUpdates",
+  "message": ""
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@transportate/api-probe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Sondeo empírico de la API Transporte GCBA y captura de fixtures (Fase 1).",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "probe": "node probe.mjs" },
+  "dependencies": { "gtfs-realtime-bindings": "2.2.0" }
+}

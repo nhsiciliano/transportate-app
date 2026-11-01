@@ -1,0 +1,8 @@
+# Fixture de error capturado por tools/api-probe/probe.mjs
+# endpoint: GET /trenes/serviceAlerts  params: {}
+# capturado: 2026-11-01T17:09:10.859Z
+# status: 404 Not Found
+# content-type: text/plain
+# bytes: 47
+# ---- cuerpo crudo ----
+No listener for endpoint: /trenes/serviceAlerts
