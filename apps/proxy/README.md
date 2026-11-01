@@ -67,12 +67,35 @@ wrangler r2 object put transportate-static/latest/manifest.json --file out/manif
 ## Secrets
 
 - **Local:** `apps/proxy/.dev.vars` (copiado de `.dev.vars.example`; está en `.gitignore`).
-- **Producción:**
+- **Preview / producción:** se cargan **por entorno**, porque los secrets no se heredan:
   ```sh
-  pnpm --filter transportate-proxy exec wrangler secret put GCBA_CLIENT_ID
-  pnpm --filter transportate-proxy exec wrangler secret put GCBA_CLIENT_SECRET
+  pnpm --filter transportate-proxy exec wrangler secret put GCBA_CLIENT_ID --env production
+  pnpm --filter transportate-proxy exec wrangler secret put GCBA_CLIENT_SECRET --env production
   ```
 - Nunca se loguean ni se devuelven. Las URLs upstream llevan el secret en la query, así que **no se loguean**. Hay un test que fuerza un error con el secret en el mensaje y verifica que no aparece en la respuesta.
+
+## Despliegue
+
+Guía completa: [`docs/10-deploy.md`](../../docs/10-deploy.md) (buckets, secrets, dominio propio, entornos, logs sin datos personales, rollback y checklist de privacidad).
+
+- **Entornos** (`wrangler.jsonc`):
+
+  | Entorno | Worker | Bucket R2 |
+  |---|---|---|
+  | `env.preview` | `transportate-proxy-preview` | `transportate-static-preview` |
+  | `env.production` | `transportate-proxy-production` | `transportate-static` |
+
+  Bindings y vars se repiten en cada entorno porque no se heredan. Si agregás uno, regenerá los tipos con `pnpm --filter transportate-proxy types`.
+- **Manual:**
+  ```sh
+  pnpm lint && pnpm typecheck && pnpm test
+  pnpm --filter transportate-proxy run deploy --env preview      # o --env production
+  ```
+  Usá `run deploy`, no `deploy` (que es un comando nativo de pnpm), y no pongas `--` antes de `--env`: pnpm 12 se lo pasa literal a wrangler, que entonces despliega la configuración raíz.
+- **CI:** `.github/workflows/deploy-proxy.yml`. Es manual (`workflow_dispatch` con `environment`), corre lint/typecheck/test y despliega con `cloudflare/wrangler-action@v4`. Necesita `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` en los secrets de GitHub.
+- **Verificación:** `curl -s $BASE/v1/health` devuelve el `environment` desplegado.
+- **Rollback:** `pnpm --filter transportate-proxy exec wrangler rollback --env production --message "<motivo>"`.
+- **Antes de abrir a usuarios:** asignar un **dominio propio** (`routes` con `custom_domain: true`), porque la Cache API no funciona en `*.workers.dev`.
 
 ## Tests (`test/`)
 
