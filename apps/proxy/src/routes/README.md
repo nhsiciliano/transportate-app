@@ -1,3 +1,3 @@
 # routes
 
-Una ruta Hono por servicio, montada en `src/app.ts` bajo `/v1/<servicio>`. Valida parámetros, llama al adaptador y fija `Cache-Control`/ETag. Nunca conoce el formato upstream. Por ahora: `health.ts`.
+Una ruta Hono por servicio, montada en `src/app.ts` bajo `/v1/<servicio>`: `index.ts` (`/v1`), `health.ts`, `subtes.ts`, `colectivos.ts`, `transito.ts` (diferido) y `static.ts`. Validan parámetros y delegan en los adaptadores; nunca conocen el formato upstream.
