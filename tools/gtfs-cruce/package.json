@@ -1,0 +1,10 @@
+{
+  "name": "@transportate/gtfs-cruce",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cruce de GTFS estáticos candidatos con los IDs del tiempo real de colectivos (Fase 1).",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "cruce": "node cruce.mjs" },
+  "dependencies": { "gtfs-realtime-bindings": "2.2.0" }
+}
