@@ -2,7 +2,7 @@
 
 Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y tránsito de CABA en tiempo real, sin cuentas ni datos personales. Esta carpeta reúne todo lo que se decide, se investiga y se verifica a lo largo del proyecto. El trabajo avanza por fases con freno y validación al final de cada una (ver `00-plan.md`).
 
-**Estado:** Fase 1 (investigación) en curso. Ver `bitacora.md`.
+**Estado:** Fase 1 (investigación) completada el 2026-11-01, pendiente de validación del usuario. Ver `bitacora.md`.
 
 ## Cómo leer esto
 
@@ -15,26 +15,28 @@ Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y trán
 
 ## Índice
 
-Leyenda: ✅ escrito · 🚧 lo escribe otro lote de la Fase 1 · ⏳ fases posteriores
+Leyenda: ✅ escrito · ⏳ fases posteriores
 
 ### Plan y estado
 
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`00-plan.md`](00-plan.md) | Plan maestro: contexto, decisiones de arquitectura, fases, riesgos | ✅ |
-| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fase 1 en curso) |
+| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fase 1 cerrada) |
 | [`versiones.md`](versiones.md) | Versiones fijadas y verificadas con Context7, y lo pendiente de fijar | ✅ |
 
 ### Investigación (Fase 1)
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| [`01-api-transporte.md`](01-api-transporte.md) | Endpoints verificados con credenciales: status, tamaño, formato, frecuencia, inconsistencias | 🚧 |
-| [`01a-api-console.md`](01a-api-console.md) | Lectura de la consola oficial de la API (`/console/`): endpoints candidatos, métodos, parámetros, términos | 🚧 |
-| [`02-obelisco-tokens.md`](02-obelisco-tokens.md) | Tokens del sistema de diseño Obelisco v2 (color, tipografía, espaciado, radios, sombras, foco) con archivo y línea de origen; paleta oscura derivada | 🚧 |
+| [`01-api-transporte.md`](01-api-transporte.md) | Endpoints verificados con credenciales: status, tamaño, formato, frecuencia, inconsistencias | ✅ |
+| [`01a-api-console.md`](01a-api-console.md) | Inventario de la spec RAML oficial (`/console/api/?raml`): endpoints, recursos comentados, tipos GTFS-RT, matriz MVP vs spec | ✅ |
+| [`02-obelisco-tokens.md`](02-obelisco-tokens.md) | Tokens del sistema de diseño Obelisco v2 (color, tipografía, espaciado, radios, sombras, foco) con archivo y línea de origen; paleta oscura derivada | ✅ |
 | [`02b-colores-subte.md`](02b-colores-subte.md) | Colores oficiales de las líneas de subte (GTFS vs. fuentes públicas) y estaciones por línea | ✅ |
-| [`briefs/`](briefs/) | Un brief por pantalla del MVP (Impeccable `shape`), con estados y sin código | 🚧 |
+| [`briefs/`](briefs/) | Un brief por pantalla del MVP (Impeccable `shape`), con estados y sin código | ✅ |
 | [`fuentes/`](fuentes/) | Materiales de origen, por ejemplo `api-transporte-v1.raml` (spec oficial de la API) | ✅ |
+| [`../tools/api-probe/`](../tools/api-probe/README.md) | Script reproducible del sondeo de la API (`node probe.mjs`) y `last-run.json` | ✅ |
+| [`../apps/proxy/test/fixtures/`](../apps/proxy/test/fixtures/README.md) | 32 fixtures reales (pb, json, geojson, errores) para los tests del proxy | ✅ |
 
 ### Diseño de la solución
 

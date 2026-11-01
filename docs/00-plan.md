@@ -24,6 +24,19 @@ Versiones verificadas con Context7 (se reverifican al inicio de cada fase):
 
 Respuestas del usuario: tiene credenciales de la API; cuenta Cloudflare en plan Free.
 
+## Correcciones tras la Fase 1 (2026-11-01)
+
+Resultado de la verificación empírica (`docs/01-api-transporte.md`) y de la bitácora. Lo que sigue **reemplaza** lo que diga el resto del plan cuando se contradigan:
+
+- **Sí hay arribos de colectivos:** `/colectivos/tripUpdates` existe (no documentado) y se actualiza cada 60 s. Las tareas 2.6 y 4.7 pasan de "si la API lo permite" a "condicionado a un GTFS estático vigente" (el oficial es de 2021 y cruza solo 32 % de rutas / 40 % de paradas).
+- **Arribos de subte bloqueados:** `forecastGTFS` congelado desde 2026-10-24. Tarea 4.2 implementa arribos detrás de un flag con detección de dato viejo; el estado por línea se deriva de `serviceAlerts?json=1` (el protobuf llega corrupto).
+- **Cortes de tránsito:** `/transito/v1/cortes` devuelve 500. Tareas 2.7 y 4.8 se mantienen con el estado "Fuente no disponible" hasta que el usuario decida N3 (ocultar el tab o buscar otra fuente).
+- **Trenes:** 404. Sin cambios (fuera del MVP).
+- **Proxy:** TTL de 20–30 s para colectivos (cadencia real 60 s) y 15–30 s para alertas de subte; reintentos y último dato bueno obligatorios (1–9 % de fallos upstream); compresión en el Worker (upstream no comprime); nunca loguear la URL upstream (lleva el secret en la query).
+- **Tokens Obelisco:** identidad vigente (`#1d3343`, `#035c80`, `#009688`) + Nunito/Open Sans por mandato del brief; paleta oscura ya derivada y verificada (tarea 1.6 hecha).
+- **Costos:** Free alcanza para ~1.100 usuarios activos (1 request por tick de 20 s, 30 min/día), no 300; la Cache API no reduce requests facturadas.
+- **Sin `bearing`** en los feeds: tarea 4.6 no rota íconos por rumbo real (se puede derivar de posiciones sucesivas, opcional).
+
 ## Herramientas de trabajo transversales
 
 - **Impeccable (UX/UI).** Es el skill de diseño para todo lo visual. `PRODUCT.md` y `DESIGN.md` viven en la raíz del repo porque el launcher los lee de ahí; `docs/README.md` los enlaza. Comandos por fase: `init` y `shape` en Fase 1, `extract`/`document` en Fase 3, `shape` + `onboard` + `clarify` por feature en Fase 4, `audit` nativo + `adapt` nativo + `harden` + `critique` + `polish` en Fase 5. Antes de cualquier edición de UI se lee `craft-floor.md` como indica el skill.
