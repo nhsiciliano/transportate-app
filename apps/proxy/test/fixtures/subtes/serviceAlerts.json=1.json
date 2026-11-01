@@ -1,0 +1,126 @@
+{
+  "header": {
+    "gtfs_realtime_version": "2.0",
+    "incrementality": 0,
+    "timestamp": 1793552929
+  },
+  "entity": [
+    {
+      "id": "Alert_LineaB",
+      "is_deleted": false,
+      "trip_update": null,
+      "vehicle": null,
+      "alert": {
+        "active_period": [
+          
+        ],
+        "informed_entity": [
+          {
+            "agency_id": "",
+            "route_id": "LineaB",
+            "route_type": 0,
+            "trip": null,
+            "stop_id": ""
+          }
+        ],
+        "cause": 2,
+        "effect": 7,
+        "url": null,
+        "header_text": {
+          "translation": [
+            {
+              "text": "Estación Medrano cerrada por obras de renovación integral.",
+              "language": "es"
+            }
+          ]
+        },
+        "description_text": {
+          "translation": [
+            {
+              "text": "Estación Medrano cerrada por obras de renovación integral.",
+              "language": "es"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Alert_LineaC",
+      "is_deleted": false,
+      "trip_update": null,
+      "vehicle": null,
+      "alert": {
+        "active_period": [
+          
+        ],
+        "informed_entity": [
+          {
+            "agency_id": "",
+            "route_id": "LineaC",
+            "route_type": 0,
+            "trip": null,
+            "stop_id": ""
+          }
+        ],
+        "cause": 2,
+        "effect": 7,
+        "url": null,
+        "header_text": {
+          "translation": [
+            {
+              "text": "El 02/11 cierra Independencia por obras. Lavalle cerrada por obras de renovación.",
+              "language": "es"
+            }
+          ]
+        },
+        "description_text": {
+          "translation": [
+            {
+              "text": "El 02/11 cierra Independencia por obras. Lavalle cerrada por obras de renovación.",
+              "language": "es"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "Alert_LineaE",
+      "is_deleted": false,
+      "trip_update": null,
+      "vehicle": null,
+      "alert": {
+        "active_period": [
+          
+        ],
+        "informed_entity": [
+          {
+            "agency_id": "",
+            "route_id": "LineaE",
+            "route_type": 0,
+            "trip": null,
+            "stop_id": ""
+          }
+        ],
+        "cause": 10,
+        "effect": 2,
+        "url": null,
+        "header_text": {
+          "translation": [
+            {
+              "text": "Entre Ríos y Urquiza cerradas por obras de renovación integral.",
+              "language": "es"
+            }
+          ]
+        },
+        "description_text": {
+          "translation": [
+            {
+              "text": "Entre Ríos y Urquiza cerradas por obras de renovación integral.",
+              "language": "es"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# Fixture de error capturado por tools/api-probe/probe.mjs
+# endpoint: GET /transito/v1/cortes  params: {}
+# capturado: 2026-11-01T17:09:11.859Z
+# status: 500 Server Error
+# content-type: text/plain; charset=UTF-8
+# bytes: 10
+# ---- cuerpo crudo ----
+/v1/cortes

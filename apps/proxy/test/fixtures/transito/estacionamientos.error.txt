@@ -1,0 +1,8 @@
+# Fixture de error capturado por tools/api-probe/probe.mjs
+# endpoint: GET /transito/v1/estacionamientos  params: {}
+# capturado: 2026-11-01T17:09:33.865Z
+# status: 500 Server Error
+# content-type: text/plain; charset=UTF-8
+# bytes: 40
+# ---- cuerpo crudo ----
+Required query parameter x not specified
