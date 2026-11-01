@@ -30,6 +30,7 @@ Leyenda: ✅ escrito · ⏳ fases posteriores
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`01-api-transporte.md`](01-api-transporte.md) | Endpoints verificados con credenciales: status, tamaño, formato, frecuencia, inconsistencias | ✅ |
+| [`01b-gtfs-alternativos.md`](01b-gtfs-alternativos.md) | Fuentes alternativas de GTFS de colectivos evaluadas, cruce con el tiempo real (`tools/gtfs-cruce/`) y plan B de paradas | ✅ |
 | [`01a-api-console.md`](01a-api-console.md) | Inventario de la spec RAML oficial (`/console/api/?raml`): endpoints, recursos comentados, tipos GTFS-RT, matriz MVP vs spec | ✅ |
 | [`02-obelisco-tokens.md`](02-obelisco-tokens.md) | Tokens del sistema de diseño Obelisco v2 (color, tipografía, espaciado, radios, sombras, foco) con archivo y línea de origen; paleta oscura derivada | ✅ |
 | [`02b-colores-subte.md`](02b-colores-subte.md) | Colores oficiales de las líneas de subte (GTFS vs. fuentes públicas) y estaciones por línea | ✅ |
