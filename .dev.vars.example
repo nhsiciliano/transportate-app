@@ -1,0 +1,4 @@
+# Copiá este archivo a apps/proxy/.dev.vars para `wrangler dev` (nunca commitees .dev.vars).
+# En producción van con `wrangler secret put GCBA_CLIENT_ID` / `GCBA_CLIENT_SECRET`.
+GCBA_CLIENT_ID=reemplazar-por-tu-client-id
+GCBA_CLIENT_SECRET=reemplazar-por-tu-client-secret

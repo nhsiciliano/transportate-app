@@ -1,0 +1,20 @@
+# Solo apps/* y packages/*. Las carpetas de tools/* tienen su propio package.json
+# (npm) y quedan fuera del workspace a propósito.
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - '@cloudflare/vitest-plugin@1.4.12'
+  - '@cloudflare/workerd-darwin-64@1.20261101.1'
+  - '@cloudflare/workerd-darwin-arm64@1.20261101.1'
+  - '@cloudflare/workerd-linux-64@1.20261101.1'
+  - '@cloudflare/workerd-linux-arm64@1.20261101.1'
+  - '@cloudflare/workerd-windows-64@1.20261101.1'
+  - globals@17.14.0
+  - hono@4.13.16
+  - miniflare@5.20261101.0-beta
+  - workerd@1.20261101.1
+  - wrangler@4.156.1
