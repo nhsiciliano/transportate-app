@@ -1,0 +1,59 @@
+# Despliegue manual del proxy (apps/proxy) a Cloudflare Workers.
+# No corre en push: se dispara a mano desde Actions → "Deploy proxy" → Run workflow.
+# Requiere los secrets de repositorio CLOUDFLARE_API_TOKEN y CLOUDFLARE_ACCOUNT_ID
+# (permisos mínimos del token en docs/10-deploy.md §9). Los secrets GCBA_* del Worker
+# NO pasan por acá: se cargan una vez con `wrangler secret put … --env <entorno>`.
+name: Deploy proxy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Entorno de wrangler (env.<nombre> en apps/proxy/wrangler.jsonc)
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+
+permissions:
+  contents: read
+
+# Un despliegue por entorno a la vez; no se cancela uno en curso.
+concurrency:
+  group: deploy-proxy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Environment de GitHub homónimo: permite exigir aprobación manual para production.
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Toma la versión exacta de pnpm del campo `packageManager` del package.json raíz.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      - name: Deploy con wrangler
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: pnpm
+          workingDirectory: apps/proxy
+          # Usa el wrangler fijado en apps/proxy/package.json (ya instalado arriba).
+          command: deploy --env ${{ inputs.environment }}
