@@ -1,0 +1,1454 @@
+#%RAML 1.0  
+title: API Transporte – Datos Abiertos
+version: v1
+description: |
+  API de transporte. Provee información GTFS dinámica y estática de colectivos, subtes y trenes dentro de la CABA. Incluye información sobre estacionamiento y cortes de calles.
+mediaType: application/json
+baseUri: https://apitransporte.buenosaires.gob.ar/
+
+traits:
+  client-id-required:
+    queryParameters:
+      client_id:
+        type: string
+      client_secret:
+        type: string
+  transito-estacionamiento-params:
+    queryParameters:
+        x:
+          description: coordenada x (longitud)
+          type: number
+          format: float
+          required: true
+        y:
+          description: coordenada y (latitude)
+          type: number
+          format: float
+          required: true
+        srid:
+          description: |
+            sistema de referencia (srid default: 4326)
+          type: string
+          default: "4326"
+          required: false
+        radio:
+          description: radio en metros que actúa como buffer para el punto indicado
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+          required: false
+        orden:
+          description: |
+            criterio de ordenamiento para los objetos devueltos en la respuesta. Opciones "nombre", "distancia"
+          type: string
+          default: distancia
+          enum: [ nombre, distancia ]
+          required: false
+        limite:
+          description: limita la cantidad de objetos devueltos en la respuesta
+          type: integer
+          default: 10
+          required: false
+        formato:
+          description: devuelve un geojson sino lo devuelve en formato json. Opciones "json", "geojson"
+          type: string
+          default: json
+          required: false
+        fullInfo:
+          description: en True agrega el campo "contenido" a la respuesta devuelta con detalle del objeto. Si se especificó el formato geojson este parámetro queda sin efecto
+          type: boolean
+          default: false
+          required: false
+        callback:
+          description: callback
+          type: string
+          required: false  
+        
+types:
+  Link:
+    type: object
+    properties: 
+      rel: string
+      href?: string
+    
+  TimeRange:
+    #description: Time Range
+    description: Rango de tiempo
+    type: object
+    properties:
+      start:
+        #description: Start time. POSIX format - seconds from Jan 1st, 1970 00:00:00 UTC. If missing, interval starts in negative infinit.
+        description: Tiempo de inicio. Formato POSIX - segundos desde el 1ero de Enero, 1970 00:00:00 UTC. Si está ausente, el intervalo comienza en infinito negativo.
+        type: number
+        format: int64
+        required: false
+      end:
+        #description: End time. POSIX format. If missing, interval ends in positive infinit.
+        description: Tiempo de fin. Formato POSIX. Si está ausente, el intervalo finaliza en infinito positivo.
+        type: number?
+        required: false
+    example:
+      start: 1525888786
+      end: 1525888983
+  
+  Translation:
+    #description: String related to a language
+    description: String relacionado a un lenguaje
+    type: object
+    properties:
+      text:
+        #description: UTF8 string with the message
+        description: String UTF8 con el mensaje
+        type: string
+        required: true
+      language:
+        #description: BCP-47 language code. If not informed, default language for the feed.
+        description: Código de lenguaje BCP-47. Si no es informado, lenguaje por default para el feed.
+        type: string
+        required: false
+    example:
+      text: "Sin servicio"
+      language: "es"
+    
+  TranslatedString:
+    #description: Internationalized object
+    description: Objecto internacionalizado
+    type: object
+    properties:
+      translation:
+        type: Translation | Translation[]
+    example:
+      translation: [
+        {
+          text: "Sin servicio",
+          language: "es"
+        },
+        {
+          text: "No service",
+          language: "en"
+        }
+      ]
+  
+  Position:
+    #description: Current position of this vehicle.
+    description: Posición actual de este vehículo.
+    type: object
+    properties:
+      latitude:
+        #description: Degrees North (WGS-84 coordinate system). In case of GPS fail or invalid fix the field contains the value 91.
+        description: Grados Norte (sistema de coordenadas WGS-84).
+        type: number
+        format: float
+        required: true
+      longitude:
+        #description: Degrees East (WGS-84 coordinate system). ). In case of GPS fail or invalid fix the field contains the value 181.
+        description: Grados Este (sistema de coordenadas WGS-84).
+        type: number
+        format: float
+        required: true
+      bearing:
+        #description: Orientation, in degrees (0=north, 90=east)
+        description: Orientación, en grados (0=norte, 90=este)
+        type: number
+        format: float
+        required: false
+      odometer:
+        #description: Cuentakilómetros. Odometer value received from vehicle measured in meters (m). In case of odometer fail the field contains the value -1.
+        description: Valor del odómetro recibido desde el vehículo medido en metros (m). En caso de falla del odómetro el campo contiene el valor -1.
+        type: number
+        format: double
+        required: false
+      speed:
+        #description: Vehicle speed at the moment (m/seg)
+        description: Velocidad del vehículo a ese momento (m/seg)
+        type: number
+        format: float
+        required: false
+    example:
+      latitude: -34.628474
+      longitude: -58.427338
+      bearing: 0
+      odometer: 12039.45
+      speed: 0
+        
+  TripDescriptor:
+    #description: Descriptor for a trip instance (trip_id instance). If not informed, it searches every trip instance in a route.
+    description: Descriptor para una instancia de trip (trip_id instancia). Si no es informado, busca cada instancia de trip en una ruta.
+    type: object
+    properties:
+      trip_id?: string
+      route_id?: string
+      start_time:
+        #description: Scheduled start time for this trip instance. Format hh:mm:ss
+        description: Tiempo de inicio programado para esta instancia de trip. Formato hh:mm:ss
+        type: string
+        required: false
+      start_date:
+        #description: Scheduled start date for this trip instance. Format YYYYMMDD.
+        description: Fecha de inicio programada para esta instancia de trip. Formato YYYYMMDD
+        type: string
+        required: false
+      schedule_relationship:
+        description: |
+          #Relationship between this actual trip and the scheduled. Possible values:
+          Relación entre este trip y el programado. Valores posibles:
+          0: SCHEDULED
+          1: ADDED
+          2: UNSCHEDULED
+          3: CANCELED
+          5: REPLACEMENT
+        type: integer
+        required: false
+    example:
+      trip_id: "22944107288575"
+      route_id: "580"
+      start_time: "13:15:00"
+      start_date: "20180417"
+      schedule_relationship: 0
+  
+  VehicleDescriptor:
+    #description: Specific identification information on the vehicle serving this trip. Each vehicle entry has a unique identifier.
+    description: Información de indentificación especifica sobre el vehículo sirviendo este trip. Cada entrada de vehículo tiene un identificador único.
+    type: object
+    properties:
+      id:
+        #description: Internal system identification of the vehicle. This is unique per vehicle, and is used for tracking the vehicle as it proceeds through the AVLS system.
+        description: Systema interno de identificación del vehículo. Este es único por vehículo, y es usado para hacer el seguimiento del vehículo como prosigue en el sistema AVLS.
+        type: string
+        required: false
+      license_plate:
+        #description: The license plate of the vehicle.
+        description: La chapa patente del vehículo.
+        type: string
+        required: false
+      label:
+        description: x
+        type: string
+        required: false
+    example:
+      id: "1702"
+      license_plate: "PDU980"
+      label: "1404"
+      
+    
+  VehiclePosition:
+    #description: Data about the real-time position of a vehicle.
+    description: Información sobre la posición en tiempo real del vehículo.
+    type: object
+    properties:
+      trip?: TripDescriptor
+      vehicle?: VehicleDescriptor
+      position?: Position
+      current_stop_sequence?: integer
+      stop_id?: string
+      current_status?: string
+      timestamp?: number
+      congestion_level:
+        description: |
+          0:  "UNKNOWN_CONGESTION_LEVEL"
+          1:  "RUNNING_SMOOTHLY"
+          2:  "STOP_AND_GO"
+          3:  "CONGESTION"
+          4:  "SEVERE_CONGESTION"
+        type: number
+        required: false
+    example:
+        trip:
+          trip_id: "22944107288575"
+          route_id: "580"
+          start_time: "13:15:00"
+          start_date: "20180417"
+          schedule_relationship: 0
+        vehicle: 
+          id: "1013"
+          label: "0033"
+          license_plate: "PNB992"
+        position: 
+          bearing: 0
+          latitude: -34.7110863
+          longitude: -58.39237
+          odometer: 43069
+          speed: 0
+        current_stop_sequence: 0
+        stop_id: "20284"
+        current_status: "0"
+        timestamp: 1525457578
+        congestion_level: 0
+  
+  EntitySelector:
+    #description: Feed selector. At least one of the optional values must be given.
+    description: Feed selector. Al menos uno de estos valores opcionales debe ser entregado.
+    type: object
+    properties:
+      agency_id?: string
+      route_id?: number | string
+      route_type?:
+        type: number
+        format: int32
+      trip?: TripDescriptor
+      stop_id?: string
+    example:
+      route_id: "580"
+      stop_id: "20284"
+  
+    
+  FeedHeader:
+    #description: Header for the feed. Metadata about this feed and feed message.
+    description: Cabecera del feed. Metadata sobre este feed y el mensaje feed.
+    type: object
+    properties:
+      gtfs_realtime_version:
+        #description: Version of the feed specification. The current version is 1.0.
+        description: Versión de la especificación del feed. La versión actual es 1.0.
+        type: string
+        required: true
+      incrementality:
+        description: |
+          Identifies if the search is incremental
+              0:  "FULL_DATASET"
+              1:  "DIFFERENTIAL" - not admitted yet
+        type: number
+        required: false
+      timestamp:
+        #description: This time identifier shows when the feed content was created on the server, in POSIX time (seconds since January 1st 1970 00:00:00 UTC).
+        description: Este identificador de tiempo muestra cuando el contenido del feed fue creado en el servidor, en tiempo POSIX (segundos desde 1ero de Enero 1970 00:00:00 UTC).
+        type: number
+        required: false
+    example:
+      gtfs_realtime_version: "1.0"
+      incrementality: 0
+      timestamp: 1284457468
+  
+    
+  FeedEntityVehiclePosition:
+    #description: Contents of the feed message. One FeedEntity message for each vehicle.
+    description: Contenido del mensaje de feed . Un mensaje FeedEntity por cada vehículo.
+    type: object
+    properties:
+      alert: nil
+      id:
+        #description: Unique feed identifier for this feed
+        description: Identificador de feed único para este feed.
+        required: true
+        type: string
+      is_deleted:
+        #description: Specifies if the entity needs to be deleted. Only relevanta for incremental searchs.
+        description: Especifica si la entidad necesita ser eliminada. Solo relevante para busquedas incrementales.
+        required: false
+        type: boolean
+      trip_update: nil
+      vehiclePos: VehiclePosition
+    example:
+      alert: null
+      id: "1"
+      is_deleted: false
+      trip_update: null
+      vehiclePos:
+        congestion_level: 0
+        current_status: "0"
+        current_stop_sequence: 0
+        position: 
+          bearing: 0
+          latitude: -34.7110863
+          longitude: -58.39237
+          odometer: 43069
+          speed: 0
+        stop_id: "20284"
+        timestamp: 1525457578
+        vehicle: 
+          id: "1013"
+          label: "0033"
+          license_plate: "PNB992"
+  FeedEntity:
+    properties:
+      id: integer  
+      alert: FeedEntityAlert
+  FeedEntityAlert:
+    #description: Feed Entity for Alerts
+    description: Feed Entity para Alertas
+    type: object
+    properties:
+      active_period:
+        #description: Period while the alert is active
+        description: Periodo durante el cual la alerta está activa.
+        type: TimeRange | TimeRange[]
+      informed_entity:
+        description: x
+        type: EntitySelector | EntitySelector[]
+      cause:
+        description: |
+          1:  "UNKNOWN_CAUSE"
+          2:  "OTHER_CAUSE"
+          3:  "TECHNICAL_PROBLEM"
+          4:  "STRIKE"
+          5:  "DEMONSTRATION"
+          6:  "ACCIDENT"
+          7:  "HOLIDAY"
+          8:  "WEATHER"
+          9:  "MAINTENANCE"
+          10: "CONSTRUCTION"
+          11: "POLICE_ACTIVITY"
+          12: "MEDICAL_EMERGENCY"
+        required: false
+        type: integer
+      effect:
+        description: |
+          1:  "NO_SERVICE"
+          2:  "REDUCED_SERVICE"
+          3:  "SIGNIFICANT_DELAYS"
+          4:  "DETOUR"
+          5:  "ADDITIONAL_SERVICE"
+          6:  "MODIFIED_SERVICE"
+          7:  "OTHER_EFFECT"
+          8:  "UNKNOWN_EFFECT"
+          9:  "STOP_MOVED"
+        required: false
+        type: integer
+      url:
+        #description: url to additional information about the alert
+        description: Url hacia información adicional acerca del alerta. 
+        type: TranslatedString
+        required: false
+      header_text:
+        #description: Alert header
+        description: Cabecera del alerta.
+        type: TranslatedString | Translation[]
+        required: false
+      description_text:
+        #description: Alert description
+        description: Descripción de la alerta.
+        type: TranslatedString | Translation[]
+        required: false
+    example: 
+      active_period: [
+        {
+          start: 1525888786,
+          end: 1525888983,
+        },
+        {
+          start: 1525890087,
+          end: 1525989878,
+        }      
+      ]
+      informed_entity: [
+        {
+          agency_id: "",
+          route_id: "",
+          route_type: 0,
+          stop_id: ""
+        }
+      ]
+      cause: 3
+      effect: 3
+      header_text: [
+          {
+            text: "Servicio con demoras - 60",
+            language: "es"
+          },
+          {
+            text: "Significant delays - 60",
+            language: "en"
+          }
+      ]
+      description_text: [
+        {
+          text: "Línea 60 - Servicio con demora por problemas técnicos",
+          language: "es"
+        },
+        {
+          text: "60 - Significant delays due to technical problems",
+          language: "en"
+        }
+      ]
+  
+  StopTimeEvent:
+    description: Información acerca de demoras y tiempos estimados.
+    type:
+      object
+    properties:
+      delay?:
+        description: demora en segundos (Si es positivo, el vehículo está adelantado. Si es negativo, está adelantado).
+        type: integer
+      time?: integer
+      uncertainty?:
+        type: integer
+    example:
+      delay: 600
+  
+  FeedEntityTripUpdate:
+    type: object
+    properties:
+      trip?: TripDescriptor
+      vehicle: VehicleDescriptor
+      
+  contenido:
+    type: object
+    properties:
+      nombreId: string
+      nombre: string
+      posicion: string
+      valor: string
+      
+  ParkingEntity:
+    description: Parking Entity
+    type: object
+    properties:
+        distancia: string
+        contenido: 
+          type: object
+          properties:
+            contenido: contenido[]
+        claseId: string
+        clase: string
+        nombre: string
+        id: string
+        
+  GeometryEntity:
+    description: Geometria
+    type: object
+    properties:
+      type: string
+      coordinates: number[]
+      
+  PropertyCortesEntity:
+    description: Propiedades de geometría
+    type: object
+    properties:
+      Nombre: string
+      Motivo: string
+      Id: string
+      Tipo: string
+        
+  CortesEntity:
+    description: Cortes Entity
+    type: object
+    properties:
+      #geometry: GeometryEntity
+      #type: string
+      #id: string
+      #properties: PropertyCortesEntity
+  
+  GBFS_Monopatines:
+    description: Datos de monopatines.
+    type: object
+    properties:
+      last_updated:
+        description: Tiempo de última actualización.
+        type: number
+        example: 1579194662
+      ttl:
+        description: Time to live.
+        type: number
+        example: 300
+      version:
+        description: Versión de la API del proveedor.
+        type: string
+        example: "1.0"
+      data:
+        description: Contenido del objeto JSON devuelto.
+        type: object
+        properties:
+          bikes:
+            description: Array ordenado de objetos encontrados.
+            type: array
+            items:
+                type: object
+                properties:
+                  bike_id: 
+                    description: ID del vehículo.
+                    type: string
+                    example: "M#AA2401"
+                  lat: 
+                    description: Latitud del vehículo.
+                    type: number
+                    example: -34.62968445
+                  lon: 
+                    description: Longitud del vehículo.
+                    type: number
+                    example: -58.39722061
+                  is_reserved: 
+                    description: Indicador de reserva.
+                    type: number
+                    example: 0
+                  is_disabled: 
+                    description: Indicador de deshabilitacion.
+                    type: number
+                    example: 0
+                  Vehicle_type?: 
+                    description: Si es un scooter o una bicicleta.
+                    type: string
+                    example: "bicicleta"
+  
+  ConteoHorarioZonaTransito:
+    description: Conteo horario de tránsito por área y sentido
+    type: object
+    properties:
+      hora:
+        description: Hora calendaria del intervalo de conteo
+        required: true
+        type: string
+        example: 2020-04-10T09:30Z
+      location_code:
+        description: Zona para agrupar zonas de captura, como zona de Open Location
+        required: true
+        type: string
+        example: 48Q3FG00+
+      sentido:
+        description: Sentido de circulación
+        enum:
+          - ingreso
+          - egreso
+          - interna
+        required: true
+        type: string
+        example: egreso
+      cantidad:
+        description: Cantidad de tránsito detectado
+        required: true
+        type: integer
+        example: 90
+  
+  ConteoTransito:
+    description: ""
+    type: array
+    items:
+      type: ConteoHorarioZonaTransito
+  
+  RamalTransporte:
+    description: Ramal de línea de transporte público
+    type: object
+    properties:
+      codigo_entidad:
+        description: Código numérico de la entidad o empresa a cargo de la línea
+        type: integer
+        required: true
+        example: 9999
+      nombre_empresa:
+        description: Nombre de la entidad o empresa a cargo de la línea
+        required: true
+        type: string
+        example: Contoso SRL
+      codigo_linea:
+        description: Código numérico de la línea de transporte
+        required: true
+        type: integer
+        example: 99999
+      nombre_linea:
+        description: Nombre de la línea de transporte
+        required: true
+        type: string
+        example: Línea 9999
+      codigo_trayecto:
+        description: Código numérico del trayecto o ramal
+        required: true
+        type: integer
+        example: 99999
+      descripcion_ramal_larga:
+        description: Código numérico del trayecto o ramal
+        required: true
+        type: string
+        example: Línea 9999 A - Salbastro - Rincón de Achicoria
+      tipo_transporte:
+        description: Modo de transporte de la línea
+        enum:
+          - colectivo
+          - tren
+          - subte
+        required: true
+        type: string
+        example: subte
+    
+  ConteoDiarioRamalTransporte:
+    description: Conteo agregado del uso diario de un ramal de línea de transporte
+    type: object
+    properties:
+      fecha:
+        description: Día calendario de conteo
+        required: true
+        type: string
+        example: 2020-04-20
+      parcial:
+        description: Estado del conteo; si sólo se informó parcialmente
+        required: true
+        type: boolean
+        example: false
+      cantidad:
+        description: Cantidad de usos registrados en el día, sin combinaciones
+        required: true
+        type: integer
+        example: 42
+      RamalTransporte:
+        required: true
+        type: RamalTransporte  
+  
+  ConteoTransporte:    
+    description: ""
+    type: array
+    items:
+      type: ConteoDiarioRamalTransporte       
+  
+
+#/monopatines:
+#  /movo:
+#    description: General Bikeshare Feed Specification de Movo.
+#    get:
+#      is: [client-id-required]
+#      responses:
+#        200:
+#          body:
+#            application/json:
+#              type: GBFS_Monopatines
+#  /glovo:
+#    description: General Bikeshare Feed Specification de Glovo.
+#    get:
+#      is: [client-id-required]
+#      responses:
+#        200:
+#          body:
+#            application/json:
+#              type: GBFS_Monopatines
+#  /grin:
+#    description: General Bikeshare Feed Specification de Grin.
+#    get:
+#      is: [client-id-required]
+#      responses:
+#        200:
+#          body:
+#            application/json:
+#              type: GBFS_Monopatines
+    
+/subtes:
+  /feed-gtfs:
+      description: GTFS estático
+      get:
+        is: [client-id-required]
+        description: |
+          Devuelve el feed GTFS más reciente.
+        responses: 
+          200:
+            body:
+              application/x-zip-compressed:
+
+#  /tripUpdates:
+#    is: [client-id-required]
+#    description: |
+#       Trip updates capturan la información acerca de los trips actualmente siendo recorridos |
+#       por vehículos en transito, incluyendo información sobre tiempos estimados de arrivo
+#       y demoras en las paradas a lo largo del trip. No existe necesariamente una relación uno-a-uno
+#       entre los vehículos activos en el campo y trip updates, ya que actualizaciones pueden ser 
+#       entregadas para ambos, el trip en el que un vehículo está actualmente y para el trip que está por empezar
+#       en algunos minutos.
+#    get:
+#      description: !
+#       "Trip updates capturan la información acerca de los trips actualmente siendo recorridos 
+#       por vehículos en transito, incluyendo información sobre tiempos estimados de arrivo
+#       y demoras en las paradas a lo largo del trip. No existe necesariamente una relación uno-a-uno
+#       entre los vehículos activos en el campo y trip updates, ya que actualizaciones pueden ser 
+#       entregadas para ambos, el trip en el que un vehículo está actualmente y para el trip que está por empezar
+#       en algunos minutos."
+#      responses: 
+#        200:
+#          body: 
+#            application/json:
+#              example: !include trip-updates-subtes.json
+  /forecastGTFS:
+    is: [client-id-required]
+    description: |
+       ForecastGTFS capturan la información acerca de los trips actualmente siendo recorridos |
+       por vehículos en transito, incluyendo información sobre tiempos estimados de arrivo
+       y demoras en las paradas a lo largo del trip. No existe necesariamente una relación uno-a-uno
+       entre los vehículos activos en el campo y trip updates, ya que actualizaciones pueden ser 
+       entregadas para ambos, el trip en el que un vehículo está actualmente y para el trip que está por empezar
+       en algunos minutos.
+    get:
+      description: !
+       "ForecastGTFS capturan la información acerca de los trips actualmente siendo recorridos 
+       por vehículos en transito, incluyendo información sobre tiempos estimados de arrivo
+       y demoras en las paradas a lo largo del trip. No existe necesariamente una relación uno-a-uno
+       entre los vehículos activos en el campo y trip updates, ya que actualizaciones pueden ser 
+       entregadas para ambos, el trip en el que un vehículo está actualmente y para el trip que está por empezar
+       en algunos minutos."
+      responses: 
+        200:
+          body: 
+            application/json:
+  /serviceAlerts:
+    is: [client-id-required]
+    description: |
+        Las alertas de servicio te permiten proporcionar actualizaciones cada vez que 
+        se produce una interrupción en la red. Las demoras y cancelaciones de viajes 
+        individuales a menudo se deben comunicar a través de los trip updates.
+    get:
+      description: !
+        "Las alertas de servicio te permiten proporcionar actualizaciones cada vez que 
+        se produce una interrupción en la red. Las demoras y cancelaciones de viajes 
+        individuales a menudo se deben comunicar a través de los trip updates."
+      queryParameters:
+        json:
+          description: Si el valor es 1 devuelve la respuesta en formato json. Por default lo hace en formato protobuf
+          type: integer
+          required: false
+      responses:
+        200:
+          body:
+            application/octet-stream:
+            application/json:
+              properties:
+                header: FeedHeader
+                entity: FeedEntityAlert
+              example:
+                header: {
+                  gtfs_realtime_version: "1.0",
+                  incrementality: 0,
+                  timestamp: 1525802328
+                }
+                entity:  {
+                    active_period: [
+                      {
+                        start: 1525888786,
+                        end: 1525888983,
+                      },
+                      {
+                        start: 1525890087,
+                        end: 1525989878,
+                      }      
+                    ],
+                    informed_entity: [
+                      {
+                        agency_id: "",
+                        route_id: "",
+                        route_type: 0,
+                        stop_id: ""
+                      }
+                    ],
+                    cause: 3,
+                    effect: 3,
+                    header_text: [
+                        {
+                          text: "Servicio con demoras - 60",
+                          language: "es"
+                        },
+                        {
+                          text: "Significant delays - 60",
+                          language: "en"
+                        }
+                    ],
+                    description_text: [
+                      {
+                        text: "Línea 60 - Servicio con demora por problemas técnicos",
+                        language: "es"
+                      },
+                      {
+                        text: "60 - Significant delays due to technical problems",
+                        language: "en"
+                      }
+                    ]
+                }
+
+#/trenes:
+#  /feed-gtfs:
+#      is: [client-id-required]
+#      description: GTFS estático
+#      get:
+#        description: |
+#          Devuelve el feed GTFS más reciente.
+#        responses: 
+#          200:
+#            body: 
+#              application/zip:
+#
+#  /vehiclePositions:
+#    is: [client-id-required]
+#    description: Devuelve la posición de los vehículos monitoreados actualizada cada 30 segundos.
+#    get:
+#      description: |
+#        Devuelve la posición de los vehículos monitoreados actualizada cada 30 segundos.
+#      queryParameters: 
+#        json:
+#          description: Si el valor es 1 devuelve la respuesta en formato json. Por default lo hace en formato protobuf
+#          type: integer
+#          required: false
+#      responses: 
+#        200:
+#          body: 
+#            application/x-protobuf:
+#            application/json:
+#              #example: !include vehicle-positions-trenes.json
+#  /tripUpdates:
+#    is: [client-id-required]
+#    description: !
+#       "Trip updates capturan la información acerca de los trips actualmente siendo recorridos 
+#       por vehículos en transito, incluyendo información sobre tiempos estimados de arrivo
+#       y demoras en las paradas a lo largo del trip. No existe necesariamente una relación uno-a-uno
+#       entre los vehículos activos en el campo y trip updates, ya que actualizaciones pueden ser 
+#       entregadas para ambos, el trip en el que un vehículo está actualmente y para el trip que está por empezar
+#       en algunos minutos."
+#    get:
+#      description: !
+#       "Trip updates capturan la información acerca de los trips actualmente siendo recorridos 
+#       por vehículos en transito, incluyendo información sobre tiempos estimados de arrivo
+#       y demoras en las paradas a lo largo del trip. No existe necesariamente una relación uno-a-uno
+#       entre los vehículos activos en el campo y trip updates, ya que actualizaciones pueden ser 
+#       entregadas para ambos, el trip en el que un vehículo está actualmente y para el trip que está por empezar
+#       en algunos minutos."
+#      queryParameters: 
+#        json:
+#          description: Si el valor es 1 devuelve la respuesta en formato json.Por default lo hace en formato protobuf
+#          type: integer
+#          required: false
+#      responses: 
+#        200:
+#          body: 
+#            application/x-protobuf:
+#            application/json:
+#              #example: !include trip-updates-trenes.json
+#  /serviceAlerts:
+#    is: [client-id-required]
+#    description: |
+#        Las alertas de servicio te permiten proporcionar actualizaciones cada vez que 
+#        se produce una interrupción en la red. Las demoras y cancelaciones de viajes 
+#        individuales a menudo se deben comunicar a través de los trip updates.
+#    get:
+#      description: !
+#        "Las alertas de servicio te permiten proporcionar actualizaciones cada vez que 
+#        se produce una interrupción en la red. Las demoras y cancelaciones de viajes 
+#        individuales a menudo se deben comunicar a través de los trip updates."
+#      queryParameters:
+#        json:
+#          description: Si el valor es 1 devuelve la respuesta en formato json. Por default lo hace en formato protobuf
+#          type: integer
+#          required: false
+#      responses:
+#        200:
+#          body:
+#            application/x-protobuf:
+#            application/json:
+          
+/colectivos:
+  /feed-gtfs:
+    is: [client-id-required]
+    description: Devuelve GTFS estático en base horarios. Versión con el detalle de horarios para cada parada. Este es el feed a utilizar para las APIs de tiempo real Vehicle Position, Trip Updates y Service Alerts.
+    get:
+      description: Devuelve GTFS estático en base horarios. Versión con el detalle de horarios para cada parada. Este es el feed a utilizar para las APIs de tiempo real Vehicle Position, Trip Updates y Service Alerts.
+      responses: 
+        200:
+          body: 
+            application/zip:
+  /feed-gtfs-frequency:
+    is: [client-id-required]
+    description: Devuelve el feed GTFS estático en base frecuencias. Es una versión simplificada que tiene como objetivo representar las frecuencias o intervalos entre viajes en vez del detalle de horarios para cada parada.
+    get:
+      description: Devuelve el feed GTFS estático en base frecuencias. Es una versión simplificada que tiene como objetivo representar las frecuencias o intervalos entre viajes en vez del detalle de horarios para cada parada.
+      responses: 
+        200:
+          body: 
+            application/zip:    
+  /vehiclePositions:
+    is: [client-id-required]
+    description: !
+        "Devuelve la posición de los vehículos monitoreados actualizada cada 30 segundos.
+        Si no se pasan parámetros de entrada, retorna la posición actual de todos los vehículos monitoreados."
+    get:
+      description: !
+        "Devuelve la posición de los vehículos monitoreados actualizada cada 30 segundos.
+        Si no se pasan parámetros de entrada, retorna la posición actual de todos los vehículos monitoreados." 
+      queryParameters: 
+        json:
+          description: Si el valor es 1 devuelve la respuesta en formato json. Por default lo hace en formato protobuf
+          type: integer
+          required: false
+        agency_id:
+          type: integer
+          required: false
+        route_id:
+          type: integer
+          required: false
+        Trip:
+          type: string
+          required: false
+      responses:  
+         200:
+          body: 
+            application/json:
+              examples:
+                #sin_filtro:  !include buses_positions.json
+                #filtro_route_id: !include vehicle-position_routeid_580.json
+            application/x-protobuf:
+              properties:
+                entity: FeedEntityVehiclePosition[]
+                header: FeedHeader
+  /vehiclePositionsSimple:
+    is: [client-id-required]
+    description: |
+        Devuelve la posición de los vehículos monitoreados actualizada cada 30 segundos con el formato simplificado, agregando el route_short_name (línea de colectivo) a la respuesta.
+    get:
+      description: |
+        Devuelve la posición de los vehículos monitoreados actualizada cada 30 segundos con el formato simplificado, agregando el route_short_name (línea de colectivo) a la respuesta.
+      queryParameters: 
+        route_id:
+          type: string
+          required: false
+        agency_id:
+          type: integer
+          required: false
+        Trip:
+          type: string
+          required: false
+      responses: 
+        200:
+          body: 
+            application/json:
+              #example: !include moovit.json
+
+  /serviceAlerts:
+    is: [client-id-required]
+    description: !
+        "Las alertas de servicio te permiten proporcionar actualizaciones cada vez que 
+        se produce una interrupción en la red. Las demoras y cancelaciones de viajes 
+        individuales a menudo se deben comunicar a través de los trip updates."
+    get:
+      description: !
+        "Las alertas de servicio te permiten proporcionar actualizaciones cada vez que 
+        se produce una interrupción en la red. Las demoras y cancelaciones de viajes 
+        individuales a menudo se deben comunicar a través de los trip updates."
+      queryParameters:
+        json:
+          type: integer
+          required: false
+        agency_id:
+          type: string
+          required: false
+        route_id:
+          type: string
+          required: false
+        Trip:
+          type: string
+          required: false
+      responses:
+        200:
+          body:
+            application/x-protobuf:
+              properties:
+                header: FeedHeader
+                entity: FeedEntityAlert 
+            application/json:
+              properties:
+                header: FeedHeader
+                entity: FeedEntityAlert
+              example:
+                header: {
+                  gtfs_realtime_version: "1.0",
+                  incrementality: 0,
+                  timestamp: 1525802328
+                }
+                entity:  {
+                  active_period: [
+                    {
+                      start: 1525888786,
+                      end: 1525888983,
+                    },
+                    {
+                      start: 1525890087,
+                      end: 1525989878,
+                    }      
+                  ],
+                  informed_entity: [
+                    {
+                      agency_id: "",
+                      route_id: "",
+                      route_type: 0,
+                      stop_id: ""
+                    }
+                  ],
+                  cause: 3,
+                  effect: 3,
+                  header_text: [
+                      {
+                        text: "Servicio con demoras - 60",
+                        language: "es"
+                      },
+                      {
+                        text: "Significant delays - 60",
+                        language: "en"
+                      }
+                  ],
+                  description_text: [
+                    {
+                      text: "Línea 60 - Servicio con demora por problemas técnicos",
+                      language: "es"
+                    },
+                    {
+                      text: "60 - Significant delays due to technical problems",
+                      language: "en"
+                    }
+                  ]
+                }
+
+/ecobici:
+  /gbfs:
+    description: General Bikeshare Feed Specification (GBFS)
+    /systemInformation:
+      is: [client-id-required]
+      description: Describe el sistema incluyendo operador del sistema, ubicación del sistema, año implementado, URLs, información de contacto y zona horaria.
+      get:
+        description: Describe el sistema incluyendo operador del sistema, ubicación del sistema, año implementado, URLs, información de contacto y zona horaria.
+        responses:
+          200:
+            body:
+              application/json:
+                example: 
+                  {
+                    "last_updated": 1560973300,
+                    "ttl": 30,
+                    "data": {
+                      "system_id": "bike_buenosaires",
+                      "language": "en",
+                      "name": "Ecobici",
+                      "timezone": "America/Argentina/Buenos_Aires",
+                      "build_version": "2019.5.2",
+                      "build_label": "",
+                      "build_hash": "",
+                      "build_number": "22",
+                      "mobile_head_version": "2",
+                      "mobile_minimum_supported_version": "1"
+                    }
+                  }
+    /stationStatus:
+      is: [client-id-required]
+      description: Número de bicicletas y anclajes disponibles en cada estación y disponibilidad de estación.
+      get:
+        description: Número de bicicletas y anclajes disponibles en cada estación y disponibilidad de estación.
+        responses:
+          200:
+            body:
+              application/json:
+                example: 
+                 {
+                     "last_updated":1560973477,
+                     "ttl":23,
+                     "data":{
+                        "stations":[
+                           {
+                              "station_id":"2",
+                              "num_bikes_available":0,
+                              "num_bikes_available_types":{
+                                 "mechanical":0,
+                                 "ebike":0
+                              },
+                              "num_bikes_disabled":0,
+                              "num_docks_available":20,
+                              "num_docks_disabled":0,
+                              "is_installed":1,
+                              "is_renting":1,
+                              "is_returning":1,
+                              "last_reported":1560892904,
+                              "is_charging_station":false,
+                              "status":"IN_SERVICE"
+                           }
+                        ]
+                     }
+                  } 
+    /stationInformation:
+      is: [client-id-required]
+      description: Listado estático de todas las estaciones, sus capacidades y ubicaciones.
+      get:
+        description: Listado estático de todas las estaciones, sus capacidades y ubicaciones.
+        responses:
+          200:
+            body:
+              application/json:
+                example:
+                  {
+                     "last_updated":1560973383,
+                     "ttl":17,
+                     "data":{
+                        "stations":[
+                           {
+                              "station_id":"2",
+                              "name":"002 - Retiro I",
+                              "physical_configuration":"SMARTLITMAPFRAME",
+                              "lat":-34.5924233,
+                              "lon":-58.3747151,
+                              "altitude":0,
+                              "address":"Ramos Mejia, Jose Maria, Dr. Av. & Del Libertador Av.",
+                              "post_code":"11111",
+                              "capacity":20,
+                              "rental_methods":[
+                                 "KEY",
+                                 "TRANSITCARD",
+                                 "PHONE"
+                              ],
+                              "groups":[
+                                 "RETIRO"
+                              ],
+                              "obcn":""
+                           }
+                        ]
+                     }
+                  }
+/estacionamiento:
+   description: |
+        Búsqueda de información de estacionamiento en vía pública para un tramo de una calle de la Ciudad Autónoma de Buenos Aires. Dado un punto y un radio, busca información de estacionamiento en esa área circular.
+   
+   /garajesComerciales:  
+      is: [client-id-required, transito-estacionamiento-params]
+      description: |
+        Este servicio permite buscar información de garajes comerciales para un tramo de una calle de la Ciudad Autónoma de Buenos Aires.
+      get:
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include Examples/garage-comercialExample.json
+   
+   /cajonesCargaDescarga: 
+      is: [client-id-required, transito-estacionamiento-params]
+      description: |
+        Este servicio permite buscar información de cajones de Carga y Descarga para un tramo de una calle de la Ciudad Autónoma de Buenos Aires.
+      get:
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include Examples/carga-descargaExample.json
+                
+   /cajonesParadasColectivo: 
+      is: [client-id-required, transito-estacionamiento-params]
+      description: |
+        Este servicio permite buscar información de cajones para paradas de colectivos para un tramo de una calle de la Ciudad Autónoma de Buenos Aires.
+      get:
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include Examples/parada-colectivoExample.json
+                
+   /cajonesEstacionamientosMoto: 
+      is: [client-id-required, transito-estacionamiento-params]
+      description: |
+        Este servicio permite buscar información de cajones para estacionamientos de motos para un tramo de una calle de la Ciudad Autónoma de Buenos Aires.
+      get:
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include Examples/estacionamiento-motoExample.json
+                     
+  
+/transito:
+  /v1:
+    /estacionamientos:
+      is: [client-id-required, transito-estacionamiento-params]
+      description: |
+          Búsqueda de información de estacionamiento en vía pública para un tramo de una calle de la Ciudad Autónoma de Buenos Aires. Dado un punto y un radio, busca información de estacionamiento en esa área circular.
+      get:
+        description: |
+          Búsqueda de información de estacionamiento en vía pública para un tramo de una calle de la Ciudad Autónoma de Buenos Aires. Dado un punto y un radio, busca información de estacionamiento en esa área circular.
+        responses:
+          200:
+            body:
+              application/json:
+                type: object
+                properties: 
+                  total: number
+                  totalFull: number
+                  instancias: ParkingEntity[]
+                examples:
+                  fullInfo: !include ParkingExample.json
+      
+#    /cortes:
+#      is: [client-id-required]
+#      description: |
+#          Búsqueda de información de cortes en vía pública de la Ciudad Autónoma de Buenos Aires.
+#      get:
+#        description: |
+#          Búsqueda de información de cortes en vía pública de la Ciudad Autónoma de Buenos Aires.
+#        queryParameters:
+#          #formato:
+#          #  description: Devuelve un geojson sino lo devuelve en formato xml. Opciones "xml", "geojson" y también en "Closure and Incidents Feed Specifications (CIFS V2 - https://developers.google.com/waze/data-feed/overview)"
+#          #  type: string
+#          #  default: xml
+#          #  required: false
+#          #  enum: ['xml', 'cifs', 'geojson']
+#          callback:
+#            description: Nombre de la función donde se almacenará el response de la consulta
+#            type: string
+#            required: false
+#        responses:
+#          200:
+#            body:
+#              #text/xml:
+#              #  example: !include cortes_transito.xml
+#              #text/javascript:
+#              #  properties:
+#              #    type: string
+#              #    features: CortesEntity[]
+#              #  example: !include cortes_transito_geojson.json
+#              application/json:
+#                example: !include Examples/cortesExample.json
+  #  /clv:
+  #    is: [client-id-required]
+  #    description: |
+  #        Búsqueda de información de carteles luminosos en vía pública de la Ciudad Autónoma # de Buenos Aires.
+  #    get:
+  #      description: |
+  #        Búsqueda de información de carteles luminosos en vía pública de la Ciudad Autónoma # de Buenos Aires.
+  #      responses:
+  #        200:
+  #          body:
+  #            application/json:
+  #              example: !include Examples/gantriesExample.json
+  #              type: !include Examples/gantriesType.raml
+    /semaforos:
+      is: [client-id-required]
+      description: |
+          Búsqueda de información de semáforos en vía pública de la Ciudad Autónoma de Buenos Aires.
+      get:
+        description: |
+          Búsqueda de información de semárofos en vía pública de la Ciudad Autónoma de Buenos Aires.
+        queryParameters:
+          lat:
+            description: Latitud sobre la que se desea obtener la informacion
+            example: "-34.61100153885997"
+            required: false
+          lon:
+            description: Longitud sobre la que se desea obtener la informacion
+            example: "-58.40327826995849"
+            required: false
+          radius:
+            description: Radio en metros de busqueda que se desea obtener la informacion
+            example: "100"
+            required: false
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include Examples/junctionsExample.json
+                type: !include Examples/junctionsType.raml
+#    /eventos:
+#      is: [client-id-required]
+#      description: |
+#          Búsqueda de información de eventos en vía pública de la Ciudad Autónoma de Buenos Aires.
+#      get:
+#        description: |
+#          Búsqueda de información de eventos en vía pública de la Ciudad Autónoma de Buenos Aires.
+#        queryParameters:
+#          month:
+#            pattern: ^([12]\d{3}-(0[1-9]|1[0-2]))$
+#            type: string
+#            example: 2018-12
+#            required: false
+#          provider:
+#            type: string
+#            enum: ['1', '201', '769']
+#            description: |
+#              - 1: BA Tránsito
+#              - 201: Transporte Público
+#              - 769: Accidentes Observatorio Seguridad Vial (sólo históricos)
+#            required: true
+#        responses:
+#          200:
+#            body:
+#              application/json:
+#                example: !include Examples/eventsExample.json
+#                type: !include Examples/eventsType.raml
+      
+/datos:
+  /movilidad:  
+    /transito:
+      is: [client-id-required]
+      description: Reporte de datos del conteo vehicular proveniente de los sensores de la Ciudad. La información está agregada por hora y zona de captura. La zona de captura se encuentra codificada en Open Location Code. Estos datos se actualizan cada hora, con una ventana de 35 dias calendarios, incluyendo el día actual.
+      get:
+        responses:
+          200:
+            description: Reporte de tránsito horario como JSON
+            body:
+              application/json:
+                type: ConteoTransito
+      /mensual:
+        is: [client-id-required]
+        description: Reporte de datos del conteo vehicular proveniente de los sensores de la Ciudad, del último mes completo (no del que esta en curso).
+        get:
+          responses:
+            200:
+              description: Reporte de tránsito horario del último mes como CSV
+              body:
+                text/csv:
+                  type: ConteoTransito
+        /{anioMes}:
+          is: [client-id-required]
+          description: Reporte de datos del conteo vehicular proveniente de los sensores de la Ciudad de un mes especifico. Por ejemplo, si se desea el reporte mensual de marzo de este año, se debe ingresar 2020-03 en la url. Se cuenta con los datos a partir de Febrero del año 2020.
+          uriParameters:
+            anioMes:
+              type: string
+              required: true
+              description: el año y el mes especifico     
+          get:
+            responses:
+              200:
+                body:
+                  text/csv:
+                    type: ConteoTransito
+      
+      /semanaTipica:
+        is: [client-id-required]
+        description: Reporte con la información de una semana típica (funcionamiento con actividad normal) del conteo vehicular. La semana es seleccionada por un equipo de ingenieros civiles. Esta información es útil para comparar el comportamiento actual con el esperado al comparar los conteos.
+        get:
+          responses:
+            200:
+              description: Reporte de tránsito horario de la semana típica como JSON
+              body:
+                application/json:
+                  type: ConteoTransito
+  
+    /transportePublico:
+      is: [client-id-required]
+      description: Reporte de conteos de transacciones SUBE (colectivos, trenes y subtes). La información se encuentra agregada por día y se dividen los conteos para cada modo de transporte. Estos datos se actualizan a día vencido, con una ventana de 35 días calendarios.
+      get:
+        responses:
+          200:
+            description: Reporte de transporte público diario como JSON
+            body:
+              application/json:
+                type: ConteoTransporte
+                  
+      /mensual:
+        is: [client-id-required]
+        description: Reporte de datos del conteo de transacciones SUBE, del último mes completo, no del que está en curso.
+        get:
+          responses:
+            200:
+              description: Reporte de transporte público diario del último mes como CSV
+              body:
+                text/csv:
+                  type: ConteoTransporte
+                  
+        /{anioMes}:
+          is: [client-id-required]
+          description: Reporte de datos del conteo de transacciones SUBE, de un mes específico, donde anioMes debe proporcionarse en formato aaaa-mm siendo aaaa el año y mm el mes. Por ejemplo, si se desea el reporte mensual de marzo de este año, se debe ingresar 2020-03 en la url. Se cuenta con los datos a partir de Marzo del año 2020.
+          uriParameters:
+            anioMes:
+              type: string
+              required: true
+              description: el año y el mes especifico  
+                 
+          get:
+            responses:
+              200:
+                body:
+                  text/csv:
+                    type: ConteoTransporte
+    
+      /semanaTipica:
+        is: [client-id-required]
+        description: Reporte con la información de una semana típica (funcionamiento con actividad normal) del conteo de transacciones SUBE. La semana es seleccionada por un equipo de ingenieros civiles. Esta información es útil para comparar el comportamiento actual con el esperado al comparar los conteos.
+        get:
+          responses:
+            200:
+              description: Reporte de transporte público diario de la semana típica como JSON
+              body:
+                application/json:
+                  type: ConteoTransporte
+                  
+       
