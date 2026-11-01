@@ -1,7 +1,8 @@
 # Brief: Tránsito
 
 > `shape` · modo **Operate** · plataforma adaptive. Suposiciones marcadas **(suposición)**; consolidadas en [README.md](README.md#suposiciones-consolidadas-a-validar-por-el-usuario).
-> **Fuente sin confirmar.** `/transito/v1/cortes` está **comentado** en la spec oficial (`docs/fuentes/api-transporte-v1.raml:1260-1289`; `docs/01a-api-console.md`, "Recursos comentados"). Otro worker verifica si igual responde (tarea 1.3). Este brief diseña la pantalla con **"Fuente no disponible" como estado de primera clase** y usa **solo** los campos de `CortesEntity`.
+> **DIFERIDO (decisión del usuario, 2026-11-01).** La verificación empírica dio **500** en todas las variantes (`docs/01-api-transporte.md`), así que el tab Tránsito **se oculta** y este brief no se implementa hasta que exista una fuente de cortes. Se conserva como diseño de referencia.
+> **Contexto original:** `/transito/v1/cortes` está **comentado** en la spec oficial (`docs/fuentes/api-transporte-v1.raml:1260-1289`; `docs/01a-api-console.md`, "Recursos comentados"). Otro worker verifica si igual responde (tarea 1.3). Este brief diseña la pantalla con **"Fuente no disponible" como estado de primera clase** y usa **solo** los campos de `CortesEntity`.
 
 ## 1. Trabajo y audiencia
 

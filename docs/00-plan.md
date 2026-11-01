@@ -30,10 +30,11 @@ Resultado de la verificación empírica (`docs/01-api-transporte.md`) y de la bi
 
 - **Sí hay arribos de colectivos:** `/colectivos/tripUpdates` existe (no documentado) y se actualiza cada 60 s. Las tareas 2.6 y 4.7 pasan de "si la API lo permite" a "condicionado a un GTFS estático vigente" (el oficial es de 2021 y cruza solo 32 % de rutas / 40 % de paradas).
 - **Arribos de subte bloqueados:** `forecastGTFS` congelado desde 2026-10-24. Tarea 4.2 implementa arribos detrás de un flag con detección de dato viejo; el estado por línea se deriva de `serviceAlerts?json=1` (el protobuf llega corrupto).
-- **Cortes de tránsito:** `/transito/v1/cortes` devuelve 500. Tareas 2.7 y 4.8 se mantienen con el estado "Fuente no disponible" hasta que el usuario decida N3 (ocultar el tab o buscar otra fuente).
+- **Cortes de tránsito:** `/transito/v1/cortes` devuelve 500. **Decisión del usuario (2026-11-01): el tab Tránsito se oculta por ahora.** Tareas 2.7 y 4.8 quedan **diferidas**; la navegación del MVP tiene 4 tabs (Inicio, Colectivos, Subtes, Favoritos). `TransitoAdapter` se escribe solo como stub vacío para conservar el patrón.
 - **Trenes:** 404. Sin cambios (fuera del MVP).
 - **Proxy:** TTL de 20–30 s para colectivos (cadencia real 60 s) y 15–30 s para alertas de subte; reintentos y último dato bueno obligatorios (1–9 % de fallos upstream); compresión en el Worker (upstream no comprime); nunca loguear la URL upstream (lleva el secret en la query).
-- **Tokens Obelisco:** identidad vigente (`#1d3343`, `#035c80`, `#009688`) + Nunito/Open Sans por mandato del brief; paleta oscura ya derivada y verificada (tarea 1.6 hecha).
+- **Tokens Obelisco:** identidad vigente (`#1d3343`, `#035c80`, `#009688`) **confirmada por el usuario el 2026-11-01** + Nunito/Open Sans por mandato del brief; paleta oscura ya derivada y verificada (tarea 1.6 hecha).
+- **GTFS alternativo (tarea extra 1.11, 🟡 mid-dev):** relevar y cruzar fuentes vigentes de GTFS de colectivos contra los fixtures reales; resultado en `docs/01b-gtfs-alternativos.md`. Condiciona 2.10, 4.5 y 4.7.
 - **Costos:** Free alcanza para ~1.100 usuarios activos (1 request por tick de 20 s, 30 min/día), no 300; la Cache API no reduce requests facturadas.
 - **Sin `bearing`** en los feeds: tarea 4.6 no rota íconos por rumbo real (se puede derivar de posiciones sucesivas, opcional).
 

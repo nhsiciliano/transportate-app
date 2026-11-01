@@ -11,7 +11,7 @@
 | 1 | Inicio | "¿Funciona el subte y cómo están mis cosas de siempre?" | [01-inicio.md](01-inicio.md) |
 | 2 | Colectivos | "¿Dónde está mi colectivo ahora?" (posiciones, **sin arribos**) | [02-colectivos.md](02-colectivos.md) |
 | 3 | Subtes | "¿Funciona mi línea y cuándo viene el próximo?" | [03-subtes.md](03-subtes.md) |
-| 4 | Tránsito | "¿Hay cortes en mi camino?" (fuente sin confirmar) | [04-transito.md](04-transito.md) |
+| 4 | Tránsito **(diferido: tab oculto, sin fuente de cortes)** | "¿Hay cortes en mi camino?" | [04-transito.md](04-transito.md) |
 | 5 | Favoritos | "Lo mío, sin buscarlo de nuevo" | [05-favoritos.md](05-favoritos.md) |
 | 6 | Ajustes (+ Acerca de) | "Configurar y saber de dónde salen los datos" | [06-ajustes.md](06-ajustes.md) |
 
@@ -152,5 +152,5 @@ Todos se construyen una vez en `shared/ui` (plan, tarea 3.7) y se usan igual en 
 
 - **N1** — Navegación cruzada entre tabs (ver arriba).
 - **N2** — Estilo de mapa claro/oscuro (Fase 4, tarea 4.3), incluido si los trazos de subte usan colores de GTFS o de señalética (`docs/02b-colores-subte.md:81`).
-- **N3** — Qué pasa si `/transito/v1/cortes` no responde (lo verifica otro worker en 1.3): ¿se oculta el tab Tránsito o se mantiene con el estado "Fuente no disponible"? Este brief diseña el segundo caso; ocultar el tab cambia la barra a 4 destinos.
+- **N3 — RESUELTA (usuario, 2026-11-01):** `/transito/v1/cortes` devuelve 500 (`docs/01-api-transporte.md`). **Se oculta el tab Tránsito por ahora**: la barra queda con 4 destinos (Inicio, Colectivos, Subtes, Favoritos). El brief `04-transito.md` se conserva como diferido para cuando exista una fuente de cortes; nada de Tránsito se implementa en Fases 2–4.
 - **N4** — Si en el futuro aparece un feed de arribos de colectivos: dónde entra está marcado en `02-colectivos.md` y `05-favoritos.md`, pero **no** se diseña ni se promete.
