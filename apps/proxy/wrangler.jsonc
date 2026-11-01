@@ -38,4 +38,55 @@
     "STATIC_TTL_SECONDS": "86400",
     "ENVIRONMENT": "dev",
   },
+  // Entornos desplegables (`wrangler deploy --env preview|production`). Los bindings y
+  // las vars NO se heredan de la raíz: se repiten en cada entorno. Los secrets se cargan
+  // por entorno con `wrangler secret put <NOMBRE> --env <entorno>`. Ver docs/10-deploy.md.
+  "env": {
+    // Worker `transportate-proxy-preview`, solo en *.workers.dev (sin Cache API efectiva).
+    "preview": {
+      "workers_dev": true,
+      "ratelimits": [
+        {
+          "name": "RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": { "limit": 60, "period": 60 },
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "STATIC",
+          "bucket_name": "transportate-static-preview",
+        },
+      ],
+      "vars": {
+        "FEED_TTL_SECONDS": "20",
+        "STATIC_TTL_SECONDS": "86400",
+        "ENVIRONMENT": "preview",
+      },
+    },
+    // Worker `transportate-proxy-production`. Hasta tener dominio propio queda en
+    // *.workers.dev; al asignarlo, agregar `routes` con `custom_domain: true` y pasar
+    // `workers_dev` a false (la Cache API solo funciona con dominio o ruta propia).
+    "production": {
+      "workers_dev": true,
+      "ratelimits": [
+        {
+          "name": "RATE_LIMITER",
+          "namespace_id": "1003",
+          "simple": { "limit": 60, "period": 60 },
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "STATIC",
+          "bucket_name": "transportate-static",
+        },
+      ],
+      "vars": {
+        "FEED_TTL_SECONDS": "20",
+        "STATIC_TTL_SECONDS": "86400",
+        "ENVIRONMENT": "production",
+      },
+    },
+  },
 }
