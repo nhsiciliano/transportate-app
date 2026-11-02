@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Transportate C: Tren en vivo</title>
+  <desc id="description">Tren lateral de nariz inclinada, ventanas y ruedas, con una señal de tiempo real sobre el techo.</desc>
+  <style>
+    /* docs/02-obelisco-tokens.md §1.2: secondary, colors:136 / dist:33. */
+    .bg { fill: #035c80; }
+    /* docs/02-obelisco-tokens.md §1.3: text-white, typo:170. */
+    .mark { fill: #ffffff; }
+    /* docs/02-obelisco-tokens.md §1.1: yellow-200, colors:5. */
+    .accent { fill: #ffcd02; }
+  </style>
+  <rect class="bg" width="1024" height="1024" />
+  <g id="vehicle">
+    <circle class="mark" cx="292" cy="684" r="28" />
+    <circle class="mark" cx="632" cy="684" r="28" />
+    <path class="mark" d="M 228 416 H 548 C 636 416 688 452 752 520 L 840 612 Q 864 638 840 656 Q 826 668 800 668 H 228 Q 180 668 180 620 V 464 Q 180 416 228 416 Z" />
+    <rect class="bg" x="228" y="464" width="88" height="80" rx="16" />
+    <rect class="bg" x="340" y="464" width="88" height="80" rx="16" />
+    <rect class="bg" x="452" y="464" width="88" height="80" rx="16" />
+    <path class="bg" d="M 572 464 H 592 Q 626 464 652 492 L 700 544 H 572 Z" />
+    <rect class="mark" x="204" y="756" width="640" height="28" rx="14" />
+  </g>
+  <g id="live-signal">
+    <circle class="accent" cx="622" cy="324" r="22" />
+    <path class="accent" d="M 684 324 C 684 288 658 262 622 262 V 226 C 678 226 720 268 720 324 Z" />
+    <path class="accent" d="M 750 324 C 750 254 694 198 622 198 V 162 C 714 162 786 234 786 324 Z" />
+  </g>
+</svg>
