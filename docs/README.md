@@ -34,10 +34,11 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | [`01-api-transporte.md`](01-api-transporte.md) | Endpoints verificados con credenciales: status, tamaño, formato, frecuencia, inconsistencias | ✅ |
 | [`01b-gtfs-alternativos.md`](01b-gtfs-alternativos.md) | Fuentes alternativas de GTFS de colectivos evaluadas, cruce con el tiempo real (`tools/gtfs-cruce/`) y plan B de paradas | ✅ |
 | [`01a-api-console.md`](01a-api-console.md) | Inventario de la spec RAML oficial (`/console/api/?raml`): endpoints, recursos comentados, tipos GTFS-RT, matriz MVP vs spec | ✅ |
+| [`01c-portal-datosabiertos-apis.md`](01c-portal-datosabiertos-apis.md) | Portal 3scale `datosabiertos-apis` y host alternativo `datosabiertos-transporte-apis`: spec OpenAPI `Transporte_3` vs. realidad, comparación con `apitransporte` (2026-11-02) | ✅ |
 | [`02-obelisco-tokens.md`](02-obelisco-tokens.md) | Tokens del sistema de diseño Obelisco v2 (color, tipografía, espaciado, radios, sombras, foco) con archivo y línea de origen; paleta oscura derivada | ✅ |
 | [`02b-colores-subte.md`](02b-colores-subte.md) | Colores oficiales de las líneas de subte (GTFS vs. fuentes públicas) y estaciones por línea | ✅ |
 | [`briefs/`](briefs/) | Un brief por pantalla del MVP (Impeccable `shape`), con estados y sin código | ✅ |
-| [`fuentes/`](fuentes/) | Materiales de origen, por ejemplo `api-transporte-v1.raml` (spec oficial de la API) | ✅ |
+| [`fuentes/`](fuentes/) | Materiales de origen: `api-transporte-v1.raml` (spec RAML oficial) y `transporte-3-openapi.json` (spec OpenAPI del portal 3scale) | ✅ |
 | [`../tools/api-probe/`](../tools/api-probe/README.md) | Script reproducible del sondeo de la API (`node probe.mjs`) y `last-run.json` | ✅ |
 | [`solicitud-gtfs-gcba.md`](solicitud-gtfs-gcba.md) | Borrador de correo (sin enviar) al GCBA pidiendo el GTFS vigente de colectivos y consultando el estado de la API | ✅ |
 | [`../apps/proxy/test/fixtures/`](../apps/proxy/test/fixtures/README.md) | 32 fixtures reales (pb, json, geojson, errores) para los tests del proxy | ✅ |
