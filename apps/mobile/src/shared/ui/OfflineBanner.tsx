@@ -21,6 +21,8 @@ export function OfflineBanner({ visible, style, testID }: OfflineBannerProps) {
   return (
     <View
       testID={testID}
+      // Sin `accessible`, el View no expone su rol: el lector no lo anuncia como alerta.
+      accessible
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
       style={[

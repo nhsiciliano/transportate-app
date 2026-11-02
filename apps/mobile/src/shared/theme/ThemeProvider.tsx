@@ -176,7 +176,7 @@ export function textStyle(variant: TextVariant): TextStyle {
   };
 }
 
-/** Tope de escalado por variante (títulos 1.6, texto 2; justificación en tokens.ts). */
+/** Tope de escalado por variante (títulos 1.2, texto 1.3; DESIGN.md §3.2, justificación en tokens.ts). */
 export function fontScaleCap(variant: TextVariant): number {
   return variant.startsWith('text.') ? maxFontSizeMultiplier.text : maxFontSizeMultiplier.heading;
 }

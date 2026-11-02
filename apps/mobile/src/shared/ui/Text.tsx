@@ -14,7 +14,7 @@ export interface TextProps extends RNTextProps {
 }
 
 /**
- * - `allowFontScaling` siempre activo, con tope por variante (títulos 1.6, texto 2; ver tokens.ts).
+ * - `allowFontScaling` siempre activo, con tope por variante (títulos y tabs 1.2, texto 1.3; DESIGN.md §3.2, ver tokens.ts).
  * - Los `heading.*` se anuncian como encabezado (`accessibilityRole="header"`).
  */
 export function Text({
