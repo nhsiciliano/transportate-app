@@ -86,7 +86,7 @@ describe('EdgeCachedFeedSource', () => {
     expect(req.url.searchParams.has('client_secret')).toBe(false);
   });
 
-  it('coalescing: 10 llamadas concurrentes → 1 fetch upstream', async () => {
+  it('en frío: 10 llamadas concurrentes → 1 fetch (las demás sondean la memoria, sin promesa compartida)', async () => {
     const { source, req } = await setup();
     let release: (r: Response) => void = () => undefined;
     fetchSpy.mockImplementation(
@@ -101,6 +101,66 @@ describe('EdgeCachedFeedSource', () => {
     const results = await all;
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(results.map((r) => text(r.body))).toEqual(Array(10).fill('compartido'));
+  });
+
+  it('requests separadas con dato vencido: una refresca y la otra sirve la copia sin esperarla', async () => {
+    // Dos instancias = dos requests (cada una con su propio I/O). No se comparten promesas.
+    const { cache, req, advance } = await setup();
+    let clock = 1_800_000_000_000;
+    const mk = () =>
+      new EdgeCachedFeedSource({
+        credentials: { clientId: 'i', clientSecret: FAKE_SECRET },
+        cache,
+        now: () => clock,
+        retryDelayMs: 1,
+      });
+    fetchSpy.mockResolvedValueOnce(ok('v1'));
+    await mk().fetch(req);
+    clock += 25_000; // vencido (TTL 20 s) pero dentro de maxStale
+    advance(25_000);
+    let release: (r: Response) => void = () => undefined;
+    fetchSpy.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = resolve;
+        }),
+    );
+    const a = mk().fetch(req); // toma el refresco
+    await new Promise((r) => setTimeout(r, 10));
+    const t0 = performance.now();
+    const b = await mk().fetch(req); // no espera a la otra request
+    expect(performance.now() - t0).toBeLessThan(100);
+    expect(b).toMatchObject({ fromCache: true, stale: false });
+    expect(text(b.body)).toBe('v1');
+    release(ok('v2'));
+    expect(text((await a).body)).toBe('v2');
+    expect(fetchSpy).toHaveBeenCalledTimes(2); // carga inicial + un solo refresco
+  });
+
+  it('en frío, si la otra request tarda más que coldWaitMs, cada una hace su propio fetch', async () => {
+    const { cache, req } = await setup();
+    const mk = () =>
+      new EdgeCachedFeedSource({
+        credentials: { clientId: 'i', clientSecret: FAKE_SECRET },
+        cache,
+        coldWaitMs: 50,
+      });
+    fetchSpy
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((r) =>
+            setTimeout(() => {
+              r(ok('lenta'));
+            }, 300),
+          ),
+      )
+      .mockResolvedValueOnce(ok('propia'));
+    const a = mk().fetch(req);
+    await new Promise((r) => setTimeout(r, 5));
+    const b = await mk().fetch(req);
+    expect(text(b.body)).toBe('propia');
+    expect(text((await a).body)).toBe('lenta');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 
   it('vencido + upstream ok → dato fresco', async () => {
