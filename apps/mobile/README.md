@@ -42,7 +42,7 @@ npx eas-cli build --profile development --platform android         # APK interna
 
 EAS necesita `eas login` y un proyecto creado en expo.dev: lo hace el usuario.
 
-**Pendiente de confirmar:** el identificador nativo `app.transportate.mobile` (`ios.bundleIdentifier` y `android.package` en `app.config.ts`) es provisorio. Se tiene que confirmar antes del primer build que se publique.
+El identificador nativo `app.transportate.mobile` (`ios.bundleIdentifier` y `android.package` en `app.config.ts`) quedó confirmado por el usuario el 2026-11-02. Una vez publicado en las tiendas no se puede cambiar.
 
 ## Variables de entorno
 

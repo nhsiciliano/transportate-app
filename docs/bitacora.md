@@ -192,7 +192,6 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 ### Riesgos abiertos que pasan a Fase 4
 
 - **Sin dev build real todavía:** nada se corrió en un simulador o dispositivo. Siguen sin confirmar `react-native-mmkv` 4.3.2 con Nitro 0.37.1 en RN 0.88 (fallback 0.35.9), NetInfo, el comportamiento del 304 con `NSURLCache` de iOS y `NativeTabs` en dispositivo. Lo cubren Jest y `expo export`, no el hardware.
-- **Identificador nativo** `app.transportate.mobile` provisorio: hay que confirmarlo antes del primer build que se publique.
 - **`eas login` y proyecto en expo.dev:** los hace el usuario; sin eso no hay builds de EAS.
 - **Las pantallas todavía no consumen los hooks** de `shared/api`: el cliente, los hooks y el polling están probados con `fetch` mockeado, pero ninguna pantalla los usa. La integración real contra el proxy llega con las features.
 - **Tests sensibles a la carga de la máquina:** con la máquina muy cargada (load average > 20, otros workers corriendo) se vieron timeouts de 5 s en `apps/proxy` (`health`, `edge-cached`) y en varios tests de UI de `apps/mobile` al correr `pnpm test` desde la raíz con todo en paralelo. Los mismos tests pasan al correr cada paquete solo.
@@ -201,7 +200,8 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 
 ### Pendiente de decisión del usuario
 
-- Identificador nativo `app.transportate.mobile` (`app.config.ts`).
+- ~~Identificador nativo `app.transportate.mobile`~~: confirmado por el usuario el 2026-11-02.
+- Ícono de la app: el usuario no quedó convencido de `design/brand/icon-ios-1024.png` y pidió a Dev Images tres alternativas más modernas con colectivo, tren o subte (ver `design/brand/alternativas/`). Elige una cuando estén listas.
 - Validar [`DESIGN.md`](../DESIGN.md) y sus suposiciones marcadas.
 - La estrella de "no es favorito" con el glifo de contorno (FILL 0), excepción a FILL 1.
 - Los topes de escala de fuente: 1,3 en texto corrido y 1,2 en títulos y etiquetas de controles.

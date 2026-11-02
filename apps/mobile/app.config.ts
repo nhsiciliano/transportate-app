@@ -6,8 +6,8 @@
 // `process.env.EXPO_PUBLIC_API_URL` (ver `.env.example`).
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-// Identificador nativo PROVISORIO: lo tiene que confirmar el usuario antes del primer build
-// de EAS (una vez publicado en las tiendas no se puede cambiar).
+// Identificador nativo confirmado por el usuario el 2026-11-02 (`docs/bitacora.md`, Fase 3).
+// Una vez publicado en las tiendas no se puede cambiar.
 const NATIVE_ID = 'app.transportate.mobile';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
