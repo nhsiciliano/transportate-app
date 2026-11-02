@@ -19,6 +19,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   // Claro y oscuro de primera clase (`docs/02-obelisco-tokens.md` §6).
   userInterfaceStyle: 'automatic',
+  // Ícono de la app (`design/brand/icon-ios-1024.png`): 1024×1024, sin transparencia ni esquinas
+  // redondeadas. iOS lo toma de acá porque `ios.icon` no se declara (ver README, "Assets").
+  icon: './assets/images/icon.png',
   ios: {
     bundleIdentifier: NATIVE_ID,
     supportsTablet: true,
@@ -27,16 +30,30 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // `android.edgeToEdgeEnabled` ya no existe en `ExpoConfig`; no hace falta declararla.
   android: {
     package: NATIVE_ID,
+    // Adaptativo: primer plano y silueta monocromática (íconos temáticos de Android 13+) sobre el
+    // fondo primary de Obelisco `#1d3343` (`docs/02-obelisco-tokens.md` §1.2). El valor tiene que
+    // coincidir con `design/brand/adaptive-background.txt` (lo verifica `test/app-config.test.ts`).
+    adaptiveIcon: {
+      foregroundImage: './assets/images/adaptive-icon.png',
+      backgroundColor: '#1d3343',
+      monochromeImage: './assets/images/adaptive-icon-monochrome.png',
+    },
   },
   plugins: [
     'expo-router',
     [
       'expo-splash-screen',
       {
-        // Sin imagen por ahora: los assets de marca los produce otra tarea.
-        // Claro: blanco. Oscuro: primary de Obelisco `#1d3343` (`docs/02-obelisco-tokens.md`).
+        // Marca de `design/brand/`: silueta primary sobre blanco en claro, silueta blanca sobre el
+        // primary de Obelisco `#1d3343` en oscuro (`docs/02-obelisco-tokens.md` §1.2).
+        image: './assets/images/splash-icon-light.png',
+        imageWidth: 200,
+        resizeMode: 'contain',
         backgroundColor: '#ffffff',
-        dark: { backgroundColor: '#1d3343' },
+        dark: {
+          image: './assets/images/splash-icon-dark.png',
+          backgroundColor: '#1d3343',
+        },
       },
     ],
     'expo-dev-client',
