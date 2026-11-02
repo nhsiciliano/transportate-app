@@ -1,0 +1,18 @@
+{
+  // Hereda primero las opciones estrictas del monorepo y después la base de Expo, que pisa
+  // solo lo que Metro/Babel necesitan (target, module "preserve", lib con DOM, jsx,
+  // customConditions "react-native"). Todas las opciones estrictas de la raíz quedan activas:
+  // strict, noUncheckedIndexedAccess, exactOptionalPropertyTypes, noImplicitOverride,
+  // noImplicitReturns y verbatimModuleSyntax (Babel elimina los `import type` sin problemas).
+  "extends": ["../../tsconfig.base.json", "expo/tsconfig.base"],
+  "compilerOptions": {
+    // TypeScript 6 ya no incluye todos los @types por defecto: se declaran explícitos.
+    // `expo/types` es lo que referencia el `expo-env.d.ts` que genera Expo (ignorado en git).
+    "types": ["expo/types", "jest"],
+    // Alias `@/*` → `src/*` (Metro lo resuelve con `experiments.tsconfigPaths` en app.config.ts).
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}
