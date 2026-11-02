@@ -61,18 +61,107 @@ Registro de las versiones que usa (o usará) Transportate, con la fecha y la fue
 3. No declarar `nodejs_compat` con la `compatibility_date` recomendada.
 4. Probar `gtfs-realtime-bindings` dentro de `workerd` antes de depender de él.
 
-## Pendiente de fijar en Fase 2/3
+## Verificadas para la Fase 3 (tarea 3.1) — 2026-11-02
 
-Todavía **sin versión fijada** ni consulta a Context7 (la Fase 2 cerró lo que corresponde a 2.1; el resto se hace al inicio de cada fase, tarea 3.1 del plan):
+**Cómo se verificó.** "Última en npm" sale de `npm view <paquete> version` el 2026-11-02 (11:58 UTC). Para los paquetes del SDK, "versión a fijar" es la que declara el `bundledNativeModules.json` de `expo@58.0.22` (`https://cdn.jsdelivr.net/npm/expo@58.0.22/bundledNativeModules.json`), que es el archivo que lee `npx expo install` para alinear versiones al SDK; la tarea 3.2 lo confirma con `npx expo install --check`. Ese archivo escribe rangos `~`: **acá se fija la versión exacta** (sin `~` ni `^`), igual que en la Fase 2. Cuando una fila dice "Context7", la compatibilidad se leyó en esa documentación; "npm" significa que solo se verificó la versión, los `peerDependencies`, `engines` y las fechas de publicación del registro; "prueba local" es algo que se ejecutó en una carpeta temporal fuera del repo.
+
+**Política de antigüedad de pnpm.** El `pnpm-workspace.yaml` no fija `minimumReleaseAge`, así que rige el default de pnpm: **1440 minutos (1 día)** (Context7 `/pnpm/pnpm`, `docs/settings/dependency-resolution.md`). A las 11:58 UTC del 2026-11-02 **todas** las versiones de la tabla tienen más de un día de publicadas (la más reciente, `@tanstack/react-query@5.105.1`, salió el 2026-11-01 10:07 UTC; `expo`, `expo-router`, `expo-dev-client` y `eas-cli` salieron el 2026-10-29/31). Si la tarea 3.2 se corre más adelante y sale una versión nueva, no usarla: se instala la de esta tabla.
+
+### Plataforma y Expo SDK 58
+
+| Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
+|---|---|---|---|---|
+| **Expo SDK** (`expo`) | **58.0.22** | 58.0.22 | npm; `bundledNativeModules.json` de `expo@58.0.22`; Context7 `/websites/expo_dev` | Misma versión que ya figura en la tabla de la Fase 2. `peerDependencies` de `expo`: `react`, `react-dom`, `react-native`, `react-native-web`, `@expo/dom-webview`, `@expo/metro-runtime`, `react-native-webview` (todas `*`, las de web son opcionales). Sin web en el MVP. |
+| **`react`** | **19.3.0** | 19.3.1 | `bundledNativeModules.json` (`react 19.3.0`), `devDependencies` de `expo@58.0.22` (`react 19.3.0`), npm | **No usar la 19.3.1** aunque exista: el SDK 58 está alineado a 19.3.0 y `expo install --check` la marcaría. `react-dom` (19.3.0) no hace falta sin web; `expo-router` lo declara como peer opcional. |
+| **`react-native`** | **0.88.1** | 0.88.1 | `bundledNativeModules.json`, npm, Context7 `/react/react-native` (0.88 indexada) | New Architecture siempre activa (ver tabla de la Fase 1). La Fase 1 anotó 0.88.0 por la plantilla; el SDK 58.0.22 ya trae **0.88.1**. |
+| **`expo-router`** | **58.0.29** | 58.0.29 | npm; Context7 `/expo/expo` (instalación, Fase 2) | Peers opcionales (`peerDependenciesMeta`): `@expo/ui`, `react-dom`, `expo-symbols`, `react-native-web`, `react-native-worklets`, `react-native-reanimated`, `react-native-gesture-handler`, `react-server-dom-webpack`, `@testing-library/react-native`. **Peers obligatorios:** `expo`, `react`, `react-native`, `expo-linking`, `expo-constants`, `@expo/log-box`, `@expo/metro-runtime`, `react-native-screens`, `react-native-safe-area-context`. En la Fase 3 **no hace falta** instalar Reanimated, Worklets ni Gesture Handler. |
+| **`expo-dev-client`** | **58.0.18** | 58.0.18 | `bundledNativeModules.json`, npm | Necesario: no hay Expo Go (MMKV y MapLibre son módulos nativos). |
+| **`expo-font`** | **58.0.11** | 58.0.11 | `bundledNativeModules.json`, Context7 `/websites/expo_dev` (guía de fuentes: `npx expo install expo-font expo-splash-screen`) | Lo usa `useFonts` de `@expo-google-fonts`. |
+| **`expo-splash-screen`** | **58.0.12** | 58.0.12 | `bundledNativeModules.json`, Context7 `/websites/expo_dev` | Patrón: `SplashScreen.preventAutoHideAsync()` al cargar el módulo y `SplashScreen.hideAsync()` cuando las fuentes están listas. |
+| **`expo-haptics`** | **58.0.7** | 58.0.7 | `bundledNativeModules.json`, Context7 `/websites/expo_dev` (`docs.expo.dev/versions/latest/sdk/haptics/`) | API: `selectionAsync()`, `impactAsync(style)`, `notificationAsync(type)` con `NotificationFeedbackType.{Success, Warning, Error}`. La doc de Expo desaconseja `Vibrator` en Android y recomienda `performAndroidHapticsAsync` (no requiere el permiso `VIBRATE`): usar esa vía si se necesita en Android. |
+| **`expo-constants`** | **58.0.14** | 58.0.14 | `bundledNativeModules.json`, npm | Peer de `expo-router`. |
+| **`expo-linking`** | **58.0.15** | 58.0.15 | `bundledNativeModules.json`, npm | Peer de `expo-router`. Sin deep links en el MVP (S4), pero el router lo exige. |
+| **`expo-status-bar`** | **58.0.4** | 58.0.4 | `bundledNativeModules.json`, npm | Dependencia de `expo-router`. |
+| **`react-native-safe-area-context`** | **5.10.1** | 5.11.0 | `bundledNativeModules.json` (`~5.10.1`), npm | **No usar la 5.11.0**: el SDK 58 está en `~5.10.1`. `expo-router` pide `>= 5.4.0`. |
+| **`react-native-screens`** | **4.30.1** | 4.30.1 | `bundledNativeModules.json`, npm | `expo-router` pide `^4.30.1 \|\| ^5.0.0-alpha.3`. |
+| **`react-native-svg`** | **15.16.0** | 15.16.0 | `bundledNativeModules.json` (sin `~`: versión exacta), Context7 `/websites/expo_dev` (`npx expo install react-native-svg`) | Es lo que elige `expo install` para el SDK 58. `peerDependencies`: `react`, `react-native` (`*`). Importa como `import Svg, { Path } from 'react-native-svg'`. |
+| **TypeScript** | **6.0.3** | 7.0.2 | Fase 2 (`typescript-eslint` 8.72.1 declara `<6.1.0`) | Sin cambios. |
+| **`@types/react`** | **19.3.0** | 19.3.0 | `devDependencies` de `expo@58.0.22` (`~19.3.0`), npm | Alineada con `react` 19.3.0. |
+
+### Fuentes (tarea 3.4)
+
+| Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
+|---|---|---|---|---|
+| **`@expo-google-fonts/nunito`** | **0.4.2** | 0.4.2 | Context7 `/expo/google-fonts` (patrón `useFonts`), npm, `data.jsdelivr.net` (listado de archivos) | Licencia `MIT AND OFL-1.1`. Se importa **por peso** (un subpath por archivo): `@expo-google-fonts/nunito/400Regular`, `/600SemiBold`, `/700Bold`. Cada uno exporta una constante con el mismo nombre que el `fontFamily` a usar (verificado en el `index.js` de cada subpath): **`Nunito_400Regular`**, **`Nunito_600SemiBold`**, **`Nunito_700Bold`**. Los `.ttf` pesan 132.200, 132.152 y 132.148 bytes. |
+| **`@expo-google-fonts/open-sans`** | **0.4.2** | 0.4.2 | ídem | **`OpenSans_400Regular`**, **`OpenSans_600SemiBold`**, **`OpenSans_700Bold`** (`.ttf` de 130.832, 130.760 y 130.860 bytes). |
+
+Carga: `import { useFonts } from '@expo-google-fonts/nunito/useFonts'` (también existe en `open-sans`) o `useFonts` de `expo-font` con el objeto `{ Nunito_600SemiBold, … }`. **Hay que citar el `fontFamily` entre comillas** (la doc de `expo/google-fonts` lo remarca). Con la escala de Obelisco (§2 de `02-obelisco-tokens.md`) alcanzan estos 6 archivos (789.000 bytes en total, ≈ 0,79 MB): títulos 700/600 (Nunito), headline 700/600 (Nunito), texto 400 (Open Sans) y 600/700 (Open Sans) para énfasis. **No cargar itálicas** ni otros pesos. No usar `@expo-google-fonts/dev` (descarga por red en ejecución; contradice `05-privacidad.md`). Los `.ttf` se empaquetan en el binario.
+
+### Almacenamiento, datos y red
+
+| Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
+|---|---|---|---|---|
+| **`react-native-mmkv`** | **4.3.2** | 4.3.2 | Context7 `/margelo/react-native-mmkv` (`README.md`, `docs/WRAPPER_REACT_QUERY.md`, `docs/V4_UPGRADE_GUIDE.md`), npm | Requiere RN ≥ 0.76 (README) y New Architecture. Instalación en Expo: `npx expo install react-native-mmkv react-native-nitro-modules` y build de dev client (`prebuild`). API: `createMMKV()`, `getString`/`set`/`remove`. En Jest **se usa un mock automático** (README, "Testing with Jest or Vitest"), así que `createMMKV()` funciona en los tests sin configurar nada. Publicada el 2026-06-22. |
+| **`react-native-nitro-modules`** | **0.37.1** (alternativa probada por la propia librería: 0.35.9) | 0.37.1 | Context7 `/margelo/nitro` (`troubleshooting.md`, `NativeNitroModules.ts`), npm | `react-native-mmkv@4.3.2` declara el peer como `*`, pero se construyó y testeó contra **0.35.9** y RN 0.85.3 (sus `devDependencies`); no hay una combinación publicada con RN 0.88. El runtime exige que la versión nativa y la de JS **coincidan** y que haya **una sola copia** en `node_modules` (si no, "Nitro was installed twice"). **Sin verificar en dispositivo:** hay que confirmarlo en el primer build del dev client (tarea 3.2/3.9); si falla con 0.37.1, bajar a 0.35.9. Con pnpm, declararla como dependencia directa de `apps/mobile` para que haya una única copia. |
+| **`@tanstack/react-query`** | **5.105.1** | 5.105.1 | ver tabla de la Fase 1, npm | Sin cambios. Peers: `react ^18 \|\| ^19`. |
+| **`@tanstack/query-async-storage-persister`** | **5.105.1** | 5.105.1 | Context7 `/tanstack/query` (`plugins/createSyncStoragePersister.md`), Context7 `/margelo/react-native-mmkv` (`docs/WRAPPER_REACT_QUERY.md`), npm | **Es el persister a usar con MMKV.** La doc de TanStack marca **`createSyncStoragePersister` como deprecado** ("se va a eliminar en la próxima major; usá `@tanstack/query-async-storage-persister`"), así que `@tanstack/query-sync-storage-persister` (5.105.1 existe en npm) **no se instala**. MMKV es síncrono, pero el persister acepta un storage con `getItem`/`setItem`/`removeItem` que puede devolver valores directos. Adaptador oficial de MMKV: `getItem` devuelve `null` si `getString` da `undefined`. |
+| **`@tanstack/react-query-persist-client`** | **5.105.1** | 5.105.1 | Context7 `/tanstack/query`, `/margelo/react-native-mmkv`, npm | Aporta `PersistQueryClientProvider`. Peer: `@tanstack/react-query ^5.105.1`. |
+| **`@react-native-community/netinfo`** | **12.0.1** | 12.0.1 | `bundledNativeModules.json` (versión exacta), npm | Para `onlineManager.setEventListener` (ver tabla de la Fase 1). `peerDependencies`: `react *`, `react-native >=0.59`. Publicada el 2026-02-14. |
+
+### Tests
+
+| Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
+|---|---|---|---|---|
+| **`jest`** | **30.5.2** | 30.5.2 | npm (`peerDependencies` de `jest-expo`: `^29 \|\| ^30`) | Jest 30. |
+| **`jest-expo`** | **58.0.13** | 58.0.13 | `bundledNativeModules.json` (`~58.0.13`), Context7 `/websites/expo_dev` (`develop/unit-testing`), npm | Preset: `"preset": "jest-expo"`. Con **pnpm** la doc da un `transformIgnorePatterns` propio que incluye `.pnpm` en la negación: `node_modules/(?!(.pnpm\|(jest-)?react-native\|@react-native(-community)?\|expo(nent)?\|@expo(nent)?/.*\|@expo-google-fonts/.*\|react-navigation\|@react-navigation/.*\|@sentry/react-native\|native-base\|react-native-svg))`. Agregar también `react-native-mmkv` y `react-native-nitro-modules` si Jest los intenta transformar. **Peer obligatorio nuevo:** `@react-native/jest-preset ^0.88.1`. |
+| **`@react-native/jest-preset`** | **0.88.1** | 0.88.1 | npm (`peerDependencies` de `jest-expo`) | `devDependency`; `peerDependencies` propias: `react ^19.2.3`. |
+| **`@testing-library/react-native`** | **14.1.0** | 14.1.0 | Context7 `/callstack/react-native-testing-library` (guía `migration-v14.md`, `api/jest-matchers.md`), npm | Pide React ≥ 19, RN ≥ 0.78 y Node `^22.13 \|\| >=24` (cumplido). **v14 cambia la API: `render`, `renderHook`, `fireEvent` y `act` son asíncronos** (`await render(...)`). Context7 indexa solo v13.3.3 y v13.2.0; la parte de v14 salió de la documentación de la rama principal del propio repo. `expo-router` pide `>= 14.0.0` como peer opcional. |
+| **`test-renderer`** | **1.3.0** | 1.3.1 | Context7 `/callstack/react-native-testing-library` (`migration-v14.md`), npm | **Reemplaza a `react-test-renderer`** en RNTL 14 (peer obligatorio, `^1.0.0`). Se fija la **1.3.0** porque es la versión exacta que trae `jest-expo@58.0.13` como dependencia: así hay una sola copia. |
+| **`react-test-renderer`** | **no instalar** | 19.3.1 | Context7 (`migration-v14.md`: "remove React Test Renderer and its types, then add Test Renderer"), npm | React lo deprecó; RNTL 14 ya no lo usa. Sigue existiendo en npm (19.3.1) pero **no hace falta** con React 19.3. Tampoco `@types/react-test-renderer`. |
+| **`@testing-library/jest-native`** | **no instalar** | 5.4.3 | npm (`deprecated`), Context7 (`api/jest-matchers.md`) | **Deprecado**: el propio paquete dice "usá los matchers integrados de `@testing-library/react-native` v12.4+". RNTL 14 trae `toBeOnTheScreen`, `toHaveTextContent`, `toBeEnabled`/`toBeDisabled`, `toBeVisible`, `toHaveStyle`, `toHaveAccessibleName`, etc., disponibles con solo importar RNTL. |
+| **`@types/jest`** | **30.0.0** | 30.0.0 | npm | Alineado con Jest 30. |
+
+### Lint
+
+| Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
+|---|---|---|---|---|
+| **`eslint-plugin-react-hooks`** | **7.1.1** | 7.1.1 | Context7 `/reactjs/react.dev` (preset `recommended-latest`), npm, prueba local | Declara `eslint` hasta `^10.0.0`. **Probado con ESLint 10.14.0**: `reactHooks.configs.flat['recommended-latest']` carga y reporta `rules-of-hooks`, `exhaustive-deps` y las reglas del compilador (`set-state-in-effect`). |
+| **`eslint-plugin-react`** | **no instalar** (7.37.5) | 7.37.5 | npm, prueba local | **No funciona con ESLint 10**: su `peerDependencies` llega solo a `eslint ^9.7`, y al correrlo con ESLint 10.14.0 falla en cada archivo con `TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function`. Es la última publicada (`latest` = 7.37.5; la rama `next` es 7.8.0-rc.0, anterior). |
+| **`eslint-config-expo`** | **no usar con ESLint 10** (58.0.4) | 58.0.4 | npm, Context7 `/websites/expo_dev` (`guides/using-eslint`), prueba local | Declara `eslint >=8.10`, pero depende de `eslint-plugin-react@^7.37.3`, así que **hereda la falla de arriba con ESLint 10**. **Probado con ESLint 9.39.5**: carga y corre (`import/no-unresolved` solo se queja de que `react` no estaba instalado en la carpeta de prueba). |
+| **ESLint** | **10.14.0** (raíz) | 10.14.0 | Fase 2 | La raíz ya usa ESLint 10 + `typescript-eslint`. Ver decisión 4. |
+
+### Íconos, EAS y Fase 4
+
+| Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
+|---|---|---|---|---|
+| **`@material-symbols/svg-400`** | **0.48.2** | 0.48.2 | npm, `cdn.jsdelivr.net` (HTTP 200 de cada ícono; ver `08-design-system.md`) | Reconfirmada hoy. Licencia **Apache-2.0** (campo `license` del `package.json` publicado y archivo `LICENSE`). Los SVG son de 48 px con `viewBox="0 -960 960 960"`. |
+| **`eas-cli`** | **27.2.0** | 27.2.0 | npm (`engines`: node `^20.18.3 \|\| >=22.0.0`) | **Solo versión: no se consultó Context7.** No va como dependencia del monorepo; correr con `npx eas-cli@27.2.0` o instalarla global. Publicada el 2026-10-29. |
+| `@maplibre/maplibre-react-native` | *(Fase 4, no fijar)* 11.5.1 | 11.5.1 | npm | `peerDependencies`: `expo >=54`, `react >=19.1`, `@types/react >=19.1`, `react-native >=0.80`, `@types/geojson ^7946`. Cumple con SDK 58 / RN 0.88. Plugin de config en `app.json` (ver tabla de la Fase 1). |
+| `expo-location` | *(Fase 4, no fijar)* 58.0.20 | 58.0.20 | `bundledNativeModules.json` (`~58.0.20`), npm | Permiso "mientras se usa" (S32). Se instala con `npx expo install` en la Fase 4. |
+
+**Decisiones que esto pide a la Fase 3:**
+
+1. **No instalar `@testing-library/jest-native`:** está deprecado; usar los matchers integrados de RNTL 14 (`toBeOnTheScreen`, `toHaveTextContent`, …).
+2. **Tests con RNTL 14 (no 13):** reemplaza `react-test-renderer` por `test-renderer@1.3.0`, y `render`/`fireEvent`/`act` son asíncronos. Hay que escribir los tests con `await`. `jest-expo` 58 además exige `@react-native/jest-preset@0.88.1`.
+3. **`transformIgnorePatterns` para pnpm** de la doc de Expo en el `jest` de `apps/mobile` (incluye `.pnpm` y `@expo-google-fonts` y `react-native-svg`).
+4. **Lint de `apps/mobile`:** `eslint-config-expo` no corre con ESLint 10. Dos caminos: **(A, recomendado)** seguir con la config raíz (ESLint 10 + `typescript-eslint`) y sumar solo `eslint-plugin-react-hooks@7.1.1` (`flat['recommended-latest']`), sin `eslint-plugin-react` ni `eslint-config-expo`; un solo ESLint en todo el monorepo y las reglas de hooks, que son las que importan en RN. **(B)** `eslint@9.39.5` + `eslint-config-expo@58.0.4` solo dentro de `apps/mobile` (probado que carga), a costa de dos versiones de ESLint y de que `pnpm lint` use dos configuraciones. Subir a ESLint 10 con `eslint-config-expo` queda esperando una versión de `eslint-plugin-react` que lo soporte. Lo decide quien haga la 3.2.
+5. **Persister de TanStack Query:** `@tanstack/query-async-storage-persister` + `@tanstack/react-query-persist-client` con el adaptador de MMKV; no usar el persister síncrono (deprecado).
+6. **Nitro/MMKV:** fijar `react-native-nitro-modules@0.37.1` como dependencia directa y probar el primer dev build; fallback `0.35.9`. Es el riesgo abierto principal de esta tabla.
+7. **Alinear a la plantilla del SDK, no a `latest`:** `react` 19.3.0 (no 19.3.1) y `react-native-safe-area-context` 5.10.1 (no 5.11.0). Tras `npx expo install`, convertir los `~` en versión exacta y correr `npx expo install --check`.
+8. **Fuentes:** cargar solo los 6 archivos de arriba y usar los `fontFamily` `Nunito_*` / `OpenSans_*` tal cual figuran.
+9. **Antigüedad mínima de pnpm (1 día):** las versiones de esta tabla ya la cumplen; si 3.2 se corre en un día en que una versión de la tabla tuviera menos de 24 h (no es el caso hoy), esperar en lugar de agregarla a `minimumReleaseAgeExclude`.
+
+## Pendiente de fijar
+
+Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al inicio de cada fase):
 
 | Fase | Herramienta | Qué falta |
 |---|---|---|
 | 2 | `autocannon` | prueba de carga local (2.12) |
 | 2 | Cómo testear Cache API y rate limit con `@cloudflare/vitest-plugin`; configuración compartida de ESLint/Prettier/TS en el monorepo | probar en `apps/proxy` |
-| 3 | `expo-dev-client`, EAS CLI | versiones alineadas a SDK 58 (`expo install`) |
-| 3 | `react-native-svg`, `expo-font` y los pesos de Nunito/Open Sans a cargar | versiones y pesos |
-| 3 | `@react-native-community/netinfo`, `expo-location`, `expo-haptics` | versiones alineadas a SDK 58 |
-| 3 | Jest + React Native Testing Library | versiones compatibles con RN 0.88 |
+| 3 | `eas-cli` | consultar Context7 (solo se verificó la versión en npm) |
+| 3 | `react-native-nitro-modules` con `react-native-mmkv` en RN 0.88 | confirmar en el primer dev build (decisión 6) |
+| 4 | `@maplibre/maplibre-react-native`, `expo-location` | fijar al empezar la Fase 4 |
 | 5 | EAS Build / Update | si se usa OTA, declararlo en `05-privacidad.md` |
 
 Cada fila se cierra con: versión fijada, fecha, y fuente consultada.
