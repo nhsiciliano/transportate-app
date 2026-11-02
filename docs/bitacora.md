@@ -157,6 +157,7 @@ Los assets de marca (ícono de la app y splash) se demoraron por un problema de 
 | `KeyValueStore` sobre MMKV, `FavoritosRepository` (alta, alias, reorden, borrado + restore, migración de esquema) y stores de tema e intervalo de refresco                                                                                | 3.10   | `b7fa68a`, `62fda41`, `d5a768c` · `apps/mobile/src/shared/storage/`, `src/features/favoritos/`                                   |
 | Tests de integración (providers, tema, favoritos, componentes) y documentación: `07-app.md`, `08-design-system.md` completo y la sección de la app en `09-testing.md`                                                                     | 3.11   | `030c116`, `12324c3` · [`07-app.md`](07-app.md), [`08-design-system.md`](08-design-system.md), [`09-testing.md`](09-testing.md)   |
 | Assets de marca de la sesión Dev Images (`design/brand/`: ícono iOS, adaptativo Android con monocromo, splash claro/oscuro, notificación, `mark.svg` y `generate.py`) enchufados en Expo: `icon`, `android.adaptiveIcon`, plugin `expo-splash-screen` y copias en `apps/mobile/assets/images/`; test de configuración (`app-config.test.ts`); `expo-doctor` 20/20 y `expo export --platform ios` OK | 3.2 (cierre) | `32da02b` (`design/brand/`) y el commit de la configuración · [`../design/brand/README.md`](../design/brand/README.md), [`../apps/mobile/README.md`](../apps/mobile/README.md#assets) |
+| Marca definitiva **Subte conectado** (alternativa B elegida por el usuario entre tres propuestas de Dev Images con colectivo, subte y tren): set completo en `design/brand/` y copias en `apps/mobile/assets/images/`; `alternativas/` queda como registro | 3.2 (marca) | `51a16ff` (alternativas), `deb7989` (set) y el commit de las copias · [`../design/brand/README.md`](../design/brand/README.md), [`../design/brand/alternativas/README.md`](../design/brand/alternativas/README.md) |
 | Ajustes transversales: condición `default` en los `exports` de `packages/contracts` para Jest; tope de CPU del proxy robusto ante carga; `OfflineBanner` con rol `alert`                                                                  | varias | `4ecde8f`, `4e86fb6`, `19092c1`                                                                                                   |
 
 ### Decisiones técnicas
@@ -201,7 +202,7 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 ### Pendiente de decisión del usuario
 
 - ~~Identificador nativo `app.transportate.mobile`~~: confirmado por el usuario el 2026-11-02.
-- Ícono de la app: el usuario no quedó convencido de `design/brand/icon-ios-1024.png` y pidió a Dev Images tres alternativas más modernas con colectivo, tren o subte (ver `design/brand/alternativas/`). Elige una cuando estén listas.
+- ~~Ícono de la app~~: el usuario descartó el Obelisco con franja, Dev Images produjo tres alternativas (`design/brand/alternativas/`) y el usuario eligió la **B, "Subte conectado"** el 2026-11-02; el set completo reemplazó a la marca anterior en `design/brand/` y en `apps/mobile/assets/images/`.
 - Validar [`DESIGN.md`](../DESIGN.md) y sus suposiciones marcadas.
 - La estrella de "no es favorito" con el glifo de contorno (FILL 0), excepción a FILL 1.
 - Los topes de escala de fuente: 1,3 en texto corrido y 1,2 en títulos y etiquetas de controles.
