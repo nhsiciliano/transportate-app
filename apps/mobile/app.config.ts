@@ -14,6 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Transportate',
   slug: 'transportate',
+  owner: 'nhsiciliano',
   scheme: 'transportate',
   version: '0.1.0',
   orientation: 'portrait',
@@ -65,5 +66,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Alias `@/*` → `src/*` desde `compilerOptions.paths` del tsconfig.
     tsconfigPaths: true,
   },
-  extra: {},
+  // Proyecto de EAS (expo.dev), creado el 2026-11-02 con `eas init`. El projectId no es un secreto:
+  // identifica el proyecto y queda embebido en el bundle como cualquier `extra`.
+  extra: {
+    eas: {
+      projectId: 'a60f9663-fe90-4a10-89e3-cc91f140b122',
+    },
+  },
 });

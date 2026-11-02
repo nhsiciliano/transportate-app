@@ -40,7 +40,7 @@ npx eas-cli build --profile development --platform android         # APK interna
 | `preview`               | Build de prueba sin dev client, distribución interna                        |
 | `production`            | Tiendas; número de build autoincremental (`cli.appVersionSource: "remote"`) |
 
-EAS necesita `eas login` y un proyecto creado en expo.dev: lo hace el usuario.
+El proyecto de EAS es `@nhsiciliano/transportate` (creado el 2026-11-02 con `eas init`; `owner` y `extra.eas.projectId` en `app.config.ts`). Hace falta tener sesión iniciada con `eas login` (el CLI se usa con `npx eas-cli@latest`). El repositorio remoto es `github.com/nhsiciliano/transportate-app`.
 
 El identificador nativo `app.transportate.mobile` (`ios.bundleIdentifier` y `android.package` en `app.config.ts`) quedó confirmado por el usuario el 2026-11-02. Una vez publicado en las tiendas no se puede cambiar.
 
