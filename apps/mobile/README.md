@@ -33,12 +33,12 @@ npx eas-cli build --profile development-simulator --platform ios   # simulador d
 npx eas-cli build --profile development --platform android         # APK interna
 ```
 
-| Perfil (`eas.json`) | Para qué |
-|---|---|
-| `development` | Dev client, distribución interna (dispositivos físicos) |
-| `development-simulator` | Igual, pero build para el simulador de iOS |
-| `preview` | Build de prueba sin dev client, distribución interna |
-| `production` | Tiendas; número de build autoincremental (`cli.appVersionSource: "remote"`) |
+| Perfil (`eas.json`)     | Para qué                                                                    |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `development`           | Dev client, distribución interna (dispositivos físicos)                     |
+| `development-simulator` | Igual, pero build para el simulador de iOS                                  |
+| `preview`               | Build de prueba sin dev client, distribución interna                        |
+| `production`            | Tiendas; número de build autoincremental (`cli.appVersionSource: "remote"`) |
 
 EAS necesita `eas login` y un proyecto creado en expo.dev: lo hace el usuario.
 
@@ -46,9 +46,9 @@ EAS necesita `eas login` y un proyecto creado en expo.dev: lo hace el usuario.
 
 ## Variables de entorno
 
-| Variable | Default de `.env.example` | Uso |
-|---|---|---|
-| `EXPO_PUBLIC_API_URL` | `http://localhost:8787` | URL base del proxy (`pnpm --filter transportate-proxy dev` levanta `wrangler dev` en ese puerto) |
+| Variable              | Default de `.env.example` | Uso                                                                                              |
+| --------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `EXPO_PUBLIC_API_URL` | `http://localhost:8787`   | URL base del proxy (`pnpm --filter transportate-proxy dev` levanta `wrangler dev` en ese puerto) |
 
 - Expo solo expone a la app las variables con prefijo `EXPO_PUBLIC_`, y quedan **embebidas en el bundle**: nunca pongas secretos ahí. Las credenciales del GCBA viven solo en el proxy.
 - En un dispositivo físico, `localhost` no es tu computadora: usá la IP de tu red local. En el emulador de Android, `10.0.2.2`.
@@ -80,11 +80,39 @@ EAS necesita `eas login` y un proyecto creado en expo.dev: lo hace el usuario.
   - **Sin verificar en dispositivo:** si el primer dev build falla con 0.37.1, el fallback documentado es 0.35.9 (`docs/versiones.md`, decisión 6).
 - **Requiere dev client:** MMKV es un módulo nativo y no anda en Expo Go.
 - **Qué hay:** `src/shared/storage` (`KeyValueStore`, persister de TanStack Query) y `src/features/favoritos` (`FavoritosRepository`). El detalle está en los README de cada carpeta.
-- **TanStack Query** queda instalado para la tarea 3.9: `@tanstack/react-query`, `@tanstack/react-query-persist-client` y `@tanstack/query-async-storage-persister`, los tres en 5.105.1.
+- **TanStack Query** (5.105.1: `@tanstack/react-query`, `@tanstack/react-query-persist-client` y `@tanstack/query-async-storage-persister`) usa este persister: ver "Datos y red".
 - **Tests:** `pnpm test` desde `apps/mobile`, o `npx jest --ci test/favoritos.test.tsx` para uno solo.
   - En Jest, `createMMKV()` devuelve el mock en memoria de la propia librería (README de react-native-mmkv, "Testing with Jest or Vitest").
   - Igual hay que stubbear `react-native-nitro-modules` en `jest.setup.ts`, porque al importarse busca el TurboModule nativo y tira.
   - Los tests de favoritos usan `MemoryKeyValueStore`.
+
+## Datos y red
+
+La app solo habla con el proxy (`apps/proxy`). La URL sale de `EXPO_PUBLIC_API_URL`, y el contrato es `@transportate/contracts` (Zod 4). El detalle está en [`src/shared/api/README.md`](src/shared/api/README.md) y [`src/shared/query/README.md`](src/shared/query/README.md).
+
+- **Cliente** (`src/shared/api/client.ts`): un método por ruta del proxy.
+  - Toda respuesta se valida con su esquema `*ResponseV1`. Si no valida, sale `ContractError` y la pantalla no recibe nada.
+  - Timeout de 8 s por request.
+  - El único header propio es `Accept: application/json`: sin User-Agent custom ni identificadores (`docs/05-privacidad.md`).
+- **ETag:** el cliente recuerda en memoria el último `ETag` y el cuerpo validado por URL (LRU de 64) y manda `If-None-Match`. Con `304` devuelve ese cuerpo (`fromCache: true`).
+- **Frescura:**
+  - `stale` es `true` con `X-Transportate-Stale: 1` o con `meta.stale`.
+  - Los hooks exponen `sourceTimestamp` (para `FreshnessLabel`) y `ageSeconds`.
+  - La edad se calcula con `sourceTimestamp`, nunca con `generatedAt`.
+- **Polling:** solo en primer plano.
+  - Intervalo: el que elige la persona (S17: 15, 20, 30 o 60 s; default 20 s, `RefreshIntervalProvider`), con ±10 % de jitter en cada ciclo.
+  - En segundo plano se detiene: `refetchIntervalInBackground: false`, con `focusManager` conectado a `AppState`. Al volver a primer plano se refresca lo vencido.
+  - Las líneas de colectivo y el manifiesto son estáticos: no hacen polling.
+- **Offline:**
+  - `onlineManager` está conectado a NetInfo. Sin conexión, las consultas quedan en pausa en lugar de fallar.
+  - `useIsOnline()` alimenta el `OfflineBanner`.
+  - La caché de TanStack Query se persiste en MMKV (`createQueryPersister`, `maxAge` 24 h, `buster` `'v1'`), así que al abrir la app sin red se ve lo último guardado.
+- **Errores:** `ApiError` es una unión discriminada por `kind` (`network`, `timeout`, `http`, `contract`, `aborted`) y deriva `retryable`.
+  - **Reintentos:** solo los retryable (red, timeout, 429, 5xx), hasta 3 veces, con backoff 1 s → 30 s y respetando `Retry-After`.
+  - **Mensajes:** `userMessage()` da el texto en voseo: "Servicio no disponible", "Esta información no está disponible por ahora.", "Algo falló de nuestro lado.". Nunca incluye la URL ni el cuerpo crudo.
+  - **Último dato bueno:** si falla una actualización y había datos, el hook conserva `data` y marca `isRefreshError`. La pantalla muestra la Alert en línea, no el ErrorState.
+- **Tests:** `test/api/` (cliente, hooks, persistencia) y `src/shared/{api,query}/__tests__`, siempre con `fetch` mockeado.
+  - NetInfo se mockea globalmente en `jest.setup.ts` con el mock oficial de la librería: sin su módulo nativo, tira el proceso de Jest.
 
 ## Tests, lint y tipos
 
@@ -112,12 +140,12 @@ apps/mobile/
 ├── eas.json               # perfiles de EAS Build
 ├── metro.config.js        # Metro con react-native-svg-transformer (importar .svg como componentes)
 ├── jest.config.js         # preset jest-expo + transformIgnorePatterns para pnpm + transformer de .svg
-├── jest.setup.ts          # stub de react-native-nitro-modules para Jest
+├── jest.setup.ts          # stubs de Jest: react-native-nitro-modules y NetInfo (mock oficial)
 ├── eslint.config.mjs      # extiende el flat config de la raíz
 ├── test/                  # tests de Jest
 └── src/
     ├── app/               # rutas (Expo Router)
-    │   ├── _layout.tsx                # Stack raíz + SafeAreaProvider + StatusBar
+    │   ├── _layout.tsx                # Stack raíz + providers (tema, datos, intervalo, favoritos) + StatusBar
     │   ├── index.tsx                  # "/" redirige a /inicio
     │   ├── +not-found.tsx
     │   └── (tabs)/
@@ -128,18 +156,18 @@ apps/mobile/
     │       ├── favoritos/             # index
     │       └── transito/              # index (tab oculto)
     ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, transito, favoritos, ajustes)
-    └── shared/            # theme, ui, icons, fonts, storage, api
+    └── shared/            # theme, ui, icons, fonts, storage, api, query
 ```
 
 **Alias:** `@/…` apunta a `src/…`. Lo resuelven TypeScript (`paths`), Metro (`experiments.tsconfigPaths`) y Jest (`moduleNameMapper`).
 
-| URL | Pantalla |
-|---|---|
-| `/inicio` | Inicio. Botón "Ajustes" en el header |
-| `/inicio/ajustes` → `/inicio/acerca` | Ajustes → Acerca de (stack dentro de Inicio, suposición S2) |
-| `/colectivos`, `/colectivos/:linea`, `/colectivos/parada/:id` | Colectivos → línea → parada |
-| `/subtes`, `/subtes/:linea`, `/subtes/estacion/:id` | Subtes → línea → estación |
-| `/favoritos` | Favoritos |
+| URL                                                           | Pantalla                                                    |
+| ------------------------------------------------------------- | ----------------------------------------------------------- |
+| `/inicio`                                                     | Inicio. Botón "Ajustes" en el header                        |
+| `/inicio/ajustes` → `/inicio/acerca`                          | Ajustes → Acerca de (stack dentro de Inicio, suposición S2) |
+| `/colectivos`, `/colectivos/:linea`, `/colectivos/parada/:id` | Colectivos → línea → parada                                 |
+| `/subtes`, `/subtes/:linea`, `/subtes/estacion/:id`           | Subtes → línea → estación                                   |
+| `/favoritos`                                                  | Favoritos                                                   |
 
 ## Decisiones
 
