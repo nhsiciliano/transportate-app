@@ -1,3 +1,5 @@
+El usuario eligió **B — Subte conectado** el 2026-11-02; la marca vigente está en [`design/brand/`](../). Las alternativas y comparaciones quedan como registro de la elección.
+
 # Tres alternativas para Transportate
 
 Compará las propuestas en [`contact-sheet.png`](contact-sheet.png): de izquierda a derecha, la marca actual y las alternativas A, B y C. Cada [`preview-a.png`](preview-a.png), [`preview-b.png`](preview-b.png) y [`preview-c.png`](preview-c.png) muestra tamaños reales de 180 y 48 px sobre claro y oscuro.
