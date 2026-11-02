@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 
 import { Icon, iconMap, type IconName } from '@/shared/icons';
+import { light } from '@/shared/theme';
 
 const names = Object.keys(iconMap) as IconName[];
 
@@ -37,7 +38,8 @@ describe('Icon', () => {
     const porDefault = screen.getByTestId('svg:search-fill', { includeHiddenElements: true });
     expect(porDefault).toHaveProp('width', 24);
     expect(porDefault).toHaveProp('height', 24);
-    expect(porDefault).toHaveProp('fill', '#000000');
+    // Sin ThemeProvider, useTheme() devuelve el tema claro: text.primary.
+    expect(porDefault).toHaveProp('fill', light.text.primary);
   });
 
   it.each([16, 20, 24, 32] as const)('respeta size=%s y color', async (size) => {
