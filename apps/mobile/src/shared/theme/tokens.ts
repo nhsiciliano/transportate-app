@@ -1,6 +1,6 @@
 // Design tokens de Transportate: Obelisco v2 (identidad vigente) en claro + paleta oscura derivada.
 //
-// Fuente única: docs/02-obelisco-tokens.md. Cada hoja cita la sección del doc y, entre paréntesis,
+// Fuentes: docs/02-obelisco-tokens.md y DESIGN.md (raíz; §2.1 superficies, §2.2 roles, §3.2 escala). Cada hoja cita la sección del doc y, entre paréntesis,
 // el `archivo:línea` de Obelisco que ese doc cita (abreviaturas del doc: colors, typo, borders,
 // c/<componente>, dist). TypeScript puro: sin imports de React Native, para poder usarlo en tests,
 // scripts y en DESIGN.md (tarea 3.6).
@@ -160,7 +160,8 @@ export type Primitives = typeof primitives;
 
 // ---------------------------------------------------------------- 2. Esquemas de color
 
-export type RoleName = 'primary' | 'secondary' | 'tertiary' | 'danger' | 'success' | 'warning' | 'info';
+export type RoleName =
+  'primary' | 'secondary' | 'tertiary' | 'danger' | 'success' | 'warning' | 'info';
 
 export interface RoleColors {
   /** Relleno sólido del rol (botón, badge primaria, alert `system`). */
@@ -173,6 +174,11 @@ export interface RoleColors {
   container: string;
   /** Texto/ícono sobre `container`. */
   onContainer: string;
+  /**
+   * El rol usado como texto, ícono o borde sobre `bg.base`/`container` (≥ 4.5:1 en claro).
+   * Ej.: "Dato de hace 4 min" en warning, borde de la alert estándar. DESIGN.md §2.2 notas.
+   */
+  text: string;
 }
 
 export interface ColorScheme {
@@ -190,7 +196,13 @@ export interface ColorScheme {
   focusRing: { color: string; width: number; subtleWidth: number };
   role: Record<RoleName, RoleColors>;
   /** Neutro para insignias y chips sin rol (badge "default", número de colectivo). */
-  neutral: { container: string; onContainer: string; border: string; solid: string; onSolid: string };
+  neutral: {
+    container: string;
+    onContainer: string;
+    border: string;
+    solid: string;
+    onSolid: string;
+  };
 }
 
 const p = primitives;
@@ -232,6 +244,7 @@ export const light: ColorScheme = {
       hover: p.blue[950], // §1.5 primary hover (c/button:203)
       container: p.slate[50], // §1.2 light (colors:142)
       onContainer: p.blue[800], // §1.3 $text-primary (typo:159)
+      text: p.blue[800], // §1.3 $text-primary (typo:159)
     },
     secondary: {
       base: p.blue[700], // §1.2 secondary (colors:136)
@@ -239,6 +252,7 @@ export const light: ColorScheme = {
       hover: p.blue[900], // §1.5 secondary hover (c/button:25)
       container: p.blue[50], // §1.1 blue-50 (colors:16)
       onContainer: p.blue[700], // §1.3 $text-secondary (typo:160)
+      text: p.blue[700], // §1.3 $text-secondary (typo:160)
     },
     tertiary: {
       base: p.cyan[500], // §1.2 tertiary (colors:137)
@@ -246,34 +260,39 @@ export const light: ColorScheme = {
       hover: p.cyan[600], // §1.5 tertiary hover (c/button:235-237)
       container: p.cyan[50], // §1.1 cyan-50 (colors:29)
       onContainer: p.cyan[800], // §1.4 cyan-800 (colors:191)
+      text: p.cyan[700], // cyan-700 (colors:36): cyan-500 como texto no llega a 4.5:1 sobre blanco
     },
     danger: {
       base: p.red[600], // §1.2 danger (colors:141)
       on: p.gray[0], // §1.5 danger texto blanco (c/button:28)
       hover: p.red[500], // §1.4 hover danger (colors:186)
       container: p.red[50], // §1.2 fondos semánticos (colors:172-177)
-      onContainer: p.red[600], // §4 Badge secundaria danger (c/badge:7-41), 4.69:1
+      onContainer: p.blue[900], // DESIGN.md §2.2 contenedor claro: texto #08202f (colors:172-177)
+      text: p.red[600], // §4 Badge secundaria danger (c/badge:7-41), 4.69:1
     },
     success: {
       base: p.green[700], // §1.2 success (colors:140)
       on: p.gray[0], // §1.5 success texto blanco (c/button:29)
       hover: p.green[800], // §1.1 green-800: un paso más oscuro (Obelisco no cambia el fondo)
       container: p.green[50], // §1.2 fondos semánticos (colors:172-177)
-      onContainer: p.green[600], // §4 Badge secundaria success (c/badge:7-41), 4.69:1
+      onContainer: p.blue[900], // DESIGN.md §2.2 contenedor claro: texto #08202f (colors:172-177)
+      text: p.green[600], // §4 Badge secundaria success (c/badge:7-41)
     },
     warning: {
       base: p.orange[400], // §1.2 warning (colors:139)
       on: p.blue[800], // §4 Alert system warning usa $primary (c/alert:85-98), 4.91:1 (§7 fix 3)
       hover: p.orange[500], // §1.1 orange-500 (colors:73)
       container: p.orange[50], // §1.2 fondos semánticos (colors:172-177)
-      onContainer: p.orange[600], // §7 fix 1: texto warning orange-600 (4.67:1)
+      onContainer: p.blue[900], // DESIGN.md §2.2 contenedor claro: texto #08202f (colors:172-177)
+      text: p.orange[600], // §7 fix 1 / DESIGN.md §2.2: warning como texto #a25c00
     },
     info: {
       base: p.sky[600], // §1.2 info (colors:138)
       on: p.gray[0], // §7 texto info/blanco 5.17:1
       hover: p.sky[700], // §4 Badge primaria info sky-700 (c/badge:47-72)
       container: p.sky[50], // §1.2 fondos semánticos (colors:172-177)
-      onContainer: p.sky[600], // §4 Badge secundaria info (c/badge:7-41), 4.69:1
+      onContainer: p.blue[900], // DESIGN.md §2.2 contenedor claro: texto #08202f (colors:172-177)
+      text: p.sky[600], // §4 Badge secundaria info (c/badge:7-41), 5.17:1
     },
   },
   neutral: {
@@ -306,7 +325,7 @@ export const dark: ColorScheme = {
     disabled: p.slate[600], // §6 text.disabled
     placeholder: p.slate[400], // §6 text.tertiary (7.43:1 sobre bg.base, §7)
     link: p.blue[300], // §6 text.link
-    inverse: p.slate[950], // §6 bg.base (texto sobre rellenos claros)
+    inverse: p.blue[900], // DESIGN.md §2.1 (on-primary oscuro, texto sobre rellenos claros)
   },
   border: {
     subtle: p.slate[800], // §6 border.subtle (decorativo)
@@ -325,6 +344,7 @@ export const dark: ColorScheme = {
       hover: p.blue[100], // derivado (§6 criterio 2)
       container: p.blue[900], // derivado (§6 criterio 3)
       onContainer: p.blue[200], // derivado (§6 criterio 3)
+      text: p.blue[200], // §6 primary (sobre fondos oscuros el relleno ya es claro)
     },
     secondary: {
       base: p.blue[400], // §6 secondary
@@ -332,6 +352,7 @@ export const dark: ColorScheme = {
       hover: p.blue[300], // derivado (§6 criterio 2)
       container: p.blue[900], // derivado (§6 criterio 3)
       onContainer: p.blue[100], // derivado (§6 criterio 3)
+      text: p.blue[400], // §6 secondary (sobre fondos oscuros el relleno ya es claro)
     },
     tertiary: {
       base: p.cyan[300], // §6 tertiary
@@ -339,6 +360,7 @@ export const dark: ColorScheme = {
       hover: p.cyan[200], // derivado (§6 criterio 2)
       container: p.cyan[900], // derivado (§6 criterio 3)
       onContainer: p.cyan[100], // derivado (§6 criterio 3)
+      text: p.cyan[300], // §6 tertiary (sobre fondos oscuros el relleno ya es claro)
     },
     danger: {
       base: p.red[400], // §6 danger
@@ -346,6 +368,7 @@ export const dark: ColorScheme = {
       hover: p.red[300], // derivado (§6 criterio 2)
       container: p.red[900], // §6 danger.container
       onContainer: p.red[200], // §6 danger.container on
+      text: p.red[400], // §6 danger (sobre fondos oscuros el relleno ya es claro)
     },
     success: {
       base: p.green[300], // §6 success
@@ -353,6 +376,7 @@ export const dark: ColorScheme = {
       hover: p.green[200], // derivado (§6 criterio 2)
       container: p.green[900], // §6 success.container
       onContainer: p.green[100], // §6 success.container on
+      text: p.green[300], // §6 success (sobre fondos oscuros el relleno ya es claro)
     },
     warning: {
       base: p.orange[300], // §6 warning
@@ -360,6 +384,7 @@ export const dark: ColorScheme = {
       hover: p.orange[200], // derivado (§6 criterio 2)
       container: p.orange[900], // §6 warning.container
       onContainer: p.orange[200], // §6 warning.container on
+      text: p.orange[300], // §6 warning (sobre fondos oscuros el relleno ya es claro)
     },
     info: {
       base: p.sky[300], // §6 info
@@ -367,6 +392,7 @@ export const dark: ColorScheme = {
       hover: p.sky[200], // derivado (§6 criterio 2)
       container: p.sky[900], // §6 info.container
       onContainer: p.sky[200], // §6 info.container on
+      text: p.sky[300], // §6 info (sobre fondos oscuros el relleno ya es claro)
     },
   },
   neutral: {
@@ -462,12 +488,13 @@ export function typeStyle(variant: TextVariant): TypeStyle {
 }
 
 /**
- * Tope de escalado de fuente (Dynamic Type / tamaño de fuente de Android). Títulos 1.6: ya son
- * grandes (h1 38 → 61) y más que eso rompe filas y la barra de navegación. Texto 2: el cuerpo es
- * lo que la persona necesita leer; 16 → 32 cubre los tamaños de accesibilidad comunes sin que una
- * palabra ocupe la pantalla entera. (Plan, tarea 3.4: "maxFontSizeMultiplier razonable".)
+ * Tope de escalado de fuente (Dynamic Type / tamaño de fuente de Android), DESIGN.md §3.2:
+ * 1.3 en texto corrido y 1.2 en títulos, headlines y etiquetas de tab (suposición del plan,
+ * tarea 3.4). Los títulos ya son grandes (h1 38 → 46) y las etiquetas de tab/segmento viven en
+ * controles de alto fijo: más escala los trunca. Con escala grande las filas crecen en alto;
+ * nunca se trunca el estado ni la frescura (docs/briefs/README.md).
  */
-export const maxFontSizeMultiplier = { heading: 1.6, text: 2 } as const;
+export const maxFontSizeMultiplier = { heading: 1.2, text: 1.3 } as const;
 
 // ---------------------------------------------------------------- 4. Espaciado, radios, bordes
 
@@ -540,10 +567,9 @@ export const component = {
   },
   card: {
     padding: 16, // §4 Card body 24 en web (c/cards:2); en teléfono 16 (§3.1 spacer 3)
-    // §4 Card radio 32 (`6xl`, c/cards:63-70) en web. En nativo se usa 20 (`4xl`): con 16 de
-    // padding en tarjetas de ~343 pt de ancho, 32 recorta las esquinas del contenido y se ve
-    // inflado; 20 conserva el aspecto suave de Obelisco y queda cerca de las tarjetas nativas.
-    radius: radius['4xl'],
+    // §4 Card radio 32 (`6xl`, c/cards:63-70) en web. En nativo 16 (`3xl`, DESIGN.md §4.2,
+    // suposición): en una pantalla de 360 pt el radio web recorta el contenido y se ve inflado.
+    radius: radius['3xl'],
     webRadius: radius['6xl'],
     outlineWidth: borderWidth.control, // §3.3 card outline 0.125rem (colors:219)
   },
@@ -570,6 +596,13 @@ export const component = {
     radius: radius.pill, // §4 Nav-link radio pill (c/nav:4-8)
     indicator: 4, // §4 Tabs subrayado 4 px (c/tabs:58-62)
   },
+  lineBadge: {
+    size: { sm: 24, md: 32, lg: 44 }, // sm/md como badge+; lg = área táctil (hitSlop)
+    paddingX: 6, // colectivo: número con aire mínimo (badge paddingX 8 − borde 1 − ajuste óptico)
+    radius: radius.xl, // §4 Badge estática radio 8 (c/badge:80,88)
+  },
+  /** Insignias con texto (letra de línea, glifo de estado): son íconos, no párrafos. */
+  badgeFontScale: 1.3,
   hitSlop,
 } as const;
 
