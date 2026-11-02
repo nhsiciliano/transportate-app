@@ -11,3 +11,10 @@ jest.mock('react-native-nitro-modules', () => ({
     },
   },
 }));
+
+// NetInfo (onlineManager de TanStack Query, src/shared/query) busca su módulo nativo y, sin él,
+// tira el proceso de Jest apenas se registra un listener. Se usa el mock oficial de la librería
+// (README de @react-native-community/netinfo, "Errors while running Jest tests"): siempre conectado.
+jest.mock('@react-native-community/netinfo', () =>
+  jest.requireActual<object>('@react-native-community/netinfo/jest/netinfo-mock.js'),
+);

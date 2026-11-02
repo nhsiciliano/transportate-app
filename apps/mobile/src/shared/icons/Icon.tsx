@@ -1,21 +1,17 @@
 import { View } from 'react-native';
 
+import { useTheme } from '../theme';
 import { iconMap, type IconName } from './map';
 
 /** Tamaños permitidos en px (`docs/08-design-system.md`; `docs/02-obelisco-tokens.md` §4). */
 export type IconSize = 16 | 20 | 24 | 32;
-
-// TODO(tema): reemplazar por `colors.text.primary` de `useTheme()` cuando `src/shared/theme`
-// esté en `main` (lo publica la tarea 3.3). Hasta entonces el default es negro fijo, que se pisa
-// con la prop `color`.
-const DEFAULT_COLOR = '#000000';
 
 interface IconBaseProps {
   /** Nombre de uso del mapa curado (`map.ts`). */
   name: IconName;
   /** Lado en px. Default: 24. El área táctil de un botón-ícono la pone el botón, no el ícono. */
   size?: IconSize;
-  /** Color de relleno. Default: negro provisorio (ver TODO). Nunca hardcodear en pantallas. */
+  /** Color de relleno. Default: `colors.text.primary` del tema (claro u oscuro). Nunca hardcodear en pantallas. */
   color?: string;
   /** Para pruebas: va en el `View` contenedor. */
   testID?: string;
@@ -45,11 +41,12 @@ export type IconProps = DecorativeIconProps | LabeledIconProps;
 export function Icon({
   name,
   size = 24,
-  color = DEFAULT_COLOR,
+  color,
   accessibilityLabel,
   decorative,
   testID,
 }: IconProps) {
+  const { colors } = useTheme();
   const Glyph = iconMap[name];
   const hidden = decorative ?? accessibilityLabel === undefined;
 
@@ -69,7 +66,7 @@ export function Icon({
             ...(accessibilityLabel === undefined ? {} : { accessibilityLabel }),
           })}
     >
-      <Glyph width={size} height={size} fill={color} />
+      <Glyph width={size} height={size} fill={color ?? colors.text.primary} />
     </View>
   );
 }

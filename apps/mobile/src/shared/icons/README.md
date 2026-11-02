@@ -13,7 +13,7 @@ import { Icon } from '@/shared/icons';
 |---|---|---|
 | `name` | `IconName` (clave de `iconMap`) | — |
 | `size` | `16 \| 20 \| 24 \| 32` | `24` |
-| `color` | `string` | `#000000` provisorio (TODO: `colors.text.primary` cuando exista `useTheme`, tarea 3.3) |
+| `color` | `string` | `colors.text.primary` del tema activo (`useTheme()`, claro u oscuro) |
 | `accessibilityLabel` | `string`; si está, el ícono deja de ser decorativo | — |
 | `decorative` | `true` oculta a VoiceOver/TalkBack; `false` exige `accessibilityLabel` | `true` si no hay etiqueta |
 | `testID` | `string`, va en el `View` contenedor | — |
