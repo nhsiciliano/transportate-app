@@ -127,9 +127,38 @@ Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers 
 - Licencia del proyecto (el README raíz dice "a definir").
 - Siguen abiertas las suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`, heredadas de la Fase 1.
 
-## Fase 3 — Base de la app
+## Fase 3 — Base de la app · **en curso**
 
-_Sin iniciar._
+**Inicio:** 2026-11-02 · **Run Orca:** `run_d7af602adf06` · **Alcance:** `apps/mobile` (Expo SDK 58 + Expo Router), tema y componentes de `shared/ui`, íconos, fuentes, cliente API tipado, favoritos en MMKV y `DESIGN.md`. Sin features de Fase 4.
+
+### Cómo se trabaja
+
+Mismo esquema que en la Fase 2: coordinación con Orca desde `planner` (run `run_d7af602adf06`), workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`) y el coordinador integra a `main`. Cada worker toca solo sus carpetas: low-dev docs, íconos y versiones; mid-dev el scaffold, la navegación, fuentes, almacenamiento y favoritos; high-dev tema y `shared/ui`.
+
+### Qué se entregó
+
+| Qué | Tarea | Commits / dónde |
+|---|---|---|
+| Versiones de la Fase 3 verificadas con Context7 y npm (Expo SDK 58, MMKV, TanStack Query, tests, lint). Hallazgos: `eslint-config-expo` no corre con ESLint 10, `@testing-library/jest-native` deprecado, RNTL 14 con `test-renderer` y API async | 3.1 | `2840b3e` · [`versiones.md`](versiones.md) |
+| Scaffold de `apps/mobile`: Expo SDK 58, TypeScript estricto, ESLint, Jest + RNTL 14, `expo-dev-client`, `eas.json` (development, development-simulator, preview, production) | 3.2 | `ba07191` · [`../apps/mobile/README.md`](../apps/mobile/README.md) |
+| Navegación con Expo Router: 4 tabs nativas (Inicio, Colectivos, Subtes, Favoritos; Tránsito oculto), Ajustes y Acerca de como stack desde Inicio, safe areas y back nativo | 3.8 | `c6b141a`, `403ff05`, merge `f38f545` |
+| `DESIGN.md` escrito a mano (el skill Impeccable no estaba disponible) con color claro/oscuro, tipografía, forma, íconos, componentes, voz y accesibilidad | 3.6 | `063e984` · [`../DESIGN.md`](../DESIGN.md) |
+| Mapa curado de íconos: 45 usos sobre 42 archivos de `@material-symbols/svg-400` 0.48.2, todos verificados con HTTP 200 | 3.5 (investigación) | `90bd1dd` · [`08-design-system.md`](08-design-system.md) |
+| Componente `Icon` y `iconMap` tipado (`src/shared/icons`), SVG importados como componentes con `react-native-svg-transformer` 1.5.3 (`metro.config.js`) y transformer de Jest; `expo export --platform ios` verificado | 3.5 | `39fd932` · [`../apps/mobile/src/shared/icons/README.md`](../apps/mobile/src/shared/icons/README.md) |
+
+_(Se completa al cierre de la fase: tema y `ThemeProvider` (3.3), fuentes (3.4), componentes de `shared/ui` (3.7), cliente API y `QueryClient` (3.9), `FavoritosRepository` (3.10), tests y documentación final (3.11), con sus commits.)_
+
+### Decisiones técnicas hasta ahora
+
+1. **Íconos:** SVG importados como componentes con `react-native-svg-transformer` en vez de extraer el `path` a mano (ADR-0004); el mapa importa cada archivo de forma explícita, así que Metro empaqueta solo los 42 SVG del mapa. La estrella de "no es favorito" es la única excepción a FILL 1 (`rounded/star.svg`), a validar por el usuario.
+2. **Lint de la app:** config raíz con ESLint 10 más `eslint-plugin-react-hooks`; sin `eslint-plugin-react` ni `eslint-config-expo` (`versiones.md`).
+3. **Tests:** RNTL 14 (asíncrono, `test-renderer`) con matchers integrados; los `.svg` se reemplazan en Jest por un `View` con `testID`.
+
+### Pendiente
+
+- Todo lo marcado como "se completa al cierre" arriba.
+- Confirmar en el primer dev build la combinación `react-native-mmkv` 4.3.2 con `react-native-nitro-modules` 0.37.1 en RN 0.88 (`versiones.md`).
+- El usuario valida el identificador nativo provisorio (`app.transportate.mobile`), la excepción de la estrella y las suposiciones S1–S33.
 
 ## Fase 4 — Features
 

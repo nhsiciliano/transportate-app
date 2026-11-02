@@ -2,7 +2,7 @@
 
 App móvil (iOS y Android, Expo) con **colectivos, subte y tránsito de CABA en tiempo real**, sin cuentas, sin analytics y con la ubicación solo en el teléfono. Un proxy en Cloudflare Workers esconde las credenciales del GCBA, cachea y le entrega a la app un contrato JSON propio.
 
-**Estado: Fase 2 (proxy) en curso.** Están hechos el scaffold del monorepo, los contratos v1, las rutas `/v1/*` con caché, rate limit y estáticos desde R2, y el preprocesado de datos estáticos. Los adaptadores de subte y colectivos se están terminando; la app (`apps/mobile`) todavía no existe. Plan y fases: [`docs/00-plan.md`](docs/00-plan.md); qué se hizo en cada fase: [`docs/bitacora.md`](docs/bitacora.md).
+**Estado: Fase 2 (proxy) cerrada el 2026-11-02; Fase 3 (base de la app) en curso.** El proxy tiene las rutas `/v1/*` con caché, rate limit, estáticos desde R2 y los adaptadores de subte y colectivos, con los contratos v1 en `packages/contracts`. `apps/mobile` ya existe: Expo SDK 58 con Expo Router, las cuatro tabs nativas (Inicio, Colectivos, Subtes, Favoritos) con Ajustes y Acerca de como stack, tests con Jest y el componente `Icon` con Material Symbols; las pantallas son placeholders. El tema, las fuentes, los componentes de `shared/ui`, el cliente API y los favoritos están en desarrollo. Plan y fases: [`docs/00-plan.md`](docs/00-plan.md); qué se hizo en cada fase: [`docs/bitacora.md`](docs/bitacora.md).
 
 ## Estructura del repo
 

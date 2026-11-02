@@ -2,7 +2,7 @@
 
 Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y tránsito de CABA en tiempo real, sin cuentas ni datos personales. Esta carpeta reúne todo lo que se decide, se investiga y se verifica a lo largo del proyecto. El trabajo avanza por fases con freno y validación al final de cada una (ver `00-plan.md`).
 
-**Estado:** **Fase 2 (proxy) en curso.** La Fase 1 (investigación) se cerró el 2026-11-01. Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
+**Estado:** **Fase 3 (base de la app) en curso. Fase 2 cerrada el 2026-11-02.** La Fase 1 (investigación) se cerró el 2026-11-01. Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
 
 ## Cómo leer esto
 
@@ -24,7 +24,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`00-plan.md`](00-plan.md) | Plan maestro: contexto, decisiones de arquitectura, fases, riesgos | ✅ |
-| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fase 1 cerrada; Fase 2 en curso) |
+| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1 y 2 cerradas; Fase 3 en curso) |
 | [`versiones.md`](versiones.md) | Versiones fijadas y verificadas con Context7, y lo pendiente de fijar | ✅ |
 
 ### Investigación (Fase 1)
@@ -75,12 +75,12 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 
 Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecuencias**. Los ADR no se reescriben: si una decisión cambia, se crea uno nuevo que reemplaza al anterior y se marca el estado.
 
-### Fases siguientes (todavía no existen)
+### Fase 3 (app)
 
-| Documento | Fase | Contenido |
+| Documento | Contenido | Estado |
 |---|---|---|
-| `07-app.md` | 3 | Estructura y convenciones de la app |
-| [`08-design-system.md`](08-design-system.md) | 3 | Componentes Obelisco en React Native. **🚧 Hoy tiene solo la sección "Íconos (mapa curado)"; el resto lo completa la tarea 3.11** |
+| `07-app.md` | Estructura y convenciones de la app. Todavía no existe el archivo: lo escribe la tarea 3.11 (mientras tanto, [`../apps/mobile/README.md`](../apps/mobile/README.md)) | 🚧 |
+| [`08-design-system.md`](08-design-system.md) | Componentes Obelisco en React Native. Hoy tiene la sección "Íconos (mapa curado)" y cómo usar `Icon`; el resto lo completa la tarea 3.11 | 🚧 |
 
 `09-testing.md` y `10-deploy.md` ya existen y se amplían en las Fases 3 a 5 (tests de la app con Jest + RNTL, EAS Build y OTA).
 

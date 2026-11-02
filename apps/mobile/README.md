@@ -2,7 +2,7 @@
 
 App de Transportate para iOS y Android: **Expo SDK 58** (React Native 0.88, React 19.3) con **Expo Router** y TypeScript strict. Consume el proxy de `apps/proxy` con el contrato JSON v1 de `packages/contracts`.
 
-Estado: **Fase 3**. Están el scaffold y la navegación (tareas 3.2 y 3.8); las pantallas son placeholders. Tema, fuentes, íconos, componentes, cliente API y favoritos llegan en las otras tareas de la fase (`docs/00-plan.md`).
+Estado: **Fase 3**. Están el scaffold, la navegación y los íconos (tareas 3.2, 3.8 y 3.5); las pantallas son placeholders. Tema, fuentes, componentes, cliente API y favoritos llegan en las otras tareas de la fase (`docs/00-plan.md`).
 
 ## Instalar
 
@@ -75,7 +75,8 @@ pnpm typecheck   # tsc --noEmit
 apps/mobile/
 ├── app.config.ts          # config de Expo tipada (nombre, scheme, plugins, splash, typed routes)
 ├── eas.json               # perfiles de EAS Build
-├── jest.config.js         # preset jest-expo + transformIgnorePatterns para pnpm
+├── metro.config.js        # Metro con react-native-svg-transformer (importar .svg como componentes)
+├── jest.config.js         # preset jest-expo + transformIgnorePatterns para pnpm + transformer de .svg
 ├── eslint.config.mjs      # extiende el flat config de la raíz
 ├── test/                  # tests de Jest
 └── src/
@@ -91,7 +92,7 @@ apps/mobile/
     │       ├── favoritos/             # index
     │       └── transito/              # index (tab oculto)
     ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, transito, favoritos, ajustes)
-    └── shared/            # api, storage (y theme, ui: tareas 3.3–3.7)
+    └── shared/            # icons (3.5), api, storage (y theme, ui: tareas 3.3–3.7)
 ```
 
 **Alias:** `@/…` apunta a `src/…`. Lo resuelven TypeScript (`paths`), Metro (`experiments.tsconfigPaths`) y Jest (`moduleNameMapper`).
@@ -110,12 +111,12 @@ apps/mobile/
   - En SDK 58 se importan de `expo-router/native-tabs`. Hasta SDK 57, la doc las importaba de `expo-router/unstable-native-tabs`, ruta que sigue existiendo por compatibilidad.
   - Usan la barra nativa de cada plataforma (UITabBarController en iOS, BottomNavigationView de Material en Android), en línea con la plataforma "adaptive" de `PRODUCT.md`.
   - No tienen header: cada tab anida su `Stack` y el back nativo funciona en todos los niveles.
-  - Íconos provisorios: SF Symbols en iOS (`sf`) y Material Symbols en Android (`md`). Los pone el sistema, así que no hace falta `@expo/vector-icons`. El componente `Icon` propio llega en la tarea 3.5.
+  - Íconos provisorios de la barra: SF Symbols en iOS (`sf`) y Material Symbols en Android (`md`). Los pone el sistema, así que no hace falta `@expo/vector-icons`. El componente `Icon` (ver "Íconos") es para el contenido de las pantallas; la barra de tabs todavía no lo usa.
 - **Tab Tránsito oculto:**
   - La ruta existe, pero el trigger va con `hidden`, así que no se puede navegar a ella.
   - Decisión del usuario del 2026-11-01 (`docs/00-plan.md`, "Correcciones tras la Fase 1").
 - **pnpm con linker aislado (el default), sin `node-linker=hoisted`.**
-  - Expo soporta dependencias aisladas desde SDK 54 ([guía de monorepos](https://docs.expo.dev/guides/monorepos/)). Desde SDK 52, `expo/metro-config` configura Metro para monorepos solo, así que no hay `metro.config.js`.
+  - Expo soporta dependencias aisladas desde SDK 54 ([guía de monorepos](https://docs.expo.dev/guides/monorepos/)). Desde SDK 52, `expo/metro-config` configura Metro para monorepos solo; el `metro.config.js` de la app existe únicamente para el transformer de SVG (ver "Íconos").
   - Verificado con `expo-doctor` (20/20) y `expo export --platform ios`.
   - Si una librería nativa futura falla con dependencias aisladas, la salida documentada es `nodeLinker: hoisted` en `pnpm-workspace.yaml`. Después hay que volver a correr los tests del proxy.
 - **Ajustes en `pnpm-workspace.yaml` por la app:**
@@ -136,3 +137,22 @@ apps/mobile/
 - **Privacidad:**
   - Sin `expo-updates`, analytics ni permisos declarados. La ubicación llega en la Fase 4 (`docs/05-privacidad.md`).
   - Sin fuentes descargadas por red: Nunito y Open Sans se empaquetan con `@expo-google-fonts/*` (tarea 3.4).
+
+## Íconos
+
+El componente `Icon` (`src/shared/icons`) dibuja **Material Symbols Rounded, FILL 1**, como SVG (`@material-symbols/svg-400` 0.48.2 + `react-native-svg` 15.16.0), según ADR-0004.
+
+```tsx
+import { Icon } from '@/shared/icons';
+
+<Icon name="subtes" />                                            {/* decorativo, junto a un texto */}
+<Icon name="interrumpida" accessibilityLabel="Servicio interrumpido" />
+```
+
+- **Mapa curado:** `src/shared/icons/map.ts` importa de forma explícita los 42 SVG de los 45 usos documentados en [`docs/08-design-system.md`](../../docs/08-design-system.md). Solo esos entran al bundle. Sumar un ícono es una fila en `map.ts` y otra en el documento.
+- **Cómo se importan los `.svg`:** `metro.config.js` usa `react-native-svg-transformer/expo` (SVGR + SVGO) y mueve `svg` de `assetExts` a `sourceExts`. El módulo `*.svg` se declara en `src/shared/icons/svg.d.ts`. En Jest, `test/mocks/svg-transformer.js` reemplaza cada `.svg` por un `View` con `testID="svg:<archivo>"`.
+- **Accesibilidad:** decorativo por default (oculto a VoiceOver/TalkBack); con `accessibilityLabel` pasa a ser una imagen con esa etiqueta.
+- **Verificación:** `pnpm test` (`test/icons.test.tsx`) y `pnpm exec expo export --platform ios` desde `apps/mobile`.
+- **Pendiente:** el color por default es `#000000` provisorio hasta que exista `useTheme` (tarea 3.3). La estrella de "no es favorito" usa el glifo de contorno (FILL 0), única excepción a FILL 1, a validar por el usuario.
+
+Detalle y reglas de uso: [`src/shared/icons/README.md`](src/shared/icons/README.md).

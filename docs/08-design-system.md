@@ -78,9 +78,38 @@ Columnas: uso en la app → nombre en Material Symbols → archivo en `@material
 6. **Sentido.** Para las cabeceras de andén se usa `arrow_forward` junto al destino ("hacia Plaza de Mayo"); `swap_horiz` es para alternar entre dos sentidos.
 7. **Etiqueta de accesibilidad obligatoria.** Los SVG no traen texto: cada uso lleva `accessibilityLabel` en voseo y rioplatense (por ejemplo, la estrella: "Quitar de favoritos" / "Agregar a favoritos") o `accessibilityElementsHidden`/`importantForAccessibility="no"` si es decorativo y hay un texto al lado. Nunca solo color.
 
+### Uso en código
+
+El componente `Icon` y el mapa viven en `apps/mobile/src/shared/icons/` (README de la carpeta: [`../apps/mobile/src/shared/icons/README.md`](../apps/mobile/src/shared/icons/README.md)). Los nombres de uso en código son los del mapa en camelCase (`inicio`, `colectivos`, `subtes`, `favoritoOn`, `favoritoOff`, `sinConexion`, …); `iconMap` en `map.ts` es la lista completa y `IconName` el tipo.
+
+```tsx
+import { Icon } from '@/shared/icons';
+```
+
+Decorativo (default): hay un texto al lado que dice lo mismo, así que el ícono se oculta a VoiceOver y TalkBack.
+
+```tsx
+<View style={{ flexDirection: 'row', gap: 8 }}>
+  <Icon name="subtes" color={colors.text.primary} />
+  <Text>Subtes</Text>
+</View>
+```
+
+Con significado propio (por ejemplo, el estado de una línea o un botón-ícono): `accessibilityLabel` es obligatorio, en castellano rioplatense, y el ícono se expone como imagen con esa etiqueta.
+
+```tsx
+<Icon name="interrumpida" size={20} color={colors.danger.base} accessibilityLabel="Servicio interrumpido" />
+
+<Pressable onPress={alternarFavorito} accessibilityRole="button" accessibilityLabel="Quitar de favoritos">
+  <Icon name={esFavorito ? 'favoritoOn' : 'favoritoOff'} size={24} color={colors.primary.base} />
+</Pressable>
+```
+
+Reglas: `size` es 16, 20, 24 (default) o 32; el color sale siempre de los tokens del tema; el área táctil de un botón-ícono la pone el botón (≥ 44×44 pt / 48×48 dp). Los ejemplos suponen un `colors` que sale de `useTheme()` (tarea 3.3); los nombres exactos de los roles los define el tema, no este documento. Hasta que exista, el color por default de `Icon` es `#000000`, provisorio.
+
 ### Cómo se dibujan
 
-- Los SVG del paquete miden 48 px y usan `viewBox="0 -960 960 960"`. Como todos tienen **un solo `<path>`**, no hace falta un transformador de Metro: alcanza con extraer el atributo `d` de cada archivo del mapa a un módulo TypeScript de constantes (`as const`) con un script de build, y renderizar `<Svg viewBox="0 -960 960 960"><Path d={…} fill={color} /></Svg>` con `react-native-svg`. Así entra al bundle solo lo que el mapa usa (la consecuencia que anticipa ADR-0004). *(Es una recomendación de la investigación; el diseño final del componente es de la tarea 3.5.)*
+- Los SVG del paquete miden 48 px y usan `viewBox="0 -960 960 960"`. **Implementado (tarea 3.5):** cada archivo se importa como componente con `react-native-svg-transformer` 1.5.3 (SVGR, configurado en `apps/mobile/metro.config.js`) y `Icon` lo dibuja con `width`/`height` = `size` y `fill` = `color`. Metro empaqueta solo los 42 SVG que importa `map.ts`. Verificado con `expo export --platform ios`: el bundle trae los 42 `viewBox="0 -960 960 960"` y ningún `fill` fijo. Alternativa que se descartó: extraer el `d` de cada SVG a constantes con un script (todos tienen un solo `<path>`); se prefirió el transformer porque lo pide la tarea y evita un paso de build propio.
 - Tamaños de referencia: 24 px por defecto, 20 px dentro de badges y chips, 28 px para el tab *(suposición)* y 32 px en estados vacíos *(suposición, igual al ícono de Card)* (`docs/02-obelisco-tokens.md` §4 fija 20 px en Badge, 24 px en Alert y 32 px en el ícono de Card). El área táctil de un ícono-botón es siempre ≥ 44×44 pt / 48×48 dp, aunque el glifo sea más chico.
 - El color se hereda por `fill` desde los tokens del tema (claro y oscuro); no se hardcodea.
 
