@@ -50,6 +50,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | [`03-arquitectura.md`](03-arquitectura.md) | Monorepo, flujo upstream → adaptador → contrato Zod v1 → app, patrón adaptador, cómo agregar un servicio | ✅ |
 | [`04-escalabilidad.md`](04-escalabilidad.md) | Capa A / capa B, requests por día para 300 → 1.000.000 usuarios, límites y costos de Cloudflare, plan de migración | ✅ |
 | [`05-privacidad.md`](05-privacidad.md) | Principios, qué se guarda y qué no sale del teléfono, rate limiting, logs, texto de "Acerca de" | ✅ |
+| [`../DESIGN.md`](../DESIGN.md) | Sistema visual de la app (Obelisco v2 vigente adaptado a nativo): color claro/oscuro, tipografía, espaciado y forma, íconos, movimiento, componentes, voz y copy, accesibilidad, qué no hacer | ✅ (Fase 3, tarea 3.6) |
 
 ### Fase 2 (proxy)
 
@@ -79,7 +80,7 @@ Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecu
 | Documento | Fase | Contenido |
 |---|---|---|
 | `07-app.md` | 3 | Estructura y convenciones de la app |
-| `08-design-system.md` | 3 | Componentes Obelisco en React Native |
+| [`08-design-system.md`](08-design-system.md) | 3 | Componentes Obelisco en React Native. **🚧 Hoy tiene solo la sección "Íconos (mapa curado)"; el resto lo completa la tarea 3.11** |
 
 `09-testing.md` y `10-deploy.md` ya existen y se amplían en las Fases 3 a 5 (tests de la app con Jest + RNTL, EAS Build y OTA).
 
@@ -97,10 +98,10 @@ Cada una es un paquete **npm standalone** dentro de `tools/` (fuera del workspac
 
 ## `PRODUCT.md` y `DESIGN.md` viven en la raíz
 
-[`../PRODUCT.md`](../PRODUCT.md) (audiencia, modo de diseño, plataforma, restricciones) y `../DESIGN.md` (sistema visual, se genera en la Fase 3 a partir de los tokens) **no están en `docs/` a propósito**: el skill de diseño **Impeccable** los lee desde la raíz del proyecto, y si estuvieran acá no los encontraría. Para no perderlos de vista, este índice los enlaza; no se duplican.
+[`../PRODUCT.md`](../PRODUCT.md) (audiencia, modo de diseño, plataforma, restricciones) y [`../DESIGN.md`](../DESIGN.md) (sistema visual: color, tipografía, espaciado, íconos, componentes, voz y accesibilidad; escrito en la Fase 3 a partir de los tokens) **no están en `docs/` a propósito**: el skill de diseño **Impeccable** los lee desde la raíz del proyecto, y si estuvieran acá no los encontraría. Para no perderlos de vista, este índice los enlaza; no se duplican.
 
 - `PRODUCT.md` → **qué** es el producto y para quién (Fase 1, tarea 1.8). Lo escribe `init`.
-- `DESIGN.md` → **cómo** se ve (Fase 3, tarea 3.6). Lo genera `extract`/`document` a partir del código y los tokens.
+- `DESIGN.md` → **cómo** se ve (Fase 3, tarea 3.6). Se escribió a mano porque el skill no estaba disponible; cuando exista `shared/theme/tokens.ts` se regenera con `extract`/`document` a partir del código y los tokens.
 
 ## Convenciones
 
