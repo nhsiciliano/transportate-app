@@ -221,7 +221,7 @@ apps/mobile/
   - `eslint-plugin-react` 7.37.5 no (su peer llega a ESLint ^9.7), y `eslint-config-expo` depende de él. Por eso no se usan.
 - **Botón "Ajustes" del header:** es un `Pressable` con `router.push` y no un `Link asChild`, porque `Link` le pone `role="link"` y el lector de pantalla lo anunciaría como enlace.
 - **Splash:**
-  - Fondo `#ffffff` en claro y `#1d3343` (primary de Obelisco) en oscuro, sin imagen. Los assets de marca llegan en otra tarea.
+  - Marca de `design/brand/` centrada, 200 px de ancho, sobre `#ffffff` en claro y sobre `#1d3343` (primary de Obelisco) en oscuro (ver "Assets").
   - En Android, edge-to-edge es obligatorio desde RN 0.81; la opción `android.edgeToEdgeEnabled` ya no existe en `ExpoConfig` de SDK 58.
 - **Privacidad:**
   - Sin `expo-updates`, analytics ni permisos declarados. La ubicación llega en la Fase 4 (`docs/05-privacidad.md`).
@@ -245,3 +245,21 @@ import { Icon } from '@/shared/icons';
 - **Pendiente:** el color por default es `#000000` provisorio hasta que exista `useTheme` (tarea 3.3). La estrella de "no es favorito" usa el glifo de contorno (FILL 0), única excepción a FILL 1, a validar por el usuario.
 
 Detalle y reglas de uso: [`src/shared/icons/README.md`](src/shared/icons/README.md).
+
+## Assets
+
+Ícono, ícono adaptativo y splash vienen de la marca de [`design/brand/`](../../design/brand/README.md) (concepto, paleta y script de generación). **Las fuentes originales siguen en `design/brand/`**; Expo usa las copias de `assets/images/`, que hay que actualizar a mano si se regenera la marca.
+
+| Copia en `assets/images/` | Origen en `design/brand/` | Dónde se usa en `app.config.ts` |
+|---|---|---|
+| `icon.png` | `icon-ios-1024.png` | `icon` (iOS y fallback de Android): 1024×1024, sin alfa |
+| `adaptive-icon.png` | `adaptive-foreground-1024.png` | `android.adaptiveIcon.foregroundImage`, sobre `backgroundColor: '#1d3343'` |
+| `adaptive-icon-monochrome.png` | `adaptive-monochrome-1024.png` | `android.adaptiveIcon.monochromeImage` (íconos temáticos de Android 13+) |
+| `splash-icon-light.png` | `splash-icon-light-1024.png` | plugin `expo-splash-screen`: `image`, sobre `#ffffff` |
+| `splash-icon-dark.png` | `splash-icon-dark-1024.png` | plugin `expo-splash-screen`: `dark.image`, sobre `#1d3343` |
+| `notification-icon.png` | `notification-icon-96.png` | Sin uso todavía: reserva para notificaciones (la app no las usa; `docs/05-privacidad.md`) |
+
+- **Splash:** `imageWidth: 200` y `resizeMode: 'contain'`. Solo se aceptan PNG (con otro formato fallan los builds de producción). El splash no se ve en Expo Go ni en un dev client: hay que probarlo en un build `preview` o `production`.
+- **`ios.icon` no se declara.** El SDK 58 lo acepta como objeto `{ light, dark, tinted }` y, si existe, pisa a `icon`. No se usa porque la marca no trae variantes oscura ni tintada: el PNG monocromo es la silueta blanca para Android 13+, no una imagen tintada de iOS. iOS toma `icon`. Si se diseñan esas variantes, se agregan ahí.
+- **Verificación:** `test/app-config.test.ts` comprueba que cada ruta de imagen existe y es PNG, que `icon.png` es de 1024×1024 sin alfa y que el fondo del adaptativo coincide con `design/brand/adaptive-background.txt`. A mano: `pnpm exec expo config --type public` lista las rutas, `npx expo-doctor` (20/20) y `pnpm exec expo export --platform ios`.
+- **`@types/node`** está en `devDependencies` solo para ese test (usa `node:fs` y `node:path`); el `tsconfig.json` no lo incluye globalmente, el test lo referencia con `/// <reference types="node" />`.

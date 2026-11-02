@@ -146,15 +146,32 @@ Todos los providers reciben sus dependencias por prop, con un default de producc
 
 ## 9. Datos y red
 
-> **Se completa al cierre de la tarea 3.9** (high-dev: `src/shared/api`, `src/shared/query`).
+Cliente tipado del proxy y TanStack Query, hechos en la tarea 3.9. El detalle está en [`../apps/mobile/src/shared/api/README.md`](../apps/mobile/src/shared/api/README.md) (cliente, errores, hooks) y [`../apps/mobile/src/shared/query/README.md`](../apps/mobile/src/shared/query/README.md) (`QueryClient`, polling, red). Las rutas del proxy están en [`06-proxy.md`](06-proxy.md).
 
-Lo previsto, según [`03-arquitectura.md`](03-arquitectura.md) y [`versiones.md`](versiones.md):
+**Cliente (`src/shared/api`):**
 
-- Cliente tipado con los esquemas de `@transportate/contracts`, con la URL base de `EXPO_PUBLIC_API_URL`.
-- `QueryClient` con `focusManager` (AppState) y `onlineManager` (NetInfo).
-- Polling solo en primer plano, con el intervalo de `RefreshIntervalStore` y jitter.
-- Retry con backoff, y el persister de `shared/storage`.
-- La frescura se muestra con `FreshnessLabel` a partir de `meta.sourceTimestamp`.
+- `createApiClient({ baseUrl, fetch?, now?, timeoutMs?, etagCacheSize? })` tiene un método por ruta `/v1/*`. La URL base sale de `EXPO_PUBLIC_API_URL` (`getApiBaseUrl()`).
+- **Validación con Zod:** cada respuesta se valida con los esquemas de `@transportate/contracts`. Un JSON inválido o fuera de contrato es un `ContractError` y no se reintenta.
+- **Timeout** de 8 s con `AbortController`.
+- **ETag / 304:** guarda en memoria, por URL, el último `ETag` y el cuerpo ya validado (LRU de 64 entradas, no persistido). Manda `If-None-Match` y, ante un `304`, devuelve ese cuerpo con `fromCache: true`.
+- **Errores tipados** (`ApiError`, unión por `kind`): `network`, `timeout`, `http`, `contract` y `aborted`, con `retryable` y `userMessage()` en voseo ("No pudimos conectarnos", "El servicio de la Ciudad no responde en este momento.", "Algo falló de nuestro lado."). Los mensajes nunca llevan host, ids ni cuerpo crudo.
+- **Frescura:** los feeds llegan con `sourceTimestamp`, `stale` y `ageSeconds`, listos para `FreshnessLabel`. La edad se calcula con `sourceTimestamp` y no con `generatedAt`.
+- **Privacidad:** el único header propio es `Accept: application/json` (más `If-None-Match`). Sin User-Agent custom ni ids de dispositivo.
+- **Hooks por recurso:** `useEstadoSubtes`, `useAlertasSubtes`, `useArribosEstacion`, `useLineasColectivo`, `usePosicionesLinea`, `useArribosParada` y `useManifest`. Exponen `isPending` (Skeleton), `isRefreshError` (hay datos y falló la actualización: Alert en línea) e `isLoadingError` (sin datos: ErrorState).
+
+**`QueryClient` (`src/shared/query`):**
+
+- `focusManager` conectado a `AppState` y `onlineManager` a NetInfo. Sin conexión, las consultas quedan en pausa (`isPaused`) y la pantalla muestra lo persistido; `useIsOnline()` alimenta el `OfflineBanner`.
+- **Polling con jitter solo en primer plano:** el intervalo elegido (15, 20, 30 o 60 s; S17) ± 10 %, recalculado en cada ciclo. En segundo plano no hay polling (`refetchIntervalInBackground: false`); al volver a primer plano o a tener conexión se refresca lo vencido. Los estáticos (líneas de colectivo, manifiesto) no hacen polling.
+- **Retry solo de errores `retryable`:** como mucho 3 intentos, con backoff de 1 s, 2 s, 4 s… hasta 30 s y nunca menos que `retryAfterSeconds`.
+- `staleTime` = `meta.ttlSeconds` del último dato; `gcTime` de 24 h para servir offline.
+- **Último dato bueno:** si una actualización falla y ya había datos, se conservan; la pantalla muestra la Alert "No pudimos actualizar. Mostramos lo último que sabemos." y no el ErrorState.
+
+**Persistencia (`src/shared/storage/queryPersister.ts`):** persister asíncrono de TanStack Query sobre MMKV, clave `transportate.query-cache.v1`, una escritura por segundo como máximo, solo consultas exitosas. `maxAge` de 24 h y `buster: 'v1'` (la versión del contrato): si cambia el esquema, la caché vieja se descarta entera.
+
+**Orden de providers** en `src/app/_layout.tsx`: `SafeAreaProvider` → `ThemeProvider` → `QueryProvider` → `RefreshIntervalProvider` → `FavoritosProvider` → `Stack` (ver §3).
+
+**Estado a la Fase 3:** el cliente y los hooks están probados con `fetch` mockeado (`test/api/`, `src/shared/query/__tests__/`), pero ninguna pantalla los consume todavía: las features de la Fase 4 los usan.
 
 ## 10. Variables de entorno
 
@@ -199,5 +216,5 @@ La app necesita **dev client** porque MMKV y Nitro son nativos; no anda en Expo 
 | S18  | Tema Sistema (default) / Claro / Oscuro; un valor guardado inválido da Sistema                                                                                              | `briefs/README.md`                                 |
 | S19  | Deshacer con `remove` + `restore`, no con un diálogo                                                                                                                        | `briefs/README.md`                                 |
 | F3-a | Id de favorito `tipo:refId` (agregar dos veces devuelve el existente)                                                                                                       | `features/favoritos/model.ts`                      |
-| F3-b | Splash con fondo `#ffffff` en claro y `#1d3343` en oscuro, sin imagen hasta que estén los assets de marca                                                                   | `app.config.ts`                                    |
+| F3-b | Splash con la marca de `design/brand/` (200 px, `contain`) sobre `#ffffff` en claro y `#1d3343` en oscuro                                                                   | `app.config.ts`                                    |
 | F3-c | Identificador nativo `app.transportate.mobile`, provisorio y a confirmar por el usuario                                                                                     | `app.config.ts`                                    |

@@ -135,11 +135,11 @@ Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers 
 
 Mismo esquema que en la Fase 2: coordinación con Orca desde `planner` (Run `run_d7af602adf06`), workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`), cada uno tocando solo sus carpetas. El coordinador integró a `main` corriendo lint, typecheck y tests, y resolvió los conflictos de `package.json` y del lockfile entre ramas. Tres olas:
 
-1. **Ola 1:** low-dev versiones (3.1), `DESIGN.md` (3.6) y la investigación del mapa de íconos; mid-dev scaffold (3.2) y navegación (3.8); high-dev tema (3.3). En paralelo, la sesión Dev Images para los assets de marca.
+1. **Ola 1:** low-dev versiones (3.1), `DESIGN.md` (3.6) y la investigación del mapa de íconos; mid-dev scaffold (3.2) y navegación (3.8); high-dev tema (3.3). En paralelo, la sesión Dev Images para los assets de marca (ver abajo).
 2. **Ola 2:** low-dev componente `Icon` (3.5); mid-dev fuentes (3.4) y favoritos (3.10).
 3. **Ola 3:** high-dev componentes de `shared/ui` (3.7) y después cliente API y `QueryClient` (3.9); mid-dev tests y documentación de la app (3.11).
 
-Los assets de marca (ícono de la app y splash) quedaron demorados por un problema de herramienta en la sesión Dev Images: **la Fase 3 cierra sin ellos** y quedan como pendiente explícito.
+Los assets de marca (ícono de la app y splash) se demoraron por un problema de herramienta en la sesión Dev Images: la fase cerró primero sin ellos, y después se integraron y se enchufaron en Expo (ver la fila de assets de marca).
 
 ### Qué se entregó
 
@@ -156,6 +156,7 @@ Los assets de marca (ícono de la app y splash) quedaron demorados por un proble
 | Cliente API tipado con Zod y los esquemas de `@transportate/contracts` (ETag/304, timeout, errores tipados), un hook por recurso, `QueryClient` con `focusManager`/`onlineManager`, polling con jitter solo en primer plano y persister   | 3.9    | `0060a54`, `569c1fe`, `1f6228d`, `aa61686` · `apps/mobile/src/shared/api/`, `src/shared/query/`                                   |
 | `KeyValueStore` sobre MMKV, `FavoritosRepository` (alta, alias, reorden, borrado + restore, migración de esquema) y stores de tema e intervalo de refresco                                                                                | 3.10   | `b7fa68a`, `62fda41`, `d5a768c` · `apps/mobile/src/shared/storage/`, `src/features/favoritos/`                                   |
 | Tests de integración (providers, tema, favoritos, componentes) y documentación: `07-app.md`, `08-design-system.md` completo y la sección de la app en `09-testing.md`                                                                     | 3.11   | `030c116`, `12324c3` · [`07-app.md`](07-app.md), [`08-design-system.md`](08-design-system.md), [`09-testing.md`](09-testing.md)   |
+| Assets de marca de la sesión Dev Images (`design/brand/`: ícono iOS, adaptativo Android con monocromo, splash claro/oscuro, notificación, `mark.svg` y `generate.py`) enchufados en Expo: `icon`, `android.adaptiveIcon`, plugin `expo-splash-screen` y copias en `apps/mobile/assets/images/`; test de configuración (`app-config.test.ts`); `expo-doctor` 20/20 y `expo export --platform ios` OK | 3.2 (cierre) | `32da02b` (`design/brand/`) y el commit de la configuración · [`../design/brand/README.md`](../design/brand/README.md), [`../apps/mobile/README.md`](../apps/mobile/README.md#assets) |
 | Ajustes transversales: condición `default` en los `exports` de `packages/contracts` para Jest; tope de CPU del proxy robusto ante carga; `OfflineBanner` con rol `alert`                                                                  | varias | `4ecde8f`, `4e86fb6`, `19092c1`                                                                                                   |
 
 ### Decisiones técnicas
@@ -173,6 +174,9 @@ Los assets de marca (ícono de la app y splash) quedaron demorados por un proble
 11. **`Icon` toma su color del tema** (`colors.text.primary` por default) en lugar de un color fijo. La estrella de "no es favorito" es la única excepción a FILL 1 (`rounded/star.svg`).
 12. **Tope de CPU del proxy con el mínimo de 11 corridas** en frío, en lugar de la mediana: la carga de la máquina solo suma tiempo, así que el mínimo estima el CPU propio. No se saltea por `loadavg`, porque corre en workerd y escondería regresiones en CI.
 13. **Tema e intervalo de refresco persistidos en MMKV** desde el layout raíz (`aa61686`), con valores guardados inválidos que caen al default (Sistema / 20 s).
+14. **Los assets de marca los commiteó el coordinador**, no la sesión que los generó (Dev Images, con Codex): el sandbox de Codex no puede escribir el índice de Git ni correr el CLI de Orca. Por eso el commit `32da02b` lo hizo el coordinador, y esa sesión avisó con `LISTO <hash>` en la terminal en lugar de mandar `worker_done` por Orca (así lo pedía su brief).
+15. **`ios.icon` simple:** no se declara el objeto `{ light, dark, tinted }` aunque el SDK 58 lo soporta, porque la marca no trae esas variantes; iOS toma el `icon` de nivel superior.
+16. **`@types/node` en `apps/mobile`** (24.9.2, la misma del lockfile) solo para el test de configuración, con autorización del coordinador; no se tocó el `tsconfig.json`.
 
 ### Números
 
@@ -180,8 +184,8 @@ Los assets de marca (ícono de la app y splash) quedaron demorados por un proble
 | --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/contracts`  | 67                                    |                                                                                                                                         |
 | `apps/proxy`          | 87 (86 corren, 1 `skipped`)           | Dentro de workerd                                                                                                                       |
-| `apps/mobile`         | 268 en 24 suites                      | Jest con `jest-expo` + RNTL 14                                                                                                          |
-| **Monorepo**          | **422**                               | Más los 79 de `tools/gtfs`, que están fuera del workspace                                                                               |
+| `apps/mobile`         | 278 en 25 suites                      | Jest con `jest-expo` + RNTL 14                                                                                                          |
+| **Monorepo** | **432**                               | Más los 79 de `tools/gtfs`, que están fuera del workspace                                                                               |
 
 Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % statements, 88,2 % branches, 86,9 % funciones y 94,8 % líneas; recorrida al cierre con 3.9 integrada: 93,2 / 87,3 / 87,8 / 94,9.
 
@@ -190,7 +194,6 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 - **Sin dev build real todavía:** nada se corrió en un simulador o dispositivo. Siguen sin confirmar `react-native-mmkv` 4.3.2 con Nitro 0.37.1 en RN 0.88 (fallback 0.35.9), NetInfo, el comportamiento del 304 con `NSURLCache` de iOS y `NativeTabs` en dispositivo. Lo cubren Jest y `expo export`, no el hardware.
 - **Identificador nativo** `app.transportate.mobile` provisorio: hay que confirmarlo antes del primer build que se publique.
 - **`eas login` y proyecto en expo.dev:** los hace el usuario; sin eso no hay builds de EAS.
-- **Assets de marca pendientes** (ícono y splash): la Fase 3 cierra sin ellos.
 - **Las pantallas todavía no consumen los hooks** de `shared/api`: el cliente, los hooks y el polling están probados con `fetch` mockeado, pero ninguna pantalla los usa. La integración real contra el proxy llega con las features.
 - **Tests sensibles a la carga de la máquina:** con la máquina muy cargada (load average > 20, otros workers corriendo) se vieron timeouts de 5 s en `apps/proxy` (`health`, `edge-cached`) y en varios tests de UI de `apps/mobile` al correr `pnpm test` desde la raíz con todo en paralelo. Los mismos tests pasan al correr cada paquete solo.
 - **`forecastGTFS` sigue congelado:** los arribos de subte llegan vacíos con `stale` hasta que el upstream se descongele.

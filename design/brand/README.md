@@ -52,3 +52,8 @@ sips -g pixelWidth -g pixelHeight -g hasAlpha design/brand/*.png
 ```
 
 Licencia: obra original creada para el proyecto Transportate, sin material de terceros ni logos oficiales del GCBA.
+
+## Dónde se copian para Expo
+
+Esta carpeta es la **fuente**. Expo no lee de acá: usa las copias de [`apps/mobile/assets/images/`](../../apps/mobile/assets/images/) (`icon.png`, `adaptive-icon.png`, `adaptive-icon-monochrome.png`, `splash-icon-light.png`, `splash-icon-dark.png`, `notification-icon.png`), referenciadas en `apps/mobile/app.config.ts`. Si regenerás la marca con `generate.py`, copiá de nuevo los PNG; la tabla de correspondencia está en [`apps/mobile/README.md`](../../apps/mobile/README.md#assets) y `apps/mobile/test/app-config.test.ts` verifica que `adaptive-background.txt` coincida con el fondo del ícono adaptativo.
+

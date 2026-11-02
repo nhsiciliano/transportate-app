@@ -133,14 +133,16 @@ cd apps/mobile && npx jest --ci test/integracion.test.tsx   # un archivo
 cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; borrá coverage/ después)
 ```
 
-### Qué cubren (268 tests en 24 archivos, 2026-11-02)
+### Qué cubren (278 tests en 25 archivos, 2026-11-02)
 
 | Archivo | Cubre |
 |---|---|
 | `test/inicio.test.tsx`, `test/navegacion.test.tsx` | Inicio renderiza su título; stack Inicio → Ajustes → Acerca de; ruta inexistente → "no encontrado" |
 | `test/layout.test.tsx`, `test/fonts.test.tsx` | Splash oculto al cargar o fallar las fuentes; los 6 pesos exactos |
+| `test/app-config.test.ts` | `app.config.ts`: cada imagen de ícono, adaptativo y splash existe y es PNG; ícono de 1024×1024 sin alfa; fondo del adaptativo igual a `design/brand/adaptive-background.txt` |
 | `test/icons.test.tsx` | Mapa curado y `Icon` (tamaño, color, accesibilidad) |
 | `test/storage.test.ts` | `KeyValueStore` (memoria y mock oficial de MMKV) y persister de TanStack Query |
+| `test/api/*`, `src/shared/query/__tests__/*` | Cliente API (validación Zod, ETag/304, errores tipados), hooks (polling solo en primer plano, reintentos, último dato bueno), `QueryClient` (AppState, NetInfo, jitter) y persistencia en MMKV, todo con `fetch` mockeado |
 | `test/favoritos.test.tsx` | Repositorio: alta y duplicados, alias (trunca a 30), reorden, borrado + restore, `clear`, persistencia entre instancias, JSON corrupto, migración ficticia 0 → 1, `useFavoritos` |
 | `test/preferences.test.tsx` | Stores de tema e intervalo: defaults, persistencia, validación, suscripción, `usePreference` |
 | `test/integracion.test.tsx` | La app arranca con `ThemeProvider` + `FavoritosProvider` y tabs nativas en Inicio; cambio de tema → `useTheme().scheme` + persistencia; favoritos de punta a punta; `FreshnessLabel` viejo en warning oscuro; `OfflineBanner` |
@@ -150,5 +152,8 @@ cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; bo
 **Cobertura** (`jest --coverage`, informativa y sin umbral, 2026-11-02): **93,2 % statements, 88,2 % branches, 86,9 % funciones, 94,8 % líneas**.
 
 **Pendiente:**
-- Tests del cliente API y del `QueryClient` (tarea 3.9): `fetch` mockeado, `ErrorV1`, ETag/304 y `stale` ante un 503.
+- **Dev build en dispositivo o simulador:** nada de la app se corrió todavía en un dev client. Falta confirmar MMKV con Nitro, NetInfo, el 304 con `NSURLCache` en iOS y `NativeTabs` (Fase 4, primer build).
+- **Pruebas E2E** (flujos completos sobre el binario, por ejemplo con Maestro): no hay ninguna.
 - No se testean en Jest las tabs nativas en profundidad, MapLibre ni los módulos nativos reales. Eso se verifica en el dev client y en el `audit` de la Fase 5.
+
+Los tests del cliente API y del `QueryClient` (tarea 3.9) ya existen: `test/api/` y `src/shared/query/__tests__/`, con `fetch` mockeado, `ErrorV1`, ETag/304, polling en primer plano, reintentos, último dato bueno y persistencia.
