@@ -54,6 +54,38 @@ EAS necesita `eas login` y un proyecto creado en expo.dev: lo hace el usuario.
 - En un dispositivo físico, `localhost` no es tu computadora: usá la IP de tu red local. En el emulador de Android, `10.0.2.2`.
 - `.env` está en `.gitignore`.
 
+## Fuentes
+
+- **Familias:** Nunito para títulos y Open Sans para texto, en los pesos 400, 600 y 700. Son exactamente 6 archivos de `@expo-google-fonts/nunito` y `@expo-google-fonts/open-sans` 0.4.2, unos 0,79 MB en total.
+  - Se importan por subpath de peso (`@expo-google-fonts/nunito/600SemiBold`, etc.).
+  - Nunca se usa `@expo-google-fonts/dev`, que descarga las fuentes por red.
+- **Dónde está:** `src/shared/fonts`.
+  - `fontFamilies` tiene los nombres exactos: `fontFamilies.heading.bold` es `'Nunito_700Bold'`, `fontFamilies.body.regular` es `'OpenSans_400Regular'`, etc.
+  - `useAppFonts()` devuelve `{ loaded, error }`.
+- **Arranque (`src/app/_layout.tsx`):**
+  - `SplashScreen.preventAutoHideAsync()` se llama en el scope del módulo.
+  - El splash se oculta cuando las fuentes cargan **o fallan**. Si fallan, la app sigue con la fuente del sistema y el error se loguea solo en `__DEV__`.
+- **Por qué `useFonts` y no el config plugin de `expo-font`:**
+  - La doc de Expo prefiere el plugin, que embebe las fuentes en el binario.
+  - Pero con el plugin, iOS toma el nombre de familia del archivo (p. ej. "Nunito") y Android el nombre del archivo ("Nunito_400Regular"), así que el `fontFamily` cambiaría según la plataforma.
+  - Con `useFonts`, el nombre es el mismo en iOS, Android y Jest, y coincide con DESIGN.md §3.
+  - Los `.ttf` igual viajan dentro de la app como assets del bundle; no hay descargas.
+- **Escala de fuente:** no hay un `maxFontSizeMultiplier` global. Lo aplica cada componente: 1,3 en texto y 1,2 en títulos (DESIGN.md §3.2).
+
+## Almacenamiento local (MMKV)
+
+- **Versiones:** `react-native-mmkv` 4.3.2 y `react-native-nitro-modules` **0.37.1**.
+  - Nitro es dependencia directa para que pnpm deje una sola copia; si hay dos, aparece el error "Nitro was installed twice".
+  - `expo install --check` y `expo-doctor` lo aceptan.
+  - **Sin verificar en dispositivo:** si el primer dev build falla con 0.37.1, el fallback documentado es 0.35.9 (`docs/versiones.md`, decisión 6).
+- **Requiere dev client:** MMKV es un módulo nativo y no anda en Expo Go.
+- **Qué hay:** `src/shared/storage` (`KeyValueStore`, persister de TanStack Query) y `src/features/favoritos` (`FavoritosRepository`). El detalle está en los README de cada carpeta.
+- **TanStack Query** queda instalado para la tarea 3.9: `@tanstack/react-query`, `@tanstack/react-query-persist-client` y `@tanstack/query-async-storage-persister`, los tres en 5.105.1.
+- **Tests:** `pnpm test` desde `apps/mobile`, o `npx jest --ci test/favoritos.test.tsx` para uno solo.
+  - En Jest, `createMMKV()` devuelve el mock en memoria de la propia librería (README de react-native-mmkv, "Testing with Jest or Vitest").
+  - Igual hay que stubbear `react-native-nitro-modules` en `jest.setup.ts`, porque al importarse busca el TurboModule nativo y tira.
+  - Los tests de favoritos usan `MemoryKeyValueStore`.
+
 ## Tests, lint y tipos
 
 ```sh
@@ -68,6 +100,9 @@ pnpm typecheck   # tsc --noEmit
   - recorre Inicio → Ajustes (botón del header) → Acerca de;
   - verifica que una ruta inexistente cae en `+not-found`.
 - Las tabs nativas no se prueban en Jest, porque necesitan el módulo nativo.
+- `test/fonts.test.tsx` y `test/layout.test.tsx` cubren la carga de fuentes y que el splash se oculte también con error. En Jest los `.ttf` no están en el registro de assets y `loadAsync` rechaza: así se prueba el camino de error real, y el de éxito se prueba mockeando `useFonts`.
+- `test/storage.test.ts` prueba `KeyValueStore` (memoria y mock oficial de MMKV) y el persister.
+- `test/favoritos.test.tsx` cubre el alta, los duplicados, el alias, el reorden, el borrado con restore, `clear`, la persistencia entre instancias, el JSON corrupto, las migraciones y `useFavoritos`.
 
 ## Estructura
 
@@ -77,6 +112,7 @@ apps/mobile/
 ├── eas.json               # perfiles de EAS Build
 ├── metro.config.js        # Metro con react-native-svg-transformer (importar .svg como componentes)
 ├── jest.config.js         # preset jest-expo + transformIgnorePatterns para pnpm + transformer de .svg
+├── jest.setup.ts          # stub de react-native-nitro-modules para Jest
 ├── eslint.config.mjs      # extiende el flat config de la raíz
 ├── test/                  # tests de Jest
 └── src/
@@ -92,7 +128,7 @@ apps/mobile/
     │       ├── favoritos/             # index
     │       └── transito/              # index (tab oculto)
     ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, transito, favoritos, ajustes)
-    └── shared/            # icons (3.5), api, storage (y theme, ui: tareas 3.3–3.7)
+    └── shared/            # theme, ui, icons, fonts, storage, api
 ```
 
 **Alias:** `@/…` apunta a `src/…`. Lo resuelven TypeScript (`paths`), Metro (`experiments.tsconfigPaths`) y Jest (`moduleNameMapper`).
