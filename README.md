@@ -2,13 +2,13 @@
 
 App móvil (iOS y Android, Expo) con **colectivos, subte y tránsito de CABA en tiempo real**, sin cuentas, sin analytics y con la ubicación solo en el teléfono. Un proxy en Cloudflare Workers esconde las credenciales del GCBA, cachea y le entrega a la app un contrato JSON propio.
 
-**Estado: Fase 2 (proxy) cerrada el 2026-11-02; Fase 3 (base de la app) en curso.** El proxy tiene las rutas `/v1/*` con caché, rate limit, estáticos desde R2 y los adaptadores de subte y colectivos, con los contratos v1 en `packages/contracts`. `apps/mobile` ya existe: Expo SDK 58 con Expo Router, las cuatro tabs nativas (Inicio, Colectivos, Subtes, Favoritos) con Ajustes y Acerca de como stack, tests con Jest y el componente `Icon` con Material Symbols; las pantallas son placeholders. El tema, las fuentes, los componentes de `shared/ui`, el cliente API y los favoritos están en desarrollo. Plan y fases: [`docs/00-plan.md`](docs/00-plan.md); qué se hizo en cada fase: [`docs/bitacora.md`](docs/bitacora.md).
+**Estado: Fase 3 (base de la app) cerrada técnicamente el 2026-11-02, pendiente de validación; Fase 4 (features) sin iniciar.** El proxy (Fase 2) tiene las rutas `/v1/*` con caché, rate limit, estáticos desde R2 y los adaptadores de subte y colectivos, con los contratos v1 en `packages/contracts`. `apps/mobile` tiene la base de la app: Expo SDK 58 con Expo Router, cuatro tabs nativas (Inicio, Colectivos, Subtes, Favoritos) con Ajustes y Acerca de como stack, tema Obelisco claro y oscuro, fuentes Nunito y Open Sans, íconos Material Symbols, 15 componentes compartidos, cliente API tipado con TanStack Query y favoritos y preferencias guardados en el teléfono con MMKV. Las pantallas son placeholders y todavía no consumen el proxy; falta probar en un dev build real (simulador o dispositivo) y los assets de marca. Hay 422 tests (contracts 67, proxy 87, app 268). Plan y fases: [`docs/00-plan.md`](docs/00-plan.md); qué se hizo en cada fase: [`docs/bitacora.md`](docs/bitacora.md).
 
 ## Estructura del repo
 
 | Carpeta | Qué hay |
 |---|---|
-| [`apps/mobile/`](apps/mobile/README.md) | App iOS/Android con Expo SDK 58 y Expo Router (Fase 3, en curso). |
+| [`apps/mobile/`](apps/mobile/README.md) | App iOS/Android con Expo SDK 58 y Expo Router (base de la Fase 3 lista; features en la Fase 4). |
 | [`apps/proxy/`](apps/proxy/README.md) | Worker de Cloudflare con Hono 4: rutas `/v1/*`, adaptadores, caché, rate limit, estáticos desde R2. |
 | `packages/contracts/` | Esquemas Zod 4 del JSON v1 y tipos compartidos entre proxy y app. |
 | [`tools/`](tools/README.md) | Herramientas de investigación y preprocesado (paquetes npm sueltos, fuera del workspace pnpm). |

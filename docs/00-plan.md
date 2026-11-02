@@ -42,6 +42,10 @@ Resultado de la verificación empírica (`docs/01-api-transporte.md`) y de la bi
 
 Fase 2 completada (ver `docs/bitacora.md`): proxy en `apps/proxy` con capa A, adaptadores reales de subtes y colectivos (arribos por parada incluidos), estáticos desde R2, rate limiting, ETag/304, 154 tests en el monorepo + 79 en `tools/gtfs`, prueba de carga sin errores, despliegue documentado (sin ejecutar: requiere `wrangler login` del usuario). Ajustes al plan: la tarea 2.10 produce ahora `indice-colectivos.json` para el proxy además de los archivos para la app; `TransitoAdapter` es un stub 503; ADR-0006 y ADR-0007 quedan como Propuestas a confirmar. Fase 3 arranca con la app (`apps/mobile`) consumiendo los contratos de `packages/contracts` y el proxy en `preview`.
 
+## Estado tras la Fase 3 (2026-11-02)
+
+Fase 3 completada técnicamente (ver `docs/bitacora.md`; falta la validación del usuario): `apps/mobile` con Expo SDK 58 y Expo Router, 4 tabs nativas (Inicio, Colectivos, Subtes, Favoritos) y Ajustes y Acerca de como stack desde Inicio, tema Obelisco claro/oscuro, fuentes Nunito y Open Sans, `Icon` con 45 usos, 15 componentes de `shared/ui`, cliente API tipado con `QueryClient` (polling solo en primer plano, persister MMKV), `FavoritosRepository` y preferencias en MMKV, `DESIGN.md`, `docs/07-app.md` y `docs/08-design-system.md`; 422 tests en el monorepo (contracts 67, proxy 87, mobile 268) y `lint`, `typecheck` y `test` en verde. Ajustes al plan: `DESIGN.md` se escribió a mano porque el skill Impeccable no estaba disponible; las fuentes se cargan con `useFonts` y no con el plugin de `expo-font`; la tarea 3.2 no incluye assets de marca, que quedan pendientes (la sesión Dev Images se demoró) junto con la confirmación del identificador nativo `app.transportate.mobile`. Nada se probó todavía en un dev build real (simulador o dispositivo). Para la Fase 4: las features consumen los hooks de `src/shared/api` y los componentes de `shared/ui` (hoy ninguna pantalla los usa), arrancan por Subtes sobre pantallas que son placeholders, y Tránsito sigue oculto hasta que exista una fuente de cortes.
+
 ## Herramientas de trabajo transversales
 
 - **Impeccable (UX/UI).** Es el skill de diseño para todo lo visual. `PRODUCT.md` y `DESIGN.md` viven en la raíz del repo porque el launcher los lee de ahí; `docs/README.md` los enlaza. Comandos por fase: `init` y `shape` en Fase 1, `extract`/`document` en Fase 3, `shape` + `onboard` + `clarify` por feature en Fase 4, `audit` nativo + `adapt` nativo + `harden` + `critique` + `polish` en Fase 5. Antes de cualquier edición de UI se lee `craft-floor.md` como indica el skill.
@@ -128,11 +132,11 @@ Transportate/
 | 3.1 | Verificar con Context7 Expo SDK 58, Expo Router, MMKV, TanStack Query, react-native-svg, expo-font; anotar versiones | 🟢 |
 | 3.2 | Crear `apps/mobile` (Expo SDK 58, Router, TS strict, ESLint/Prettier, Jest + RNTL, `expo-dev-client`, `eas.json` dev/preview/production) | 🟡 |
 | 3.3 | `shared/theme/tokens.ts` con cita de origen por token; `ThemeProvider` claro/oscuro con `useColorScheme` y override desde Ajustes | 🟡 |
-| 3.4 | Fuentes Nunito y Open Sans con `@expo-google-fonts`; escala tipográfica con soporte de Dynamic Type (`allowFontScaling`, `maxFontSizeMultiplier` razonable) | 🟢 |
+| 3.4 | Fuentes Nunito y Open Sans con `@expo-google-fonts` (cargadas con `useFonts`, no con el plugin de `expo-font`); escala tipográfica con soporte de Dynamic Type (`allowFontScaling`, `maxFontSizeMultiplier` razonable) | 🟢 |
 | 3.5 | Componente `Icon` con `@material-symbols/svg-400` rounded fill + mapa curado | 🟢 |
-| 3.6 | Impeccable `extract`/`document`: generar `DESIGN.md` desde tokens; leer `craft-floor.md` antes de componentes | 🟢 |
+| 3.6 | Impeccable `extract`/`document`: generar `DESIGN.md` desde tokens; leer `craft-floor.md` antes de componentes (hecho a mano: el skill no estaba disponible) | 🟢 |
 | 3.7 | Componentes Obelisco en RN: Button, Card, Alert, Badge, Chip, SearchInput, Tabs, Skeleton, EmptyState, ErrorState, FreshnessLabel, con haptics, 44×44 y labels de accesibilidad | 🔴 |
-| 3.8 | Navegación con Expo Router: tabs Inicio/Colectivos/Subtes/Tránsito/Favoritos, Ajustes y Acerca de como stack; safe areas y back nativo | 🟡 |
+| 3.8 | Navegación con Expo Router: tabs Inicio/Colectivos/Subtes/Favoritos (Tránsito oculto, 4 tabs), Ajustes y Acerca de como stack; safe areas y back nativo | 🟡 |
 | 3.9 | Cliente API tipado con Zod (`shared/api`), `QueryClient` con `focusManager`/`onlineManager`, polling con jitter solo en foreground, retry con backoff, persister MMKV | 🔴 |
 | 3.10 | `FavoritosRepository` (interfaz) + implementación MMKV + tests (alta, alias, reorden, borrado, migración de esquema) | 🟡 |
 | 3.11 | Tests RNTL de componentes clave; documentar `07-app.md`, `08-design-system.md`; **frenar** | 🟡 |

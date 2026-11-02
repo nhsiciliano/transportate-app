@@ -2,7 +2,7 @@
 
 Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y tránsito de CABA en tiempo real, sin cuentas ni datos personales. Esta carpeta reúne todo lo que se decide, se investiga y se verifica a lo largo del proyecto. El trabajo avanza por fases con freno y validación al final de cada una (ver `00-plan.md`).
 
-**Estado:** **Fase 3 (base de la app) en curso. Fase 2 cerrada el 2026-11-02.** La Fase 1 (investigación) se cerró el 2026-11-01. Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
+**Estado:** **Fase 3 (base de la app) cerrada técnicamente el 2026-11-02, pendiente de validación; Fase 4 sin iniciar.** Las Fases 1 y 2 se cerraron el 2026-11-01 y el 2026-11-02. Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
 
 ## Cómo leer esto
 
@@ -24,7 +24,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`00-plan.md`](00-plan.md) | Plan maestro: contexto, decisiones de arquitectura, fases, riesgos | ✅ |
-| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1 y 2 cerradas; Fase 3 en curso) |
+| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1, 2 y 3 cerradas técnicamente) |
 | [`versiones.md`](versiones.md) | Versiones fijadas y verificadas con Context7, y lo pendiente de fijar | ✅ |
 
 ### Investigación (Fase 1)
@@ -101,7 +101,7 @@ Cada una es un paquete **npm standalone** dentro de `tools/` (fuera del workspac
 [`../PRODUCT.md`](../PRODUCT.md) (audiencia, modo de diseño, plataforma, restricciones) y [`../DESIGN.md`](../DESIGN.md) (sistema visual: color, tipografía, espaciado, íconos, componentes, voz y accesibilidad; escrito en la Fase 3 a partir de los tokens) **no están en `docs/` a propósito**: el skill de diseño **Impeccable** los lee desde la raíz del proyecto, y si estuvieran acá no los encontraría. Para no perderlos de vista, este índice los enlaza; no se duplican.
 
 - `PRODUCT.md` → **qué** es el producto y para quién (Fase 1, tarea 1.8). Lo escribe `init`.
-- `DESIGN.md` → **cómo** se ve (Fase 3, tarea 3.6). Se escribió a mano porque el skill no estaba disponible; cuando exista `shared/theme/tokens.ts` se regenera con `extract`/`document` a partir del código y los tokens.
+- `DESIGN.md` → **cómo** se ve (Fase 3, tarea 3.6). Se escribió a mano porque el skill no estaba disponible; ahora que existe `apps/mobile/src/shared/theme/tokens.ts`, queda pendiente regenerarlo con `extract`/`document` y revisarlo contra el código.
 
 ## Convenciones
 

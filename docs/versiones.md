@@ -151,6 +151,72 @@ Carga: `import { useFonts } from '@expo-google-fonts/nunito/useFonts'` (también
 8. **Fuentes:** cargar solo los 6 archivos de arriba y usar los `fontFamily` `Nunito_*` / `OpenSans_*` tal cual figuran.
 9. **Antigüedad mínima de pnpm (1 día):** las versiones de esta tabla ya la cumplen; si 3.2 se corre en un día en que una versión de la tabla tuviera menos de 24 h (no es el caso hoy), esperar en lugar de agregarla a `minimumReleaseAgeExclude`.
 
+## Instaladas en la Fase 3 (2026-11-02)
+
+Cierre de la tarea 3.1: lo que **quedó** en `apps/mobile/package.json` y resuelto en `pnpm-lock.yaml` al 2026-11-02. Todas son versiones exactas (sin `~` ni `^`); `@transportate/contracts` es `workspace:*`. La columna "vs. 3.1" compara con la tabla "Verificadas para la Fase 3": "igual" significa que la versión es la planificada.
+
+### `dependencies`
+
+| Paquete                                      | Versión instalada | vs. 3.1                                                                                                                      |
+| -------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `expo`                                       | 58.0.22           | igual                                                                                                                        |
+| `expo-router`                                | 58.0.29           | igual                                                                                                                        |
+| `expo-dev-client`                            | 58.0.18           | igual                                                                                                                        |
+| `expo-constants`                             | 58.0.14           | igual                                                                                                                        |
+| `expo-font`                                  | 58.0.11           | igual                                                                                                                        |
+| `expo-haptics`                               | 58.0.7            | igual                                                                                                                        |
+| `expo-linking`                               | 58.0.15           | igual                                                                                                                        |
+| `expo-splash-screen`                         | 58.0.12           | igual                                                                                                                        |
+| `expo-status-bar`                            | 58.0.4            | igual                                                                                                                        |
+| `react`                                      | 19.3.0            | igual (la de la plantilla del SDK, no la 19.3.1)                                                                             |
+| `react-dom`                                  | 19.3.0            | **difiere:** 3.1 decía que no hacía falta sin web; la app lo declara porque `expo` y `expo-router` lo piden como peer       |
+| `react-native`                               | 0.88.1            | igual                                                                                                                        |
+| `react-native-safe-area-context`             | 5.10.1            | igual (no la 5.11.0)                                                                                                         |
+| `react-native-screens`                       | 4.30.1            | igual                                                                                                                        |
+| `react-native-svg`                           | 15.16.0           | igual (la que elige `expo install` para SDK 58)                                                                              |
+| `@expo-google-fonts/nunito`                  | 0.4.2             | igual                                                                                                                        |
+| `@expo-google-fonts/open-sans`               | 0.4.2             | igual                                                                                                                        |
+| `@material-symbols/svg-400`                  | 0.48.2            | igual                                                                                                                        |
+| `react-native-mmkv`                          | 4.3.2             | igual                                                                                                                        |
+| `react-native-nitro-modules`                 | 0.37.1            | igual: la opción recomendada en 3.1 (fallback 0.35.9). **Confirmada en Jest y en `expo export`, no en un dev build real**    |
+| `@tanstack/react-query`                      | 5.105.1           | igual                                                                                                                        |
+| `@tanstack/query-async-storage-persister`    | 5.105.1           | igual (el persister síncrono, deprecado, no se instaló)                                                                      |
+| `@tanstack/react-query-persist-client`       | 5.105.1           | igual                                                                                                                        |
+| `@react-native-community/netinfo`            | 12.0.1            | igual                                                                                                                        |
+| `zod`                                        | 4.6.7             | **no estaba en 3.1:** el cliente API valida con los esquemas de `@transportate/contracts`, que usan Zod 4 (misma versión que Fase 2) |
+| `@transportate/contracts`                    | `workspace:*`     | **no estaba en 3.1:** contratos v1 compartidos con el proxy                                                                  |
+
+### `devDependencies`
+
+| Paquete                         | Versión instalada | vs. 3.1                                                                                                    |
+| ------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `typescript`                    | 6.0.3             | igual                                                                                                      |
+| `@types/react`                  | 19.3.0            | igual                                                                                                      |
+| `@types/jest`                   | 30.0.0            | igual                                                                                                      |
+| `jest`                          | 30.5.2            | igual                                                                                                      |
+| `jest-expo`                     | 58.0.13           | igual                                                                                                      |
+| `@testing-library/react-native` | 14.1.0            | igual                                                                                                      |
+| `eslint-plugin-react-hooks`     | 7.1.1             | igual (sin `eslint-plugin-react` ni `eslint-config-expo`, decisión 4 de 3.1)                               |
+| `react-native-svg-transformer`  | 1.5.3             | **no estaba en 3.1:** lo agregó la tarea 3.5 para importar los `.svg` como componentes (Context7 `/kristerkari/react-native-svg-transformer`) |
+
+ESLint 10.14.0 y Prettier 3.9.10 siguen en el `package.json` de la raíz, no en el de la app.
+
+### Peers resueltos solo en el lockfile (`autoInstallPeers`)
+
+No figuran en el `package.json` de la app pero quedaron instalados, con estas versiones:
+
+| Paquete                       | Versión en el lockfile | Comentario                                                                                                                               |
+| ----------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `test-renderer`               | 1.3.0                  | igual a lo planificado en 3.1 (la versión exacta que trae `jest-expo`), pero **no está declarado**: llega como peer de RNTL 14           |
+| `@react-native/jest-preset`   | 0.88.1                 | igual a lo planificado en 3.1, tampoco declarado: llega como peer de `jest-expo`                                                          |
+| `react-native-reanimated`     | 4.7.1                  | **3.1 decía que no hacía falta instalarlo.** Llega como peer opcional resuelto automáticamente; no lo usa ninguna pantalla              |
+| `react-native-worklets`       | 0.13.1                 | ídem. El SDK 58 declara `0.13.0` en `bundledNativeModules.json`                                                                           |
+| `react-native-gesture-handler` | 3.4.0                 | ídem. El SDK 58 declara `~3.3.0`: **la versión resuelta no coincide con la del SDK**                                                     |
+
+Si la Fase 4 necesita animaciones o gestos (por ejemplo, el bottom sheet de S24), conviene declarar estos tres con `pnpm expo install` para que queden alineados al SDK, en lugar de depender del lockfile.
+
+**Diferencias con lo planificado, en una línea:** (1) `react-dom` y `zod` se declararon de más respecto de 3.1; (2) se sumaron `@transportate/contracts` y `react-native-svg-transformer`; (3) `test-renderer` y `@react-native/jest-preset` quedan solo como peers resueltos por pnpm; (4) `react-native-gesture-handler` 3.4.0 y `react-native-worklets` 0.13.1 quedaron por encima de lo que fija el SDK; (5) Nitro 0.37.1 se confirmó solo en Jest, con el fallback 0.35.9 sin usar. `eas-cli` 27.2.0 no está en el monorepo (se corre con `npx eas-cli@27.2.0`).
+
 ## Pendiente de fijar
 
 Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al inicio de cada fase):
@@ -160,7 +226,8 @@ Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al ini
 | 2 | `autocannon` | prueba de carga local (2.12) |
 | 2 | Cómo testear Cache API y rate limit con `@cloudflare/vitest-plugin`; configuración compartida de ESLint/Prettier/TS en el monorepo | probar en `apps/proxy` |
 | 3 | `eas-cli` | consultar Context7 (solo se verificó la versión en npm) |
-| 3 | `react-native-nitro-modules` con `react-native-mmkv` en RN 0.88 | confirmar en el primer dev build (decisión 6) |
+| 3 | `react-native-nitro-modules` con `react-native-mmkv` en RN 0.88 | confirmar en el primer dev build (decisión 6); hasta ahora solo en Jest y `expo export` |
+| 3 | Alinear `react-native-gesture-handler`, `react-native-reanimated` y `react-native-worklets` al SDK | si la Fase 4 los usa, declararlos con `expo install` |
 | 4 | `@maplibre/maplibre-react-native`, `expo-location` | fijar al empezar la Fase 4 |
 | 5 | EAS Build / Update | si se usa OTA, declararlo en `05-privacidad.md` |
 

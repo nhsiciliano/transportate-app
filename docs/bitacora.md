@@ -127,38 +127,84 @@ Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers 
 - Licencia del proyecto (el README raíz dice "a definir").
 - Siguen abiertas las suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`, heredadas de la Fase 1.
 
-## Fase 3 — Base de la app · **en curso**
+## Fase 3 — Base de la app · **completada, pendiente de validación del usuario**
 
-**Inicio:** 2026-11-02 · **Run Orca:** `run_d7af602adf06` · **Alcance:** `apps/mobile` (Expo SDK 58 + Expo Router), tema y componentes de `shared/ui`, íconos, fuentes, cliente API tipado, favoritos en MMKV y `DESIGN.md`. Sin features de Fase 4.
+**Inicio:** 2026-11-02 · **Cierre técnico:** 2026-11-02 · **Run Orca:** `run_d7af602adf06` · **Alcance:** `apps/mobile` (Expo SDK 58 + Expo Router), tema y componentes de `shared/ui`, íconos, fuentes, cliente API tipado, favoritos y preferencias en MMKV, `DESIGN.md` y documentación de la app. Sin features de Fase 4: las pantallas son placeholders.
 
-### Cómo se trabaja
+### Cómo se trabajó
 
-Mismo esquema que en la Fase 2: coordinación con Orca desde `planner` (run `run_d7af602adf06`), workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`) y el coordinador integra a `main`. Cada worker toca solo sus carpetas: low-dev docs, íconos y versiones; mid-dev el scaffold, la navegación, fuentes, almacenamiento y favoritos; high-dev tema y `shared/ui`.
+Mismo esquema que en la Fase 2: coordinación con Orca desde `planner` (Run `run_d7af602adf06`), workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`), cada uno tocando solo sus carpetas. El coordinador integró a `main` corriendo lint, typecheck y tests, y resolvió los conflictos de `package.json` y del lockfile entre ramas. Tres olas:
+
+1. **Ola 1:** low-dev versiones (3.1), `DESIGN.md` (3.6) y la investigación del mapa de íconos; mid-dev scaffold (3.2) y navegación (3.8); high-dev tema (3.3). En paralelo, la sesión Dev Images para los assets de marca.
+2. **Ola 2:** low-dev componente `Icon` (3.5); mid-dev fuentes (3.4) y favoritos (3.10).
+3. **Ola 3:** high-dev componentes de `shared/ui` (3.7) y después cliente API y `QueryClient` (3.9); mid-dev tests y documentación de la app (3.11).
+
+Los assets de marca (ícono de la app y splash) quedaron demorados por un problema de herramienta en la sesión Dev Images: **la Fase 3 cierra sin ellos** y quedan como pendiente explícito.
 
 ### Qué se entregó
 
-| Qué | Tarea | Commits / dónde |
-|---|---|---|
-| Versiones de la Fase 3 verificadas con Context7 y npm (Expo SDK 58, MMKV, TanStack Query, tests, lint). Hallazgos: `eslint-config-expo` no corre con ESLint 10, `@testing-library/jest-native` deprecado, RNTL 14 con `test-renderer` y API async | 3.1 | `2840b3e` · [`versiones.md`](versiones.md) |
-| Scaffold de `apps/mobile`: Expo SDK 58, TypeScript estricto, ESLint, Jest + RNTL 14, `expo-dev-client`, `eas.json` (development, development-simulator, preview, production) | 3.2 | `ba07191` · [`../apps/mobile/README.md`](../apps/mobile/README.md) |
-| Navegación con Expo Router: 4 tabs nativas (Inicio, Colectivos, Subtes, Favoritos; Tránsito oculto), Ajustes y Acerca de como stack desde Inicio, safe areas y back nativo | 3.8 | `c6b141a`, `403ff05`, merge `f38f545` |
-| `DESIGN.md` escrito a mano (el skill Impeccable no estaba disponible) con color claro/oscuro, tipografía, forma, íconos, componentes, voz y accesibilidad | 3.6 | `063e984` · [`../DESIGN.md`](../DESIGN.md) |
-| Mapa curado de íconos: 45 usos sobre 42 archivos de `@material-symbols/svg-400` 0.48.2, todos verificados con HTTP 200 | 3.5 (investigación) | `90bd1dd` · [`08-design-system.md`](08-design-system.md) |
-| Componente `Icon` y `iconMap` tipado (`src/shared/icons`), SVG importados como componentes con `react-native-svg-transformer` 1.5.3 (`metro.config.js`) y transformer de Jest; `expo export --platform ios` verificado | 3.5 | `39fd932` · [`../apps/mobile/src/shared/icons/README.md`](../apps/mobile/src/shared/icons/README.md) |
+| Qué                                                                                                                                                                                                                                       | Tarea  | Commits / dónde                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Versiones de la Fase 3 verificadas con Context7 y npm (Expo SDK 58, MMKV, TanStack Query, tests, lint) y las decisiones que le piden a la fase                                                                                            | 3.1    | `2840b3e` · [`versiones.md`](versiones.md)                                                                                        |
+| Scaffold de `apps/mobile`: Expo SDK 58, TypeScript estricto, ESLint, Jest + RNTL 14, `expo-dev-client`, `eas.json` (development, development-simulator, preview, production)                                                              | 3.2    | `ba07191` · [`../apps/mobile/README.md`](../apps/mobile/README.md)                                                                |
+| Tokens Obelisco con cita (claro + oscuro derivado, contrastes verificados en tests) y `ThemeProvider` Sistema / Claro / Oscuro                                                                                                            | 3.3    | `49477a6`, `ff2b820` · `apps/mobile/src/shared/theme/`                                                                            |
+| Fuentes Nunito y Open Sans (6 pesos) con `useFonts` y splash que se oculta también si falla la carga                                                                                                                                     | 3.4    | `5cc647b` · `apps/mobile/src/shared/fonts/`                                                                                       |
+| Mapa curado de 45 usos sobre 42 SVG de `@material-symbols/svg-400` 0.48.2 (verificados con HTTP 200) y componente `Icon` con `react-native-svg-transformer`                                                                               | 3.5    | `90bd1dd`, `39fd932` · `apps/mobile/src/shared/icons/`                                                                            |
+| `DESIGN.md` escrito a mano (el skill Impeccable no estaba disponible): color claro/oscuro, tipografía, forma, íconos, componentes, voz y accesibilidad                                                                                    | 3.6    | `063e984` · [`../DESIGN.md`](../DESIGN.md)                                                                                        |
+| 15 componentes de `shared/ui` (Alert, Badge, Button, Card, Chip, EmptyState, ErrorState, FreshnessLabel, LineBadge, OfflineBanner, SearchInput, SegmentedControl, Skeleton, StatusChip, Text) con háptica, 44×44 y etiquetas de accesibilidad | 3.7    | `ff2b820`, `76e957f` · `apps/mobile/src/shared/ui/`                                                                               |
+| Navegación con Expo Router: 4 tabs nativas (Inicio, Colectivos, Subtes, Favoritos; Tránsito oculto), Ajustes y Acerca de como stack desde Inicio, safe areas y back nativo                                                                | 3.8    | `c6b141a`, `403ff05`, merge `f38f545`                                                                                             |
+| Cliente API tipado con Zod y los esquemas de `@transportate/contracts` (ETag/304, timeout, errores tipados), un hook por recurso, `QueryClient` con `focusManager`/`onlineManager`, polling con jitter solo en primer plano y persister   | 3.9    | `0060a54`, `569c1fe`, `1f6228d`, `aa61686` · `apps/mobile/src/shared/api/`, `src/shared/query/`                                   |
+| `KeyValueStore` sobre MMKV, `FavoritosRepository` (alta, alias, reorden, borrado + restore, migración de esquema) y stores de tema e intervalo de refresco                                                                                | 3.10   | `b7fa68a`, `62fda41`, `d5a768c` · `apps/mobile/src/shared/storage/`, `src/features/favoritos/`                                   |
+| Tests de integración (providers, tema, favoritos, componentes) y documentación: `07-app.md`, `08-design-system.md` completo y la sección de la app en `09-testing.md`                                                                     | 3.11   | `030c116`, `12324c3` · [`07-app.md`](07-app.md), [`08-design-system.md`](08-design-system.md), [`09-testing.md`](09-testing.md)   |
+| Ajustes transversales: condición `default` en los `exports` de `packages/contracts` para Jest; tope de CPU del proxy robusto ante carga; `OfflineBanner` con rol `alert`                                                                  | varias | `4ecde8f`, `4e86fb6`, `19092c1`                                                                                                   |
 
-_(Se completa al cierre de la fase: tema y `ThemeProvider` (3.3), fuentes (3.4), componentes de `shared/ui` (3.7), cliente API y `QueryClient` (3.9), `FavoritosRepository` (3.10), tests y documentación final (3.11), con sus commits.)_
+### Decisiones técnicas
 
-### Decisiones técnicas hasta ahora
+1. **Tabs nativas (`NativeTabs` de `expo-router/native-tabs`)** en lugar de `Tabs` de JS: la barra nativa de cada plataforma, en línea con la plataforma "adaptive" de `PRODUCT.md`.
+2. **Lint de la app:** config raíz con ESLint 10 más `eslint-plugin-react-hooks` 7.1.1. Sin `eslint-plugin-react` ni `eslint-config-expo`: el primero falla bajo ESLint 10 (`getFilename is not a function`, probado el 2026-11-02) y el segundo depende de él ([`versiones.md`](versiones.md)).
+3. **Tests con RNTL 14:** asíncrono (`await render`, `await fireEvent`), `test-renderer` en lugar de `react-test-renderer` y matchers integrados (sin `@testing-library/jest-native`, deprecado).
+4. **`hoistPattern` sin `@types/jsdom`** en `pnpm-workspace.yaml`: `jest-expo` lo trae y, si se iza, los tipos de Vitest lo encuentran y meten `lib.dom` en el typecheck del proxy, que rompe `caches.default` de Workers.
+5. **`useFonts` en lugar del config plugin de `expo-font`:** con el plugin el nombre de familia difiere entre iOS y Android; con `useFonts` es el mismo (`Nunito_700Bold`, …) en iOS, Android y Jest, y coincide con `DESIGN.md` §3.
+6. **MMKV 4 con `react-native-nitro-modules` 0.37.1** como dependencia directa (una sola copia). En Jest, MMKV usa su mock en memoria y `jest.setup.ts` reemplaza Nitro por un stub, porque busca el TurboModule nativo al importarse.
+7. **Persister asíncrono de TanStack Query con adaptador MMKV:** `createSyncStoragePersister` está deprecado; el asíncrono acepta un storage cuyos métodos son síncronos. Clave `transportate.query-cache.v1`, `buster` `v1`, `maxAge` y `gcTime` de 24 h.
+8. **Condición `default` en los `exports` de `@transportate/contracts`:** `jest-expo` resuelve con `require`/`default` y no encontraba el paquete, que solo exportaba `import`. `default` apunta al mismo ESM de `dist`.
+9. **Mock global de NetInfo** en `jest.setup.ts` (siempre conectado): el módulo busca su implementación nativa y, sin ella, tira.
+10. **`react-native-svg-transformer` 1.5.3** para importar los `.svg` como componentes (SVGR + SVGO); el mapa importa cada archivo de forma explícita, así que Metro empaqueta solo los 42 del mapa. En Jest cada `.svg` se reemplaza por un `View` con `testID`.
+11. **`Icon` toma su color del tema** (`colors.text.primary` por default) en lugar de un color fijo. La estrella de "no es favorito" es la única excepción a FILL 1 (`rounded/star.svg`).
+12. **Tope de CPU del proxy con el mínimo de 11 corridas** en frío, en lugar de la mediana: la carga de la máquina solo suma tiempo, así que el mínimo estima el CPU propio. No se saltea por `loadavg`, porque corre en workerd y escondería regresiones en CI.
+13. **Tema e intervalo de refresco persistidos en MMKV** desde el layout raíz (`aa61686`), con valores guardados inválidos que caen al default (Sistema / 20 s).
 
-1. **Íconos:** SVG importados como componentes con `react-native-svg-transformer` en vez de extraer el `path` a mano (ADR-0004); el mapa importa cada archivo de forma explícita, así que Metro empaqueta solo los 42 SVG del mapa. La estrella de "no es favorito" es la única excepción a FILL 1 (`rounded/star.svg`), a validar por el usuario.
-2. **Lint de la app:** config raíz con ESLint 10 más `eslint-plugin-react-hooks`; sin `eslint-plugin-react` ni `eslint-config-expo` (`versiones.md`).
-3. **Tests:** RNTL 14 (asíncrono, `test-renderer`) con matchers integrados; los `.svg` se reemplazan en Jest por un `View` con `testID`.
+### Números
 
-### Pendiente
+| Paquete               | Tests (2026-11-02)                    | Notas                                                                                                                                   |
+| --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/contracts`  | 67                                    |                                                                                                                                         |
+| `apps/proxy`          | 87 (86 corren, 1 `skipped`)           | Dentro de workerd                                                                                                                       |
+| `apps/mobile`         | 268 en 24 suites                      | Jest con `jest-expo` + RNTL 14                                                                                                          |
+| **Monorepo**          | **422**                               | Más los 79 de `tools/gtfs`, que están fuera del workspace                                                                               |
 
-- Todo lo marcado como "se completa al cierre" arriba.
-- Confirmar en el primer dev build la combinación `react-native-mmkv` 4.3.2 con `react-native-nitro-modules` 0.37.1 en RN 0.88 (`versiones.md`).
-- El usuario valida el identificador nativo provisorio (`app.transportate.mobile`), la excepción de la estrella y las suposiciones S1–S33.
+Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % statements, 88,2 % branches, 86,9 % funciones y 94,8 % líneas; recorrida al cierre con 3.9 integrada: 93,2 / 87,3 / 87,8 / 94,9.
+
+### Riesgos abiertos que pasan a Fase 4
+
+- **Sin dev build real todavía:** nada se corrió en un simulador o dispositivo. Siguen sin confirmar `react-native-mmkv` 4.3.2 con Nitro 0.37.1 en RN 0.88 (fallback 0.35.9), NetInfo, el comportamiento del 304 con `NSURLCache` de iOS y `NativeTabs` en dispositivo. Lo cubren Jest y `expo export`, no el hardware.
+- **Identificador nativo** `app.transportate.mobile` provisorio: hay que confirmarlo antes del primer build que se publique.
+- **`eas login` y proyecto en expo.dev:** los hace el usuario; sin eso no hay builds de EAS.
+- **Assets de marca pendientes** (ícono y splash): la Fase 3 cierra sin ellos.
+- **Las pantallas todavía no consumen los hooks** de `shared/api`: el cliente, los hooks y el polling están probados con `fetch` mockeado, pero ninguna pantalla los usa. La integración real contra el proxy llega con las features.
+- **Tests sensibles a la carga de la máquina:** con la máquina muy cargada (load average > 20, otros workers corriendo) se vieron timeouts de 5 s en `apps/proxy` (`health`, `edge-cached`) y en varios tests de UI de `apps/mobile` al correr `pnpm test` desde la raíz con todo en paralelo. Los mismos tests pasan al correr cada paquete solo.
+- **`forecastGTFS` sigue congelado:** los arribos de subte llegan vacíos con `stale` hasta que el upstream se descongele.
+- Heredados de la Fase 2: sin despliegue a `preview` (requiere `wrangler login` del usuario), Cache API sin efecto en `*.workers.dev` y aprendizaje de paradas pendiente de ADR-0007.
+
+### Pendiente de decisión del usuario
+
+- Identificador nativo `app.transportate.mobile` (`app.config.ts`).
+- Validar [`DESIGN.md`](../DESIGN.md) y sus suposiciones marcadas.
+- La estrella de "no es favorito" con el glifo de contorno (FILL 0), excepción a FILL 1.
+- Los topes de escala de fuente: 1,3 en texto corrido y 1,2 en títulos y etiquetas de controles.
+- Licencia del proyecto (el README raíz dice "a definir").
+- ADR-0006 (paradas de colectivo) y ADR-0007 (aprendizaje de paradas), que siguen como **Propuestas**.
+- Siguen abiertas las suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`.
 
 ## Fase 4 — Features
 

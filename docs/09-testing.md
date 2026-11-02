@@ -133,7 +133,7 @@ cd apps/mobile && npx jest --ci test/integracion.test.tsx   # un archivo
 cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; borrá coverage/ después)
 ```
 
-### Qué cubren (190 tests en 18 archivos, 2026-11-02)
+### Qué cubren (268 tests en 24 archivos, 2026-11-02)
 
 | Archivo | Cubre |
 |---|---|
