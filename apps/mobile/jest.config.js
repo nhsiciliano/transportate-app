@@ -15,6 +15,7 @@ module.exports = {
   transform: {
     '\\.svg$': '<rootDir>/test/mocks/svg-transformer.js',
   },
+  setupFiles: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
