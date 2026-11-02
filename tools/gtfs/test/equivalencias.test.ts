@@ -5,8 +5,14 @@ import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { learnFromCapturas, type LearnedStop } from '../src/lib/capturas.js';
 import type { TripObs, VehicleObs } from '../src/lib/rt.js';
-import { EquivalenciaSchema, type Parada } from '../src/schemas.js';
-import { buildEquivalencias, buildParadaGrid, snapToParada } from '../src/steps/equivalencias.js';
+import { EquivalenciaParadaV1 } from '@transportate/contracts';
+import type { Parada } from '../src/schemas.js';
+import {
+  buildEquivalencias,
+  buildParadaGrid,
+  snapToParada,
+  toPublished,
+} from '../src/steps/equivalencias.js';
 
 // ~0,000009° de latitud ≈ 1 m
 const M = 0.000009;
@@ -89,7 +95,10 @@ describe('buildEquivalencias (semilla GTFS 2021)', () => {
     const { equivalencias, stats } = run(new Map([['111', at(25)]]), [veh('111', 300)]);
     expect(equivalencias).toHaveLength(1);
     const e = equivalencias[0];
-    expect(EquivalenciaSchema.parse(e)).toEqual(e);
+    expect(EquivalenciaParadaV1.parse(toPublished(equivalencias)[0])).toMatchObject({
+      stopId: '111',
+    });
+    expect(e?.observaciones).toBe(1);
     expect(e).toMatchObject({
       stopId: '111',
       paradaId: pid(1),
@@ -104,6 +113,8 @@ describe('buildEquivalencias (semilla GTFS 2021)', () => {
     const e = run(new Map([['112', at(60)]]), [veh('112', 100)]).equivalencias[0];
     expect(e).toMatchObject({ origen: 'gtfs2021', paradaId: null, distanciaM: null });
     expect(e?.confianza).toBeLessThan(0.5);
+    // No se publica: la app no puede usar un stop_id sin parada.
+    expect(toPublished(e ? [e] : [])).toEqual([]);
   });
 
   it('descarta el stop_id si queda a más de 1 km de los vehículos que lo informan', () => {
@@ -153,8 +164,13 @@ describe('buildEquivalencias (semilla GTFS 2021)', () => {
       ],
     ]);
     const e = run(new Map([['116', at(10)]]), [veh('116', 200)], [], learned).equivalencias[0];
-    expect(e).toMatchObject({ paradaId: pid(2), origen: 'ajustada-ba', distanciaM: null });
-    expect(e?.observaciones).toMatch(/reemplaza a la coordenada GTFS 2021/);
+    expect(e).toMatchObject({
+      paradaId: pid(2),
+      origen: 'aprendida',
+      distanciaM: null,
+      observaciones: 8,
+    });
+    expect(e?.notas).toMatch(/reemplaza a la coordenada GTFS 2021/);
   });
 });
 

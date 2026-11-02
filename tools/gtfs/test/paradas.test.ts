@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import { buildParadas, normalizeBarrio, paradaId } from '../src/steps/paradas.js';
-import { ParadaSchema } from '../src/schemas.js';
+import { ParadaV1 } from '@transportate/contracts';
 
 const HEADER =
   'CALLE,ALT PLANO,DIRECCION,coord_X,coord_Y,COMUNA,BARRIO,L1,l1_sen,L2,l2_sen,L3,l3_sen,L4,l4_sen,L5,l5_sen,L6,l6_sen';
@@ -39,7 +39,7 @@ describe('buildParadas', () => {
     expect(stats.duplicadasFusionadas).toBe(1);
     expect(stats.sinCoordenadas).toBe(1);
     expect(paradas).toHaveLength(4);
-    for (const p of paradas) expect(ParadaSchema.parse(p)).toEqual(p);
+    for (const p of paradas) expect(ParadaV1.parse(p)).toEqual(p);
 
     const defensa = paradas.find((p) => p.calle === 'Defensa');
     expect(defensa).toMatchObject({

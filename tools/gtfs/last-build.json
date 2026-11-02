@@ -1,5 +1,5 @@
 {
-  "inicio": "2026-11-01T23:51:16.743Z",
+  "inicio": "2026-11-02T00:02:10.362Z",
   "pasos": [
     "paradas",
     "lineas",
@@ -27,66 +27,69 @@
     "empresas": 124,
     "empresasReparadas": 79,
     "sinNumero": 0,
+    "empresasFaltantes": 0,
     "enCaba": 379
   },
-  "lineasBytes": 162149,
+  "lineasBytes": 161434,
   "capturas": {
     "archivos": [
       "posiciones-2026-11-01.csv.gz"
     ],
-    "filas": 100607,
-    "filasUsables": 64002,
-    "snapshots": 18,
+    "filas": 149584,
+    "filasUsables": 95005,
+    "snapshots": 27,
     "desde": "2026-11-01T23:31:07.000Z",
-    "hasta": "2026-11-01T23:50:20.000Z",
-    "vehiculos": 4148,
-    "transiciones": 34154,
-    "transicionesMultiples": 15641,
-    "transicionesDescartadas": 1915,
+    "hasta": "2026-11-02T00:01:03.000Z",
+    "vehiculos": 4288,
+    "transiciones": 52129,
+    "transicionesMultiples": 23650,
+    "transicionesDescartadas": 2937,
     "descartesPorMotivo": {
-      "saltoDeSecuencia": 1783,
-      "huecoDeTiempo": 21,
-      "tramoLargo": 111
+      "saltoDeSecuencia": 2727,
+      "huecoDeTiempo": 35,
+      "tramoLargo": 175
     },
-    "lecturasStoppedAt": 1878,
-    "stopIds": 22154,
-    "stopIdsAprendidos": 1497,
-    "stopIdsConParada": 887
+    "lecturasStoppedAt": 2902,
+    "stopIds": 28191,
+    "stopIdsAprendidos": 2893,
+    "stopIdsConParada": 1640
   },
   "equivalencias": {
     "stopIdsTiempoReal": 35447,
-    "numericos": 31710,
-    "numericosEnGtfs2021": 14187,
+    "numericos": 31795,
+    "numericosEnGtfs2021": 14256,
     "descartadosLejosDeVehiculos": 371,
-    "descartadosFueraDeCaba": 9279,
+    "descartadosFueraDeCaba": 9540,
     "validadosConVehiculo": 2248,
     "porOrigen": {
-      "gtfs2021": 1275,
-      "aprendida": 135,
-      "ajustada-ba": 3709
+      "gtfs2021": 1272,
+      "aprendida": 805,
+      "ajustada-ba": 3454
     },
-    "conParada": 3709,
-    "semillaConfirmadaPorCapturas": 480,
-    "semillaCorregidaPorCapturas": 12,
-    "aprendidasComparablesConSemilla": 553,
-    "pctAcuerdoAprendidaVsSemilla": 86.8,
-    "aprendidasSinSemilla": 582,
+    "conParada": 4023,
+    "semillaConfirmadaPorCapturas": 872,
+    "semillaCorregidaPorCapturas": 34,
+    "aprendidasComparablesConSemilla": 993,
+    "pctAcuerdoAprendidaVsSemilla": 87.8,
+    "aprendidasSinSemilla": 1186,
     "coberturaTripUpdates": {
       "stopIds": 35037,
-      "stopIdsConCoordenada": 5007,
-      "stopIdsConParada": 3636,
+      "stopIdsConCoordenada": 5337,
+      "stopIdsConParada": 3889,
       "predicciones": 105325,
-      "prediccionesConCoordenada": 23012,
-      "prediccionesConParada": 17174,
-      "pctStopIdsConParada": 10.4,
-      "pctPrediccionesConParada": 16.3,
-      "pctPrediccionesConCoordenada": 21.8,
-      "prediccionesFueraDeCaba": 22574,
-      "prediccionesSinUbicar": 59739,
-      "pctPrediccionesEnCabaConParada": 74.6
-    }
+      "prediccionesConCoordenada": 24841,
+      "prediccionesConParada": 18763,
+      "pctStopIdsConParada": 11.1,
+      "pctPrediccionesConParada": 17.8,
+      "pctPrediccionesConCoordenada": 23.6,
+      "prediccionesFueraDeCaba": 24711,
+      "prediccionesSinUbicar": 55773,
+      "pctPrediccionesEnCabaConParada": 75.5
+    },
+    "publicadas": 4023,
+    "noPublicadasSinParada": 1508
   },
-  "equivalenciasBytes": 1251483,
+  "equivalenciasBytes": 413697,
   "subte": {
     "lineas": 8,
     "estaciones": 108,
@@ -97,7 +100,7 @@
     "puntosRed": 259
   },
   "subteBytes": {
-    "lineas": 4823,
+    "lineas": 4847,
     "estaciones": 17379,
     "red": 7260
   },
@@ -111,33 +114,40 @@
     "bytes": 742203
   },
   "manifest": {
-    "version": "de43720f858b",
+    "version": "48dd847ac387",
     "archivos": {
       "paradas.json": {
+        "url": "48dd847ac387/paradas.json",
         "bytes": 1696448,
         "sha256": "54861be40833d013d3f41c171a29f8d0bf884a4d7c8bde1ee0c396d50cb8336b"
       },
       "lineas-colectivos.json": {
-        "bytes": 162149,
-        "sha256": "1e4398945d0536532e5870237170cb7ff72c1df869f0c90043a5ba8c56185553"
+        "url": "48dd847ac387/lineas-colectivos.json",
+        "bytes": 161434,
+        "sha256": "abc648a3f4d32e68d0bb6be941ef6ac09b8da85c7a354d8acfa8bc7f50684a0e"
       },
       "equivalencias-paradas.json": {
-        "bytes": 1251483,
-        "sha256": "7abe911c2555598d3e8de0b754f35df0ff74e55d649c9c5f9bc72b8d356c1395"
+        "url": "48dd847ac387/equivalencias-paradas.json",
+        "bytes": 413697,
+        "sha256": "a6c66752e681b51d87c30a5c9002517588ef4548bb53459a0bb1d79fd6db3c58"
       },
       "subte-lineas.json": {
-        "bytes": 4823,
-        "sha256": "f06c97764b42c68b0d1fd9595c1c803588cc47160c515ef48418a823a056ad27"
+        "url": "48dd847ac387/subte-lineas.json",
+        "bytes": 4847,
+        "sha256": "9dd5990d3a92953d700a05a0d45b2245886e9b7811ce1cd1d7fdf06bd08c9f22"
       },
       "subte-estaciones.json": {
+        "url": "48dd847ac387/subte-estaciones.json",
         "bytes": 17379,
         "sha256": "2c66e11fef175ef1a8032a479f85d0fc2c04a8bd9cab51e8725d9c01f0794a57"
       },
       "subte-red.geojson": {
+        "url": "48dd847ac387/subte-red.geojson",
         "bytes": 7260,
         "sha256": "633d3d06982c4fbfd98f9944c1cef52e876fb4e7c367137a6ac155fbdf8945fc"
       },
       "recorridos-colectivos.geojson": {
+        "url": "48dd847ac387/recorridos-colectivos.geojson",
         "bytes": 742203,
         "sha256": "cf885a1a565ff1598b2f407e23ffbd3656c9155aeac6c609b0a810a31cf9fac9"
       }
@@ -145,14 +155,14 @@
     "omitidos": {}
   },
   "tiempos": {
-    "paradas": 83,
-    "lineas": 15,
-    "equivalencias: stops.txt 2021": 61,
-    "equivalencias: capturas": 1385,
-    "equivalencias": 120,
-    "subte": 7,
-    "recorridos": 1051,
-    "manifest": 45
+    "paradas": 85,
+    "lineas": 17,
+    "equivalencias: stops.txt 2021": 64,
+    "equivalencias: capturas": 2106,
+    "equivalencias": 158,
+    "subte": 8,
+    "recorridos": 1060,
+    "manifest": 34
   },
-  "fin": "2026-11-01T23:51:19.596Z"
+  "fin": "2026-11-02T00:02:13.959Z"
 }

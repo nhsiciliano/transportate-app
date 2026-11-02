@@ -4,6 +4,7 @@ import { readCsvRows, type CsvRow } from '../lib/csv.js';
 import { haversine, round6, simplify, type LatLon } from '../lib/geo.js';
 import type { SubteEstacion, SubteLinea } from '../schemas.js';
 import { COLORES_SUBTE, PARAMS } from '../config.js';
+import { LineaSubteId } from '@transportate/contracts';
 import { z } from 'zod';
 import type { SubteRedSchema } from '../schemas.js';
 
@@ -38,6 +39,16 @@ const TILDES: Record<string, string> = {
   Saenz: 'Sáenz',
   Tucuman: 'Tucumán',
 };
+
+/** `route_short_name` → id de línea del contrato (`LineaSubteId`); falla si aparece una línea nueva. */
+export function toLineaId(shortName: string, routeId: string): LineaSubteId {
+  const id = LineaSubteId.options.find((x) => x === shortName);
+  if (!id)
+    throw new Error(
+      `subte: línea "${shortName}" (${routeId}) no está en LineaSubteId del contrato`,
+    );
+  return id;
+}
 
 export function addTildes(name: string): string {
   return name.replace(/\p{L}+/gu, (w) => TILDES[w] ?? w);
@@ -170,7 +181,7 @@ export function buildSubte(input: SubteInput): {
 
   const coloresDistintos: string[] = [];
   const lineas: SubteLinea[] = [];
-  const stationLines = new Map<string, Set<string>>();
+  const stationLines = new Map<string, Set<LineaSubteId>>();
   const features: RedGeoJson['features'] = [];
   let puntosRed = 0;
 
@@ -188,7 +199,7 @@ export function buildSubte(input: SubteInput): {
         `${routeId}: GTFS ${gtfsColor}/${gtfsText} vs doc ${colores.color}/${colores.texto}`,
       );
     }
-    const id = r.route_short_name ?? routeId;
+    const id = toLineaId(r.route_short_name ?? routeId, routeId);
     const routeTrips = input.trips.filter((t) => t.route_id === routeId);
 
     // Viaje más largo (más stop_times) por sentido.
@@ -207,7 +218,7 @@ export function buildSubte(input: SubteInput): {
       sentidos.push({
         directionId: dir,
         cabecera: best.trip.trip_headsign ?? '',
-        estaciones: dedup,
+        estacionIds: dedup,
       });
     }
     const first = sentidos[0];
@@ -218,10 +229,10 @@ export function buildSubte(input: SubteInput): {
       return st ? { lat: Number(st.stop_lat), lon: Number(st.stop_lon) } : undefined;
     };
     const estaciones = second
-      ? mergeSequences(first.estaciones, [...second.estaciones].reverse(), coord)
-      : first.estaciones;
+      ? mergeSequences(first.estacionIds, [...second.estacionIds].reverse(), coord)
+      : first.estacionIds;
     for (const s of estaciones) {
-      const set = stationLines.get(s) ?? new Set<string>();
+      const set = stationLines.get(s) ?? new Set<LineaSubteId>();
       set.add(id);
       stationLines.set(s, set);
     }
@@ -232,7 +243,7 @@ export function buildSubte(input: SubteInput): {
       tipo: r.route_type === '0' ? 'premetro' : 'subte',
       color: colores.color,
       colorTexto: colores.texto,
-      estaciones,
+      estacionIds: estaciones,
       sentidos,
     });
 

@@ -15,12 +15,13 @@ Es un paquete standalone (npm, fuera del workspace pnpm). TypeScript strict se e
 ## Cómo correr
 
 ```sh
+pnpm --filter @transportate/contracts build   # una vez: tools/gtfs valida contra contracts/dist
 cd tools/gtfs
 npm install                          # Node ≥ 24
 npm run build                        # todos los pasos → out/ + last-build.json
 npm run build -- --solo paradas      # solo algunos pasos (separados por coma):
                                      #   paradas, lineas, equivalencias, subte, recorridos
-npm test                             # Vitest sobre muestras chicas (no lee ~/.cache)
+npm test                             # Vitest sobre muestras chicas + validación de out/ si existe
 npm run check                        # typecheck + lint + prettier + tests
 ./upload-r2.sh                       # sube out/ a R2 (requiere wrangler login; ver abajo)
 ```
@@ -30,13 +31,13 @@ npm run check                        # typecheck + lint + prettier + tests
 - `CAPTURAS_DIR`: carpeta de capturas (default `~/.cache/transportate/capturas`);
 - `TRANSPORTATE_CACHE`: raíz de las entradas (default `~/.cache/transportate`).
 
-**Tiempos y memoria** (esta máquina, darwin-arm64, Node 24.20, build `de43720f858b`): ~3 s en total y ~300 MB de RSS máximo.
+**Tiempos y memoria** (esta máquina, darwin-arm64, Node 24.20, build `48dd847ac387`): ~3,5 s en total y ~300 MB de RSS máximo.
 
 | Paso | Tiempo |
 |---|---|
 | Recorridos (inflar y simplificar `shapes.txt` en streaming) | 1,1 s |
-| Lectura de capturas (100 mil filas) | 1,4 s |
-| Resto | < 0,1 s cada uno |
+| Lectura de capturas (150 mil filas) | 2,1 s |
+| Resto | < 0,2 s cada uno |
 
 Ningún zip se carga entero: `src/lib/zip.ts` lee el directorio central e infla en streaming solo las entradas necesarias. `stop_times.txt` de colectivos (1,4 GB) nunca se abre.
 
@@ -57,26 +58,28 @@ Las capturas se leen por nombre de columna: `snapshot_ts, vehicle_id, trip_id, r
 
 ## Salidas (`out/`, no se commitea)
 
-Todas son JSON sin espacios, con coordenadas de 6 decimales y validadas contra `src/schemas.ts` antes de escribirse. Tamaños del build `de43720f858b`:
+La app consume estos archivos directamente desde R2, así que **su contrato es el de `@transportate/contracts`** (`packages/contracts/src/static.ts`: `ManifestV1` y los `*ArchivoV1`). Es la única fuente de verdad. El build valida cada archivo contra esos esquemas antes de escribirlo, y `test/contracts.test.ts` vuelve a validar el `out/` real (si existe) para que tools/gtfs y los contratos no diverjan. Solo los GeoJSON tienen esquema local, porque no tienen contrato v1.
 
-| Archivo | Bytes | gzip -9 | Contenido |
-|---|---:|---:|---|
-| `paradas.json` | 1.696.448 | 212.692 | 6.961 paradas de CABA: `id`, `calle`, `altura`, `nombre` ("Defensa 1524"), `lat`, `lon`, `comuna`, `barrio`, `lineas[{linea, numero, sentido}]` |
-| `lineas-colectivos.json` | 162.149 | 20.209 | 936 `route_id` → `linea`, `numero`, `ramal`, `empresa`, `agencyId`, `cabeceras[]`, `enCaba` |
-| `equivalencias-paradas.json` | 1.251.483 | 120.154 | 5.119 `stop_id` → `paradaId` (o `null`), `origen`, `confianza`, `lat`, `lon`, `distanciaM`, `observaciones` |
-| `subte-lineas.json` | 4.823 | 1.072 | 8 líneas (A–H y los 2 ramales del Premetro): `color`, `colorTexto`, `estaciones[]` ordenadas, `sentidos[{directionId, cabecera, estaciones}]` |
-| `subte-estaciones.json` | 17.379 | 3.550 | 108 estaciones: `nombre` (con tildes), `nombreGtfs`, `lat`, `lon`, `lineas`, `andenes`, `accesible` |
-| `subte-red.geojson` | 7.260 | 2.002 | `FeatureCollection` de 8 `LineString` simplificados a 5 m, con `linea`, `routeId` y `color` |
-| `recorridos-colectivos.geojson` | 742.203 | 100.514 | 170 líneas (por número), `MultiLineString` recortado a CABA y simplificado a 10 m, `aproximado: true` |
-| `manifest.json` | ~2.000 | — | `version` (sha256 de 12 hex del contenido concatenado), `generatedAt`, `archivos{bytes, sha256}`, `omitidos`, `fuentes{nombre, url, fecha, licencia, nota}` |
+Todas son JSON sin espacios, con coordenadas de 6 decimales. Tamaños del build `48dd847ac387`:
+
+| Archivo | Bytes | gzip -9 | Contrato | Contenido |
+|---|---:|---:|---|---|
+| `paradas.json` | 1.696.448 | 212.692 | `ParadasArchivoV1` | 6.961 paradas de CABA: `id`, `calle`, `altura`, `nombre` ("Defensa 1524"), `lat`, `lon`, `comuna`, `barrio`, `lineas[{linea, numero, sentido}]` |
+| `lineas-colectivos.json` | 161.434 | 20.708 | `LineasColectivoArchivoV1` | 936 líneas (`LineaColectivoV1` + `numero`, `agencyId`, `enCaba`): `lineaId` (= `route_id`), `linea`, `ramal` (ausente si no hay), `empresa`, `cabeceras[]` |
+| `equivalencias-paradas.json` | 413.697 | 48.462 | `EquivalenciasArchivoV1` | 4.023 `stop_id` → `paradaId`, `origen`, `confianza`, `observaciones` (cantidad). Solo filas con parada BA |
+| `subte-lineas.json` | 4.847 | 1.073 | `SubteLineasArchivoV1` | 8 líneas (A–H y los 2 ramales del Premetro): `routeId`, `tipo`, `color`, `colorTexto`, `estacionIds[]` ordenadas, `sentidos[{directionId, cabecera, estacionIds}]`, más `feedEndDate` |
+| `subte-estaciones.json` | 17.379 | 3.550 | `SubteEstacionesArchivoV1` | 108 estaciones: `nombre` (con tildes), `nombreGtfs`, `lat`, `lon`, `lineas[]`, `andenes`, `accesible` |
+| `subte-red.geojson` | 7.260 | 2.002 | local | `FeatureCollection` de 8 `LineString` simplificados a 5 m, con `linea`, `routeId` y `color` |
+| `recorridos-colectivos.geojson` | 742.203 | 100.514 | local | 170 líneas (por número), `MultiLineString` recortado a CABA y simplificado a 10 m, `aproximado: true` |
+| `manifest.json` | ~2.300 | — | `ManifestV1` | `version` (sha256 de 12 hex del contenido concatenado), `generatedAt`, `archivos{url, bytes, sha256}` (`url` = `<version>/<archivo>`, relativa a `/v1/static/` y a la raíz del bucket), `omitidos`, `fuentes{nombre, url, fecha, licencia, nota}` |
 
 - **`version` es determinista:** las mismas entradas dan la misma versión (verificado con dos corridas sobre capturas congeladas) y no depende de `generatedAt`.
 - **Recorridos:** si `recorridos-colectivos.geojson` pasara de 5 MB, se omite y se anota en `manifest.omitidos`.
 - **Estadísticas:** cada build deja las suyas en `last-build.json` (se commitea como referencia; no tiene datos ni rutas absolutas).
 
-## Estadísticas (build `de43720f858b`)
+## Estadísticas (build `48dd847ac387`)
 
-Capturas usadas: 18 snapshots entre 2026-11-01 23:31 y 23:50 UTC (~19 minutos, 100.607 lecturas). **Es muy poco:** el plan pide 24–48 h. Los números de aprendizaje van a crecer al volver a correr el build con más captura.
+Capturas usadas: 27 snapshots entre 2026-11-01 23:31 y 2026-11-02 00:01 UTC (~30 minutos, 149.584 lecturas). **Es muy poco:** el plan pide 24–48 h. Los números de aprendizaje van a crecer al volver a correr el build con más captura.
 
 **Paradas**
 
@@ -94,44 +97,43 @@ Además se normalizan los 51 valores de barrio a los 48 oficiales (`VILLA ORTUZA
 
 | | |
 |---|---:|
-| `route_id` | 936 |
+| Líneas (`route_id`) | 936 |
 | Números de línea | 216 |
-| Empresas | 124 |
+| Empresas | 124 (ninguna faltante) |
 | Empresas con mojibake reparado | 79 |
-| `route_id` con algún vehículo en CABA | 379 |
+| Líneas con algún vehículo en CABA | 379 |
 
-**Equivalencias por origen** (5.119 en total, todas dentro de CABA)
+**Equivalencias** (5.531 calculadas dentro de CABA; **4.023 publicadas**, las que tienen parada BA)
 
-| Origen | Cantidad | Qué es |
-|---|---:|---|
-| `ajustada-ba` | 3.709 | Con parada BA asignada |
-| `gtfs2021` | 1.275 | Coordenada 2021 validada, sin parada BA a ≤ 40 m con la misma línea |
-| `aprendida` | 135 | Coordenada aprendida de capturas, sin parada BA |
+| Origen | Calculadas | Publicadas | Qué es |
+|---|---:|---:|---|
+| `ajustada-ba` | 3.454 | 3.454 | Coordenada 2021 ajustada a parada BA (≤ 40 m, misma línea) |
+| `aprendida` | 805 | 569 | Parada elegida por los votos de las capturas (sin semilla o corrigiéndola) |
+| `gtfs2021` | 1.272 | 0 | Coordenada 2021 sin parada BA cerca: no se publica |
+
+Las 1.508 filas sin parada (1.272 `gtfs2021` y 236 `aprendida` sin parada) quedan solo en `last-build.json` como conteo (`equivalencias.noPublicadasSinParada`).
 
 | Detalle de la semilla y el aprendizaje | |
 |---|---:|
-| `stop_id` numéricos del tiempo real | 31.710 |
-| …que existen en el GTFS 2021 | 14.187 |
+| `stop_id` numéricos del tiempo real que existen en el GTFS 2021 | 14.187 de 31.710 |
 | Descartados a más de 1 km de los vehículos que los informan (ID reasignado) | 371 |
-| Validados con un vehículo a ≤ 1 km | 2.248 |
-| Fuera de CABA (descartados a propósito) | 9.279 |
-| Aprendidos de capturas | 1.497 (887 con parada BA) |
-| Semillas confirmadas por las capturas | 480 |
-| Semillas corregidas por las capturas | 12 |
-| Equivalencias nuevas sin semilla | 582 |
+| `stop_id` aprendidos de capturas | 2.893 (1.640 con parada BA) |
+| Semillas confirmadas por las capturas | 872 |
+| Semillas corregidas por las capturas | 34 |
+| Equivalencias nuevas sin semilla | 1.186 |
 
-**Validación del aprendizaje:** donde hay una semilla ajustada a BA y una parada aprendida (553 casos), coinciden en el **86,8 %**.
+**Validación del aprendizaje:** donde hay una semilla ajustada a BA y una parada aprendida (993 casos), coinciden en el **87,8 %**.
 
 **Cobertura sobre `tripUpdates`** (105.325 predicciones de arribo, todo el AMBA)
 
 | Predicciones | Cantidad | % |
 |---|---:|---:|
-| Con parada BA | 17.174 | 16,3 |
-| Con coordenada en CABA | 23.012 | 21,8 |
-| Ubicadas fuera de CABA | 22.574 | 21,4 |
-| Sin ubicar | 59.739 | 56,7 |
+| Con parada BA | 18.763 | 17,8 |
+| Con coordenada en CABA | 24.841 | 23,6 |
+| Ubicadas fuera de CABA | 24.711 | 23,5 |
+| Sin ubicar | 55.773 | 53,0 |
 
-La métrica útil para la app: **de las predicciones ubicadas en CABA, el 74,6 % tiene parada BA**. Las "sin ubicar" son `stop_id` sin semilla válida que todavía no aprendió la captura: es lo que tiene que cubrir la captura de 24–48 h.
+La métrica útil para la app: **de las predicciones ubicadas en CABA, el 75,5 % tiene parada BA**. Las "sin ubicar" son `stop_id` sin semilla válida que todavía no aprendió la captura: es lo que tiene que cubrir la captura de 24–48 h.
 
 **Subte**
 
@@ -193,8 +195,9 @@ Salen solo del tiempo real. Los `route_id` 2021 están reasignados: de 252 compa
    | Solo coordenada | 0,35 o 0,25 |
    | Semilla y capturas coinciden | +0,10 |
 
-   La app debería mostrar arribos solo con `paradaId` y confianza ≥ ~0,6 (a definir en la Fase 4).
-4. **Área:** solo CABA. La máscara está formada por celdas de ~550 m que contienen paradas BA, más una celda de margen (`AreaMask`); sigue el borde mejor que el bbox, que incluye esquinas de provincia.
+   La app debería mostrar arribos solo con confianza ≥ ~0,6 (a definir en la Fase 4).
+4. **`origen` y publicación** (contrato `EquivalenciaParadaV1`): `ajustada-ba` = semilla 2021 ajustada a una parada BA; `aprendida` = parada elegida por las capturas; `gtfs2021` = semilla sin parada BA. Solo se publican las filas con `paradaId`. `observaciones` es la cantidad de evidencia independiente: vehículos que informan el `stop_id` en los fixtures, más las pasadas capturadas cuando lo confirman o lo eligen.
+5. **Área:** solo CABA. La máscara está formada por celdas de ~550 m que contienen paradas BA, más una celda de margen (`AreaMask`); sigue el borde mejor que el bbox, que incluye esquinas de provincia.
 
 ### Subte
 
@@ -220,6 +223,5 @@ Requisitos: `npx wrangler@4.156.1 login`, o `CLOUDFLARE_API_TOKEN` con permiso R
 
 - Volver a correr el build con 24–48 h de capturas y actualizar estas estadísticas (`docs/01b` §7.1).
 - Definir dónde corre el aprendizaje en producción: este paquete lo hace offline; un cron de Worker con D1/R2 es la opción del plan.
-- Migrar `src/schemas.ts` (sobre todo `ManifestSchema`) a `packages/contracts` cuando exista, para que el proxy y la app validen lo mismo.
 - No se usa OSM, así que no aplica ODbL. Las fuentes son todas CC-BY-2.5-AR (atribución en "Acerca de").
 - El GTFS de subte vence el 2026-12-31: el build lo deja en `subte-lineas.json` (`feedEndDate`) para que el proxy pueda avisar.

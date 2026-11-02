@@ -4,7 +4,7 @@
 import { Grid, haversine, round6, type LatLon } from '../lib/geo.js';
 import type { LearnedStop, ParadaRef } from '../lib/capturas.js';
 import type { TripObs, VehicleObs } from '../lib/rt.js';
-import type { Equivalencia, Parada } from '../schemas.js';
+import type { Equivalencia, EquivalenciaPublicada, Parada } from '../schemas.js';
 
 export interface EquivalenciasInput {
   stops2021: Map<string, LatLon>;
@@ -318,11 +318,14 @@ export function buildEquivalencias(input: EquivalenciasInput): {
       else notas.push(`sin parada BA a ≤ ${input.matchRadiusM} m`);
     }
 
-    const origen: Equivalencia['origen'] = match
-      ? 'ajustada-ba'
-      : tipo === 'semilla'
-        ? 'gtfs2021'
-        : 'aprendida';
+    // ajustada-ba = semilla 2021 ajustada a parada BA; aprendida = la eligieron las capturas;
+    // gtfs2021 = semilla sin parada BA (no se publica: la app no la puede usar).
+    const origen: Equivalencia['origen'] =
+      tipo === 'aprendida' ? 'aprendida' : match ? 'ajustada-ba' : 'gtfs2021';
+    const observaciones =
+      tipo === 'aprendida'
+        ? (learned?.pasadas ?? 0)
+        : rep.positions.length + (coincide && learned ? learned.pasadas : 0);
     const eq: Equivalencia = {
       stopId,
       paradaId: match?.paradaId ?? null,
@@ -339,7 +342,8 @@ export function buildEquivalencias(input: EquivalenciasInput): {
       lon: round6(point.lon),
       // Solo tiene sentido si la coordenada es independiente de la parada (semilla 2021).
       distanciaM: match && tipo === 'semilla' ? Math.round(match.d) : null,
-      observaciones: notas.join('; '),
+      observaciones,
+      notas: notas.join('; '),
     };
     out.set(stopId, eq);
     stats.porOrigen[origen]++;
@@ -378,4 +382,20 @@ export function buildEquivalencias(input: EquivalenciasInput): {
   );
 
   return { equivalencias: [...out.values()], stats };
+}
+
+/** Filas publicadas en equivalencias-paradas.json: solo las que tienen parada BA. */
+export function toPublished(list: Equivalencia[]): EquivalenciaPublicada[] {
+  const out: EquivalenciaPublicada[] = [];
+  for (const e of list) {
+    if (e.paradaId === null) continue;
+    out.push({
+      stopId: e.stopId,
+      paradaId: e.paradaId,
+      origen: e.origen,
+      confianza: e.confianza,
+      observaciones: e.observaciones,
+    });
+  }
+  return out;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SubteEstacionSchema, SubteLineaSchema } from '../src/schemas.js';
+import { EstacionSubteV1, LineaSubteV1 } from '@transportate/contracts';
 import { addTildes, buildSubte, mergeSequences, type SubteInput } from '../src/steps/subte.js';
 
 describe('mergeSequences', () => {
@@ -126,14 +126,14 @@ describe('buildSubte', () => {
   it('arma líneas con colores de docs/02b, orden por sentido y estaciones con tildes', () => {
     const { lineas, estaciones, red, stats } = buildSubte(input);
     const a = lineas[0];
-    expect(a && SubteLineaSchema.parse(a)).toEqual(a);
+    expect(a && LineaSubteV1.parse(a)).toEqual(a);
     expect(a).toMatchObject({ id: 'A', tipo: 'subte', color: '#A5C8FF', colorTexto: '#000000' });
-    expect(a?.sentidos.map((s) => s.estaciones)).toEqual([
+    expect(a?.sentidos.map((s) => s.estacionIds)).toEqual([
       ['1061', '1060'],
       ['1059', '1060'],
     ]);
-    expect(a?.estaciones).toEqual(['1061', '1060', '1059']);
-    expect(estaciones.map((e) => SubteEstacionSchema.parse(e).nombre)).toEqual([
+    expect(a?.estacionIds).toEqual(['1061', '1060', '1059']);
+    expect(estaciones.map((e) => EstacionSubteV1.parse(e).nombre)).toEqual([
       'San Pedrito',
       'San José de Flores',
       'Carabobo',
