@@ -1,7 +1,10 @@
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../src/adapters/types';
+import { env } from 'cloudflare:workers';
+import { upstreamTimeoutMs } from '../../src/adapters/index';
 import {
+  DEFAULT_UPSTREAM_TIMEOUT_MS,
   EdgeCachedFeedSource,
   resetEdgeCacheMemory,
   USER_AGENT,
@@ -200,6 +203,49 @@ describe('EdgeCachedFeedSource', () => {
       status: null,
       ms: 0,
     });
+  });
+
+  it('plazo del llamador vencido sin caché → 503 a tiempo, sin reintento', async () => {
+    const { source, req } = await setup({ timeoutMs: 5_000 });
+    fetchSpy.mockImplementation(() => new Promise<Response>(() => undefined)); // nunca responde
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const t0 = performance.now();
+    const err: unknown = await source
+      .fetch(req, { signal: AbortSignal.timeout(200), retry: false })
+      .catch((e: unknown) => e);
+    expect(performance.now() - t0).toBeLessThan(1_000);
+    expect(err).toMatchObject({ code: 'upstream_unavailable', status: 503 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('plazo vencido con dato vencido en caché → último dato bueno (stale)', async () => {
+    const { source, req, advance } = await setup({ timeoutMs: 5_000 });
+    fetchSpy.mockResolvedValueOnce(ok('bueno'));
+    await source.fetch(req);
+    advance(30_000);
+    fetchSpy.mockImplementation(() => new Promise<Response>(() => undefined));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const r = await source.fetch(req, { signal: AbortSignal.timeout(200), retry: false });
+    expect(r).toMatchObject({ fromCache: true, stale: true });
+    expect(text(r.body)).toBe('bueno');
+  });
+
+  it('retry: false → un solo intento ante 5xx', async () => {
+    const { source, req } = await setup();
+    fetchSpy.mockResolvedValue(ok('x', 502));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await expect(source.fetch(req, { retry: false })).rejects.toBeInstanceOf(ApiError);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('timeout por defecto: 5 s (UPSTREAM_TIMEOUT_MS)', () => {
+    expect(DEFAULT_UPSTREAM_TIMEOUT_MS).toBe(5_000);
+    // La var todavía no está en wrangler.jsonc (y por lo tanto tampoco en los tipos generados).
+    const con = { ...env, UPSTREAM_TIMEOUT_MS: '2500' };
+    const invalida = { ...env, UPSTREAM_TIMEOUT_MS: 'x' };
+    expect(upstreamTimeoutMs(con)).toBe(2_500);
+    expect(upstreamTimeoutMs(env)).toBe(5_000);
+    expect(upstreamTimeoutMs(invalida)).toBe(5_000);
   });
 
   it('con ExecutionContext guarda en caché con waitUntil y otra instancia lo lee', async () => {

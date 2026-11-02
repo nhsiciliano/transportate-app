@@ -13,7 +13,9 @@ import type {
   VehiculoV1,
 } from '@transportate/contracts';
 import { decodeFeed, secondsToMs, toNumber, type FeedMessage } from '../../lib/gtfs-rt';
-import type { FeedResult, FeedSource } from '../../sources/types';
+import { raceAbort } from '../../cache/deadline';
+import type { DeadlineFeedSource } from '../../sources/edge-cached';
+import type { FeedResult } from '../../sources/types';
 import { buildMeta, upstreamUrl } from '../../sources/upstream';
 import { ApiError, type ColectivosAdapter } from '../types';
 import { getStaticSnapshot, type StaticStore } from './static-index';
@@ -27,8 +29,13 @@ const ARRIBO_PASADO_S = -60;
 export const MAX_LINEAS_POR_PARADA = 8;
 export const MAX_ARRIBOS_POR_LINEA = 10;
 
+/** Presupuesto total de `arribos()` (fan-out a varias líneas): nunca esperar más que esto. */
+export const FANOUT_BUDGET_MS = 5_000;
+
 export interface ColectivosDeps {
-  source: FeedSource;
+  source: DeadlineFeedSource;
+  /** Presupuesto del fan-out de `arribos()` en ms (default `FANOUT_BUDGET_MS`). */
+  fanOutBudgetMs?: number;
   store: StaticStore;
   ttlSeconds: number;
   staticTtlSeconds: number;
@@ -58,13 +65,23 @@ export function createColectivosAdapter(deps: ColectivosDeps): ColectivosAdapter
   const { source, store, ttlSeconds, staticTtlSeconds, now } = deps;
   const snapshot = () => getStaticSnapshot(store, staticTtlSeconds, now());
 
-  const feed = (kind: 'vehiclePositions' | 'tripUpdates', lineaId: string): Promise<FeedResult> =>
-    source.fetch({
+  const fanOutBudgetMs = deps.fanOutBudgetMs ?? FANOUT_BUDGET_MS;
+  const feed = (
+    kind: 'vehiclePositions' | 'tripUpdates',
+    lineaId: string,
+    signal?: AbortSignal,
+  ): Promise<FeedResult> => {
+    const req = {
       key: `colectivos:${kind}:route=${lineaId}`,
       url: upstreamUrl(`/colectivos/${kind}`, { route_id: lineaId }),
       ttlSeconds,
-      accept: 'protobuf',
-    });
+      accept: 'protobuf' as const,
+    };
+    // Con plazo (fan-out): sin reintento y compitiendo contra el plazo también acá, por si la
+    // fuente no lo respeta. Sin plazo (una sola línea): timeout de la fuente + 1 reintento.
+    if (!signal) return source.fetch(req);
+    return raceAbort(source.fetch(req, { signal, retry: false }), signal);
+  };
 
   return {
     async lineas(): Promise<EnvelopeV1<LineasColectivoV1>> {
@@ -143,7 +160,12 @@ export function createColectivosAdapter(deps: ColectivosDeps): ColectivosAdapter
 
       const stopIds = new Set(parada.stopIds);
       const lineaIds = parada.lineaIds.slice(0, MAX_LINEAS_POR_PARADA);
-      const settled = await Promise.allSettled(lineaIds.map((id) => feed('tripUpdates', id)));
+      // Un solo plazo para todo el fan-out: la respuesta sale en ≤ fanOutBudgetMs aunque alguna
+      // línea no conteste (las que no llegan se omiten y la respuesta va con meta.stale).
+      const signal = AbortSignal.timeout(fanOutBudgetMs);
+      const settled = await Promise.allSettled(
+        lineaIds.map((id) => feed('tripUpdates', id, signal)),
+      );
       if (settled.every((s) => s.status === 'rejected')) {
         throw new ApiError(
           'upstream_unavailable',

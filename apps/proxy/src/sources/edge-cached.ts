@@ -11,6 +11,7 @@
 // fallo upstream solo lleva { event, key, status, ms }.
 import { ApiError } from '../adapters/types';
 import { Coalescer } from '../cache/coalesce';
+import { DeadlineExceeded, raceAbort } from '../cache/deadline';
 import {
   feedCacheKey,
   fromCacheResponse,
@@ -20,7 +21,23 @@ import {
 import { runInBackground } from '../lib/http';
 import type { FeedRequest, FeedResult, FeedSource } from './types';
 
+/** Opciones por llamada (extensión compatible de `FeedSource.fetch`). */
+export interface FetchOptions {
+  signal?: AbortSignal;
+  retry?: boolean;
+}
+
+/** `FeedSource` que además acepta plazo y control de reintento por llamada. */
+export interface DeadlineFeedSource extends FeedSource {
+  fetch(req: FeedRequest, opts?: FetchOptions): Promise<FeedResult>;
+}
+
 export const USER_AGENT = 'transportate-proxy/0.1';
+/** Timeout por intento si `env.UPSTREAM_TIMEOUT_MS` no lo define. */
+export const DEFAULT_UPSTREAM_TIMEOUT_MS = 5_000;
+
+const unavailable = (ttlSeconds: number): ApiError =>
+  new ApiError('upstream_unavailable', 'Servicio del GCBA no disponible', 503, ttlSeconds);
 
 export interface Credentials {
   clientId: string;
@@ -32,7 +49,7 @@ export interface EdgeCachedOptions {
   ctx?: ExecutionContext | undefined;
   /** Edad máxima (s) de una entrada vencida que se sirve si el upstream falla. Default 300. */
   maxStaleSeconds?: number;
-  /** Timeout por intento (ms). Default 8000. */
+  /** Timeout por intento (ms). Default 5000 (`UPSTREAM_TIMEOUT_MS`). */
   timeoutMs?: number;
   /** Pausa antes del reintento (ms). Default 300. */
   retryDelayMs?: number;
@@ -81,7 +98,7 @@ const sleep = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
-export class EdgeCachedFeedSource implements FeedSource {
+export class EdgeCachedFeedSource implements DeadlineFeedSource {
   private readonly maxStaleSeconds: number;
   private readonly timeoutMs: number;
   private readonly retryDelayMs: number;
@@ -89,13 +106,28 @@ export class EdgeCachedFeedSource implements FeedSource {
 
   constructor(private readonly opts: EdgeCachedOptions) {
     this.maxStaleSeconds = opts.maxStaleSeconds ?? 300;
-    this.timeoutMs = opts.timeoutMs ?? 8_000;
+    this.timeoutMs = opts.timeoutMs ?? DEFAULT_UPSTREAM_TIMEOUT_MS;
     this.retryDelayMs = opts.retryDelayMs ?? 300;
     this.now = opts.now ?? Date.now;
   }
 
-  fetch(req: FeedRequest): Promise<FeedResult> {
-    return coalescer.run(req.key, () => this.load(req));
+  /**
+   * `opts.signal`: plazo del llamador (p. ej. el presupuesto de un fan-out). Si se vence antes de
+   * que llegue el dato, se devuelve el último dato bueno (`stale: true`) o 503; el fetch compartido
+   * sigue y llena la caché para la próxima. `opts.retry` (default true): reintentar una vez.
+   */
+  fetch(req: FeedRequest, opts: FetchOptions = {}): Promise<FeedResult> {
+    const shared = coalescer.run(req.key, () => this.load(req, opts.retry ?? true));
+    if (!opts.signal) return shared;
+    return raceAbort(shared, opts.signal).catch(async (err: unknown) => {
+      if (!(err instanceof DeadlineExceeded)) throw err;
+      console.error(JSON.stringify({ event: 'upstream_deadline', key: req.key }));
+      const cached = await this.readCached(req.key, 0);
+      if (cached && this.now() - cached.fetchedAt <= this.maxStaleSeconds * 1000) {
+        return { ...cached, body: cached.body.slice(0), fromCache: true, stale: true };
+      }
+      throw unavailable(req.ttlSeconds);
+    });
   }
 
   private cache(): Cache {
@@ -114,7 +146,7 @@ export class EdgeCachedFeedSource implements FeedSource {
     return fromEdge;
   }
 
-  private async load(req: FeedRequest): Promise<FeedResult> {
+  private async load(req: FeedRequest, retry: boolean): Promise<FeedResult> {
     const cached = await this.readCached(req.key, req.ttlSeconds * 1000);
     const ageMs = cached ? this.now() - cached.fetchedAt : Infinity;
     if (cached && ageMs < req.ttlSeconds * 1000) {
@@ -123,7 +155,7 @@ export class EdgeCachedFeedSource implements FeedSource {
 
     const t0 = this.now();
     try {
-      const fresh = await this.fetchWithRetry(req);
+      const fresh = await this.fetchWithRetry(req, retry);
       remember(req.key, fresh);
       const retain = req.ttlSeconds + this.maxStaleSeconds;
       await runInBackground(
@@ -139,20 +171,15 @@ export class EdgeCachedFeedSource implements FeedSource {
       if (cached && ageMs <= this.maxStaleSeconds * 1000) {
         return { ...cached, body: cached.body.slice(0), fromCache: true, stale: true };
       }
-      throw new ApiError(
-        'upstream_unavailable',
-        'Servicio del GCBA no disponible',
-        503,
-        req.ttlSeconds,
-      );
+      throw unavailable(req.ttlSeconds);
     }
   }
 
-  private async fetchWithRetry(req: FeedRequest): Promise<CachedFeed> {
+  private async fetchWithRetry(req: FeedRequest, retry: boolean): Promise<CachedFeed> {
     try {
       return await this.attempt(req);
     } catch (err) {
-      if (!(err instanceof UpstreamFailure) || !err.retryable) throw err;
+      if (!retry || !(err instanceof UpstreamFailure) || !err.retryable) throw err;
       await sleep(this.retryDelayMs);
       return this.attempt(req);
     }
