@@ -54,13 +54,13 @@ Coordinación con Orca (run `run_71a886f27b3e`) desde la sesión `planner`. Las 
 - **Incidente menor de privacidad del equipo:** durante la tarea 1.11 un worker envió el email del usuario en el `User-Agent` de una consulta a Overpass (OSM). No quedó en el repo. Regla desde ahora: ningún script usa datos personales en headers; `User-Agent` genérico `transportate-tools`.
 - **Pendientes de decisión del usuario:** suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`; tipografía (Nunito vs Archivo); qué hacer con Tránsito sin cortes; fuente alternativa de GTFS de colectivos.
 
-## Fase 2 — Proxy · **en curso**
+## Fase 2 — Proxy · **completada, pendiente de validación del usuario**
 
-**Inicio:** 2026-11-01 · **Alcance:** `apps/proxy`, `packages/contracts`, `tools/gtfs`, tests, despliegue y documentación del proxy. Sin código de la app. **Esta entrada se actualiza hasta el cierre de la fase; todavía no hay cierre ni validación del usuario.**
+**Inicio:** 2026-11-01 · **Cierre técnico:** 2026-11-02 · **Alcance:** `apps/proxy`, `packages/contracts`, `tools/gtfs`, tests, despliegue y documentación del proxy. Sin código de la app.
 
 ### Cómo se trabaja
 
-Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`) y el coordinador integra a `main`. A `main` ya llegaron el scaffold, los contratos, el esqueleto y las rutas del proxy, los tests, el despliegue, el preprocesado estático y las tareas de low-dev (captura, versiones, ADR-0006, solicitud). Los adaptadores del proxy los está terminando high-dev en paralelo.
+Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`) y el coordinador integra a `main`. A `main` ya llegaron el scaffold, los contratos, el esqueleto y las rutas del proxy, los tests, el despliegue, el preprocesado estático y las tareas de low-dev (captura, versiones, ADR-0006, solicitud). Los adaptadores reales, la fuente con caché y las correcciones de la prueba de humo los hizo high-dev; mid-dev hizo rutas, ETag, carga y `06-proxy.md`; low-dev captura, versiones, ADRs y READMEs.
 
 ### Hecho hasta ahora
 
@@ -90,17 +90,39 @@ Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers 
 7. **Primer build de `tools/gtfs` con solo ~19 minutos de captura:** de las predicciones de `tripUpdates` ubicadas en CABA, el 74,6 % ya tiene parada BA; el 56,7 % de todas las predicciones sigue sin ubicar. Estas cifras mejoran al rehacer el build con las 24–48 h de captura (`tools/gtfs/README.md`).
 8. **Fallos de la captura:** en los primeros 40 minutos fallaron 2 de 35 snapshots de posiciones y 1 de 4 de `tripUpdates` (tras timeout de 20 s y un reintento), coherente con el 1–9 % de la Fase 1.
 
-### Pendiente en la Fase 2
+### Completado al cierre (2026-11-02)
 
-- Adaptadores reales de subte (2.5) y colectivos (2.6) en `apps/proxy/src/adapters/` (hoy `createAdapters` es un placeholder que responde 503) y las fuentes con caché, coalescing y último dato bueno (2.4), más sus tests con fixtures reales (2.11).
-- Prueba de carga con `autocannon` que muestre 1 request al upstream por TTL (2.12) y `docs/06-proxy.md`, que escribe mid-dev al cierre de la fase.
-- Dejar correr la captura 24–48 h, rehacer el build de `tools/gtfs` y actualizar la cobertura en `01b-gtfs-alternativos.md` y `tools/gtfs/README.md`.
-- Medir en `workerd` real el CPU de decodificar y probar `gtfs-realtime-bindings` dentro del Worker (hoy solo se probó en Node).
-- Primer despliegue real a `preview` (nadie lo hizo todavía: requiere `wrangler login` de la persona).
+| Qué | Tarea | Dónde |
+|---|---|---|
+| `EdgeCachedFeedSource` (capa A): Cache API con clave ficticia sin credenciales, copia en memoria del isolate, refresco con lock por timestamp (sin compartir promesas entre requests), último dato bueno ≤ 300 s, timeout 5 s configurable (`UPSTREAM_TIMEOUT_MS`) | 2.4 | `apps/proxy/src/sources/`, `src/cache/` |
+| `SubtesAdapter`: estado por línea con reglas documentadas desde `serviceAlerts?json=1`, alertas, arribos desde `forecastGTFS` con detección de feed congelado | 2.5 | `apps/proxy/src/adapters/subtes/` |
+| `ColectivosAdapter`: siempre con filtro upstream `route_id` (nunca el feed completo), índice estático compacto desde R2 (`indice-colectivos.json`, ~5 ms de CPU en el primer request), posiciones y arribos por parada con fan-out con presupuesto de 5 s | 2.6 | `apps/proxy/src/adapters/colectivos/` |
+| Tránsito como stub 503 (diferido) | 2.7 | `src/adapters/transito/` |
+| ETag estable sobre `data` + `sourceTimestamp` + `stale` (304 real), log `upstream_fetch` sin credenciales | 2.8 | `src/middleware/envelope.ts` |
+| Tests: 67 en contratos, 87 en el proxy (fuente, adaptadores con fixtures `.pb` reales en workerd, rutas, ETag, rate limit, R2, CPU) y 79 en `tools/gtfs` (incluida validación contra contratos) | 2.11 | `docs/09-testing.md` |
+| Prueba de carga `tools/carga` (autocannon): 50 conexiones × 45 s → 29.286 requests, 0 errores, 8 fetches upstream en 2 claves; rate limit 60 × 200 / 40 × 429 con `Retry-After` | 2.12 | `tools/carga/README.md` |
+| `docs/06-proxy.md` (referencia del Worker) y READMEs por carpeta | 2.12 | [`06-proxy.md`](06-proxy.md) |
+| ADR-0007 (**Propuesta**): dónde corre el aprendizaje de paradas | — | [`adr/ADR-0007-aprendizaje-paradas.md`](adr/ADR-0007-aprendizaje-paradas.md) |
+
+**Verificación del coordinador en `main` (2026-11-02):** `pnpm lint`, `pnpm typecheck`, `pnpm test` en verde; `tools/gtfs` desde cero (`npm ci && npm test && npm run build`) sin ensuciar el árbol; `wrangler dev` con credenciales reales y el paquete estático en el R2 local: `/v1/subtes/estado` (B, C y E demoradas), `/v1/subtes/alertas` (3), `/v1/subtes/estaciones/1059/arribos` (`stale`, forecast congelado), `/v1/colectivos/lineas` (936), `/v1/colectivos/lineas/1858/posiciones` (4 vehículos), `/v1/colectivos/paradas/pfee923c699/arribos` (3 arribos en 0,7 s; 5,0 s `stale` cuando una línea upstream no responde), `/v1/transito/cortes` 503, `If-None-Match` → 304 con 0 bytes; cero credenciales en logs y respuestas.
+
+### Hallazgos adicionales (cierre)
+
+9. **En workerd no se pueden compartir promesas de I/O entre requests:** el coalescing con una `Promise` a nivel de módulo produjo 57 respuestas 500 "Worker's code had hung" bajo carga. Se reemplazó por datos compartidos + flag de refresco; la prueba de carga quedó en 0 errores.
+10. **CPU del primer request de colectivos por isolate:** 25–27 ms con Zod sobre `paradas.json` (supera los 10 ms de Free) → `tools/gtfs` publica `indice-colectivos.json` compacto y el proxy no valida con Zod en runtime (el archivo viene firmado por sha256 en el manifest): ~5 ms.
+11. **`wrangler types` genera literales** para las vars (`"5000"`): los helpers que leen `env` usan tipos estructurales.
+12. **Arribos de colectivos existen y funcionan** vía `tripUpdates?route_id=` (5 KB por línea) con equivalencias `stop_id → parada`; el 1–9 % de fallos upstream se absorbe con presupuesto de 5 s y `stale`.
+
+### Riesgos abiertos que pasan a Fase 3
+
+- La cobertura de arribos por parada depende de la tabla de equivalencias; la captura de 24–48 h sigue corriendo (PID vivo, 74 snapshots al cierre) y hay que rehacer `tools/gtfs` al terminar y actualizar `01b` y el README de la herramienta.
+- Nadie desplegó todavía a `preview`: requiere `wrangler login` y `wrangler secret put` del usuario (`10-deploy.md`). La Cache API no actúa en `*.workers.dev`: hace falta dominio propio para la capa A en producción.
+- `forecastGTFS` sigue congelado (arribos de subte vacíos con `stale`).
+- Dónde corre el aprendizaje de paradas en producción (ADR-0007, Propuesta).
 
 ### Pendiente de decisión del usuario
 
-- Confirmar ADR-0006 (paradas BA + equivalencias aprendidas, sin OSM).
+- Confirmar ADR-0006 (paradas BA + equivalencias aprendidas, sin OSM) y ADR-0007 (aprendizaje fuera de Workers para el MVP).
 - Enviar (o no) la solicitud del GTFS vigente al GCBA (`solicitud-gtfs-gcba.md`): se manda desde su casilla, con sus datos.
 - Licencia del proyecto (el README raíz dice "a definir").
 - Siguen abiertas las suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`, heredadas de la Fase 1.

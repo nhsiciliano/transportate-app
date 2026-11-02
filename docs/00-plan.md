@@ -38,6 +38,10 @@ Resultado de la verificación empírica (`docs/01-api-transporte.md`) y de la bi
 - **Costos:** Free alcanza para ~1.100 usuarios activos (1 request por tick de 20 s, 30 min/día), no 300; la Cache API no reduce requests facturadas.
 - **Sin `bearing`** en los feeds: tarea 4.6 no rota íconos por rumbo real (se puede derivar de posiciones sucesivas, opcional).
 
+## Estado tras la Fase 2 (2026-11-02)
+
+Fase 2 completada (ver `docs/bitacora.md`): proxy en `apps/proxy` con capa A, adaptadores reales de subtes y colectivos (arribos por parada incluidos), estáticos desde R2, rate limiting, ETag/304, 154 tests en el monorepo + 79 en `tools/gtfs`, prueba de carga sin errores, despliegue documentado (sin ejecutar: requiere `wrangler login` del usuario). Ajustes al plan: la tarea 2.10 produce ahora `indice-colectivos.json` para el proxy además de los archivos para la app; `TransitoAdapter` es un stub 503; ADR-0006 y ADR-0007 quedan como Propuestas a confirmar. Fase 3 arranca con la app (`apps/mobile`) consumiendo los contratos de `packages/contracts` y el proxy en `preview`.
+
 ## Herramientas de trabajo transversales
 
 - **Impeccable (UX/UI).** Es el skill de diseño para todo lo visual. `PRODUCT.md` y `DESIGN.md` viven en la raíz del repo porque el launcher los lee de ahí; `docs/README.md` los enlaza. Comandos por fase: `init` y `shape` en Fase 1, `extract`/`document` en Fase 3, `shape` + `onboard` + `clarify` por feature en Fase 4, `audit` nativo + `adapt` nativo + `harden` + `critique` + `polish` en Fase 5. Antes de cualquier edición de UI se lee `craft-floor.md` como indica el skill.

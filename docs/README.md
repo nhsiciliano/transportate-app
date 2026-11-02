@@ -57,7 +57,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd, fixtures reales), cómo se corre y qué queda afuera | ✅ |
 | [`10-deploy.md`](10-deploy.md) | Despliegue del proxy en Cloudflare (entornos, R2, secrets, workflow manual de GitHub Actions) y operación sin datos personales | ✅ |
 | [`../apps/proxy/README.md`](../apps/proxy/README.md) | Rutas v1, headers, composición, rate limit y estáticos del Worker | ✅ |
-| `06-proxy.md` | Rutas, adaptadores, caché y rate limit del Worker (documento de referencia) | 🚧 lo escribe mid-dev al cierre de la Fase 2 |
+| [`06-proxy.md`](06-proxy.md) | Referencia del Worker: rutas, adaptadores, fuente con caché, estáticos, rate limit, límites de CPU, cómo agregar un servicio | ✅ |
 
 ### Decisiones (ADR)
 
@@ -68,6 +68,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | [`adr/ADR-0003-almacenamiento-mmkv.md`](adr/ADR-0003-almacenamiento-mmkv.md) | MMKV en vez de expo-sqlite |
 | [`adr/ADR-0004-iconos-material-symbols.md`](adr/ADR-0004-iconos-material-symbols.md) | Material Symbols Rounded como SVG en vez de fuente variable |
 | [`adr/ADR-0005-proxy-dos-capas.md`](adr/ADR-0005-proxy-dos-capas.md) | Proxy en dos capas con Durable Object `FeedHub` |
+| [`adr/ADR-0007-aprendizaje-paradas.md`](adr/ADR-0007-aprendizaje-paradas.md) | Dónde corre el aprendizaje de paradas (Propuesta) |
 | [`adr/ADR-0006-paradas-colectivos.md`](adr/ADR-0006-paradas-colectivos.md) | Paradas de colectivo: catálogo oficial de BA + tabla de equivalencias aprendida; sin OSM en el MVP (**Propuesta**, la confirma el usuario) |
 
 Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecuencias**. Los ADR no se reescriben: si una decisión cambia, se crea uno nuevo que reemplaza al anterior y se marca el estado.
