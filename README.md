@@ -8,13 +8,14 @@ App móvil (iOS y Android, Expo) con **colectivos, subte y tránsito de CABA en 
 
 | Carpeta | Qué hay |
 |---|---|
+| [`apps/mobile/`](apps/mobile/README.md) | App iOS/Android con Expo SDK 58 y Expo Router (Fase 3, en curso). |
 | [`apps/proxy/`](apps/proxy/README.md) | Worker de Cloudflare con Hono 4: rutas `/v1/*`, adaptadores, caché, rate limit, estáticos desde R2. |
 | `packages/contracts/` | Esquemas Zod 4 del JSON v1 y tipos compartidos entre proxy y app. |
 | [`tools/`](tools/README.md) | Herramientas de investigación y preprocesado (paquetes npm sueltos, fuera del workspace pnpm). |
 | [`docs/`](docs/README.md) | Toda la documentación: plan, API, arquitectura, escalabilidad, privacidad, ADR, bitácora. |
 | `PRODUCT.md` | Contexto de producto y diseño (lo lee el skill Impeccable desde la raíz). |
 
-`apps/mobile` (Expo SDK 58) se crea en la Fase 3. El workspace pnpm incluye solo `apps/*` y `packages/*` (`pnpm-workspace.yaml`).
+El workspace pnpm incluye solo `apps/*` y `packages/*` (`pnpm-workspace.yaml`).
 
 ## Requisitos
 
@@ -52,6 +53,18 @@ pnpm --filter transportate-proxy dev     # wrangler dev → http://localhost:878
 ```
 
 Más comandos del proxy (regenerar tipos, rutas, caché, rate limit): [`apps/proxy/README.md`](apps/proxy/README.md). Estrategia de tests: [`docs/09-testing.md`](docs/09-testing.md).
+
+## Cómo correr la app
+
+La app (`apps/mobile`) usa un dev client de Expo, no Expo Go. Con Xcode o Android Studio instalados:
+
+```sh
+pnpm install                                  # desde la raíz
+pnpm --filter transportate-proxy dev          # proxy local en :8787 (opcional por ahora)
+cd apps/mobile && pnpm ios                    # o: pnpm android
+```
+
+La guía completa está en [`apps/mobile/README.md`](apps/mobile/README.md): builds con EAS, la variable `EXPO_PUBLIC_API_URL`, los tests y la estructura de rutas.
 
 ## Paquete estático (paradas, líneas, subte)
 
