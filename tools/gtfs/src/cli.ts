@@ -30,8 +30,8 @@ import { AreaMask, isValidCoord, type LatLon } from './lib/geo.js';
 import { sha256 } from './lib/hash.js';
 import { readTripUpdates, readVehiclePositions, readVehiclePositionsSimple } from './lib/rt.js';
 import { listZip, openZipEntry } from './lib/zip.js';
-import { SCHEMAS, type Manifest, type Parada } from './schemas.js';
-import { buildEquivalencias, buildParadaGrid } from './steps/equivalencias.js';
+import { SCHEMAS, validate, type Manifest, type Parada, type Validator } from './schemas.js';
+import { buildEquivalencias, buildParadaGrid, toPublished } from './steps/equivalencias.js';
 import { buildLineas } from './steps/lineas.js';
 import { buildParadas } from './steps/paradas.js';
 import { buildRecorridos } from './steps/recorridos.js';
@@ -71,10 +71,16 @@ async function timed<T>(name: string, fn: () => Promise<T> | T): Promise<T> {
 }
 
 /** Valida contra el esquema y escribe JSON compacto. Falla el build si no valida. */
+function schemaFor(file: string): Validator {
+  const schema = SCHEMAS[file];
+  if (!schema) throw new Error(`${file}: sin esquema`);
+  return schema;
+}
+
 function writeOutput(file: OutputFile, data: unknown): number {
-  const result = SCHEMAS[file].safeParse(data);
-  if (!result.success) {
-    throw new Error(`${file} no valida contra su esquema:\n${z.prettifyError(result.error)}`);
+  const errors = validate(schemaFor(file), data);
+  if (errors.length) {
+    throw new Error(`${file} no valida contra su contrato:\n${errors.join('\n')}`);
   }
   const json = JSON.stringify(data);
   writeFileSync(join(OUT_DIR, file), json);
@@ -117,7 +123,7 @@ async function main(): Promise<void> {
       return buildLineas(vehicles, inCaba);
     });
     report.lineas = r.stats;
-    for (const l of r.lineas) if (l.numero !== null) routeNumero.set(l.routeId, l.numero);
+    for (const l of r.lineas) if (l.numero !== null) routeNumero.set(l.lineaId, l.numero);
     if (need('lineas')) {
       report.lineasBytes = writeOutput('lineas-colectivos.json', {
         version: 1,
@@ -179,12 +185,18 @@ async function main(): Promise<void> {
         minVotos: PARAMS.minVotos,
       }),
     );
-    report.equivalencias = r.stats;
+    const publicadas = toPublished(r.equivalencias);
+    // Las filas sin parada BA no se publican (la app no puede usarlas); solo se cuentan.
+    report.equivalencias = {
+      ...r.stats,
+      publicadas: publicadas.length,
+      noPublicadasSinParada: r.equivalencias.length - publicadas.length,
+    };
     report.equivalenciasBytes = writeOutput('equivalencias-paradas.json', {
       version: 1,
       metodo:
-        'docs/01b-gtfs-alternativos.md §4 + tools/gtfs/README.md: coordenada GTFS 2021 del stop_id (validada a ≤ 1 km de los vehículos que lo informan) → parada BA más cercana a ≤ 40 m que comparta número de línea; las capturas votan por parada en cada pasada del vehículo (transición de stop_id) y confirman o corrigen la semilla. origen ajustada-ba = con parada BA; gtfs2021/aprendida = solo coordenada.',
-      equivalencias: r.equivalencias,
+        'docs/01b-gtfs-alternativos.md §4 + tools/gtfs/README.md: coordenada GTFS 2021 del stop_id (validada a ≤ 1 km de los vehículos que lo informan) → parada BA más cercana a ≤ 40 m que comparta número de línea; las capturas votan por parada en cada pasada del vehículo (transición de stop_id) y confirman o corrigen la semilla. origen ajustada-ba = semilla 2021 ajustada a parada BA; aprendida = parada elegida por las capturas. Solo se publican las filas con parada BA.',
+      equivalencias: publicadas,
     });
   }
 
@@ -251,13 +263,13 @@ async function main(): Promise<void> {
   console.log(`\nversion ${manifest.version}`);
   for (const [f, a] of Object.entries(manifest.archivos))
     console.log(`  ${f.padEnd(32)} ${String(a.bytes).padStart(9)} B`);
-  for (const [f, why] of Object.entries(manifest.omitidos))
+  for (const [f, why] of Object.entries(manifest.omitidos ?? {}))
     console.log(`  ${f.padEnd(32)} omitido: ${why}`);
   console.log('Estadísticas en tools/gtfs/last-build.json');
 }
 
 function buildManifest(): Manifest {
-  const archivos: Manifest['archivos'] = {};
+  const files: { f: string; bytes: number; sha: string }[] = [];
   const contents: Buffer[] = [];
   for (const f of OUTPUT_FILES) {
     const path = join(OUT_DIR, f);
@@ -267,18 +279,23 @@ function buildManifest(): Manifest {
     }
     const buf = readFileSync(path);
     // Revalida lo que haya en out/ (también lo generado en corridas anteriores con --solo).
-    const parsed = SCHEMAS[f].safeParse(JSON.parse(buf.toString('utf8')));
-    if (!parsed.success) throw new Error(`out/${f} no valida:\n${z.prettifyError(parsed.error)}`);
-    archivos[f] = { bytes: buf.length, sha256: sha256(buf) };
+    const errors = validate(schemaFor(f), JSON.parse(buf.toString('utf8')));
+    if (errors.length) throw new Error(`out/${f} no valida:\n${errors.join('\n')}`);
+    files.push({ f, bytes: buf.length, sha: sha256(buf) });
     contents.push(Buffer.from(`${f}\n`), buf);
   }
+  const version = sha256(Buffer.concat(contents)).slice(0, 12);
+  const archivos: Manifest['archivos'] = {};
+  // url relativa a /v1/static/ (la ruta del proxy) y a la raíz del bucket R2.
+  for (const { f, bytes, sha } of files)
+    archivos[f] = { url: `${version}/${f}`, bytes, sha256: sha };
   const subteEnd = existsSync(join(OUT_DIR, 'subte-lineas.json'))
     ? z
         .object({ feedEndDate: z.string().nullable() })
         .parse(JSON.parse(readFileSync(join(OUT_DIR, 'subte-lineas.json'), 'utf8'))).feedEndDate
     : null;
   const manifest: Manifest = {
-    version: sha256(Buffer.concat(contents)).slice(0, 12),
+    version,
     generatedAt: new Date().toISOString(),
     archivos,
     omitidos,
@@ -294,8 +311,8 @@ function buildManifest(): Manifest {
       },
     },
   };
-  const ok = SCHEMAS['manifest.json'].safeParse(manifest);
-  if (!ok.success) throw new Error(`manifest no valida:\n${z.prettifyError(ok.error)}`);
+  const errors = validate(schemaFor('manifest.json'), manifest);
+  if (errors.length) throw new Error(`manifest no valida:\n${errors.join('\n')}`);
   writeFileSync(join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest));
   return manifest;
 }

@@ -8,6 +8,7 @@ import {
   ArribosParadaV1,
   ArriboSubteV1,
   EquivalenciaParadaV1,
+  EquivalenciasArchivoV1,
   ErrorV1,
   EstacionSubteV1,
   EstadoLineasV1,
@@ -15,10 +16,14 @@ import {
   HealthV1,
   LineaColectivoV1,
   LineasColectivoV1,
+  LineasColectivoArchivoV1,
   LineaSubteV1,
   ManifestV1,
   MetaV1,
   ParadaV1,
+  ParadasArchivoV1,
+  SubteEstacionesArchivoV1,
+  SubteLineasArchivoV1,
   PosicionesLineaResponseV1,
   PosicionesLineaV1,
   VehiculoV1,
@@ -86,16 +91,50 @@ const arriboColectivo = {
   incertidumbre: 7,
   viajeId: '152167-1',
 };
+// Forma real de tools/gtfs/out/paradas.json
 const parada = {
-  id: 'ba-1524-defensa',
-  calle: 'DEFENSA',
-  altura: '1524',
+  id: 'pabb406ba9f',
+  calle: 'Defensa',
+  altura: 1524,
   nombre: 'Defensa 1524',
   lat: -34.625676,
   lon: -58.371,
-  comuna: '1',
-  barrio: 'SAN TELMO',
-  lineas: [{ linea: '22', sentido: 'V' }, { linea: '53' }],
+  comuna: 1,
+  barrio: 'San Telmo',
+  lineas: [
+    { linea: '22', numero: 22, sentido: 'vuelta' },
+    { linea: 'EBUS', numero: null, sentido: null },
+  ],
+};
+
+const estacion = {
+  id: '1059',
+  nombre: 'San Pedrito',
+  nombreGtfs: 'San Pedrito',
+  lat: -34.63,
+  lon: -58.47,
+  lineas: ['A'],
+  andenes: ['1059N', '1059S'],
+  accesible: true,
+};
+
+const lineaSubte = {
+  id: 'PM-C',
+  routeId: 'PM-Civico',
+  nombre: 'Saguier - Centro Cívico',
+  tipo: 'premetro',
+  color: '#FFBD33',
+  colorTexto: '#000000',
+  estacionIds: ['1142', '1143'],
+  sentidos: [{ directionId: 0, cabecera: 'Centro Cívico', estacionIds: ['1142', '1143'] }],
+};
+
+const equivalencia = {
+  stopId: '6441111945',
+  paradaId: 'pabb406ba9f',
+  origen: 'ajustada-ba',
+  confianza: 0.8,
+  observaciones: 12,
 };
 
 // [nombre, esquema, válido, inválido]
@@ -163,7 +202,7 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
       generatedAt: '2026-11-01T00:00:00Z',
       archivos: {
         'paradas.json': {
-          url: '/v1/static/a1b2c3/paradas.json',
+          url: 'a1b2c3/paradas.json',
           bytes: 123456,
           sha256: 'a'.repeat(64),
         },
@@ -171,36 +210,80 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
     },
     { version: '', generatedAt: '2026-11-01T00:00:00Z', archivos: {} },
   ],
-  ['ParadaV1', ParadaV1, parada, { ...parada, lineas: [{ sentido: 'V' }] }],
+  ['ParadaV1', ParadaV1, parada, { ...parada, altura: '1524' }],
   [
-    'EstacionSubteV1',
-    EstacionSubteV1,
-    { id: '1059', nombre: 'San Pedrito', linea: 'A', lat: -34.63, lon: -58.47, orden: 0 },
-    { id: '1059', nombre: 'San Pedrito', linea: 'A', lat: -34.63, lon: -58.47, orden: -1 },
+    'ParadaV1 (sentido)',
+    ParadaV1,
+    parada,
+    { ...parada, lineas: [{ linea: '22', numero: 22, sentido: 'V' }] },
   ],
   [
-    'LineaSubteV1',
-    LineaSubteV1,
-    {
-      id: 'PM-C',
-      nombre: 'Premetro',
-      color: '#FFBD33',
-      colorTexto: '#000000',
-      estacionIds: ['1142'],
-    },
-    { id: 'PM', nombre: 'Premetro', color: '#FFBD33', colorTexto: '#000000', estacionIds: [] },
+    'ParadaV1 (comuna)',
+    ParadaV1,
+    { ...parada, comuna: null, barrio: null, altura: null },
+    { ...parada, comuna: 76 },
   ],
+  ['EstacionSubteV1', EstacionSubteV1, estacion, { ...estacion, lineas: [] }],
+  ['EstacionSubteV1 (id)', EstacionSubteV1, estacion, { ...estacion, id: '1059N' }],
+  ['LineaSubteV1', LineaSubteV1, lineaSubte, { ...lineaSubte, id: 'PM' }],
+  ['LineaSubteV1 (estaciones)', LineaSubteV1, lineaSubte, { ...lineaSubte, estacionIds: ['1142'] }],
+  ['EquivalenciaParadaV1', EquivalenciaParadaV1, equivalencia, { ...equivalencia, origen: 'osm' }],
   [
-    'EquivalenciaParadaV1',
+    'EquivalenciaParadaV1 (sin parada)',
     EquivalenciaParadaV1,
+    equivalencia,
+    { ...equivalencia, paradaId: null },
+  ],
+  [
+    'ParadasArchivoV1',
+    ParadasArchivoV1,
+    { version: 1, fuente: 'https://cdn.buenosaires.gob.ar/x.csv', paradas: [parada] },
+    { version: 2, fuente: 'x', paradas: [] },
+  ],
+  [
+    'EquivalenciasArchivoV1',
+    EquivalenciasArchivoV1,
+    { version: 1, metodo: 'docs/01b', equivalencias: [equivalencia] },
+    { version: 1, metodo: 'docs/01b', equivalencias: [{ ...equivalencia, observaciones: 'x' }] },
+  ],
+  [
+    'SubteLineasArchivoV1',
+    SubteLineasArchivoV1,
+    { version: 1, fuente: 'x', feedEndDate: '20261231', lineas: [lineaSubte] },
+    { version: 1, fuente: 'x', lineas: [lineaSubte] },
+  ],
+  [
+    'SubteEstacionesArchivoV1',
+    SubteEstacionesArchivoV1,
+    { version: 1, fuente: 'x', estaciones: [estacion] },
+    { version: 1, fuente: 'x', estaciones: [{ ...estacion, linea: 'A', lineas: undefined }] },
+  ],
+  [
+    'LineasColectivoArchivoV1',
+    LineasColectivoArchivoV1,
     {
-      stopId: '6441111945',
-      paradaId: 'ba-1',
-      origen: 'gtfs2021',
-      confianza: 0.8,
-      observaciones: 12,
+      version: 1,
+      fuente: 'x',
+      nota: 'semilla',
+      capturadoEn: '2026-11-01',
+      lineas: [
+        {
+          lineaId: '1858',
+          linea: '10',
+          empresa: 'LINEA 10 S.A.',
+          numero: 10,
+          agencyId: '17',
+          enCaba: true,
+        },
+      ],
     },
-    { stopId: '6441111945', paradaId: 'ba-1', origen: 'osm', confianza: 0.8, observaciones: 12 },
+    {
+      version: 1,
+      fuente: 'x',
+      nota: 'semilla',
+      capturadoEn: '2026-11-01',
+      lineas: [{ lineaId: '1858', linea: '10', empresa: 'LINEA 10 S.A.' }],
+    },
   ],
 ];
 

@@ -12,6 +12,7 @@ export interface LineasStats {
   empresas: number;
   empresasReparadas: number;
   sinNumero: number;
+  empresasFaltantes: number;
   enCaba: number;
 }
 
@@ -46,6 +47,7 @@ export function buildLineas(
     else byRoute.set(v.route_id, [v]);
   }
   let empresasReparadas = 0;
+  let empresasFaltantes = 0;
   const lineas: LineaColectivo[] = [];
   for (const [routeId, vs] of byRoute) {
     const shortName = mostCommon(
@@ -57,24 +59,27 @@ export function buildLineas(
     const empresa = normalizeEmpresa(rawEmpresa);
     if (rawEmpresa && MOJIBAKE_TEST.test(rawEmpresa)) empresasReparadas++;
     const agency = vs.find((v) => v.agency_id != null)?.agency_id;
-    lineas.push({
-      routeId,
+    const linea: LineaColectivo = {
+      lineaId: routeId,
       linea: n.linea,
-      numero: n.numero,
-      ramal: n.ramal,
-      empresa,
-      agencyId: agency == null ? null : String(agency),
+      // El contrato no admite empresa nula; hoy todas la traen (stats.empresasFaltantes).
+      empresa: empresa ?? 'Sin empresa informada',
       cabeceras: [
         ...new Set(vs.map((v) => cleanText(v.trip_headsign)).filter((h) => h !== '')),
       ].sort(),
+      numero: n.numero,
+      agencyId: agency == null ? null : String(agency),
       enCaba: vs.some((v) => inCaba(v.latitude, v.longitude)),
-    });
+    };
+    if (n.ramal !== null) linea.ramal = n.ramal;
+    if (empresa === null) empresasFaltantes++;
+    lineas.push(linea);
   }
   lineas.sort(
     (a, b) =>
       (a.numero ?? Infinity) - (b.numero ?? Infinity) ||
       a.linea.localeCompare(b.linea) ||
-      a.routeId.localeCompare(b.routeId, 'en', { numeric: true }),
+      a.lineaId.localeCompare(b.lineaId, 'en', { numeric: true }),
   );
   return {
     lineas,
@@ -85,6 +90,7 @@ export function buildLineas(
       empresas: new Set(lineas.map((l) => l.empresa)).size,
       empresasReparadas,
       sinNumero: lineas.filter((l) => l.numero === null).length,
+      empresasFaltantes,
       enCaba: lineas.filter((l) => l.enCaba).length,
     },
   };

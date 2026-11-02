@@ -7,11 +7,12 @@ import {
   LineasColectivoResponseV1,
   PosicionesLineaResponseV1,
 } from '@transportate/contracts';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { createApp } from '../src/app';
 import { V1_ROUTES } from '../src/routes/index';
-import { alertas, type Calls, estado, fakeAdapters, lineas, testEnv } from './helpers';
+import { resetEdgeCacheMemory } from '../src/sources/edge-cached';
+import { alertas, type Calls, estado, FAKE_SECRET, fakeAdapters, lineas, testEnv } from './helpers';
 
 function setup() {
   const calls: Calls = { arribosSubte: [], posiciones: [], arribosColectivo: [] };
@@ -121,18 +122,35 @@ describe('rutas de datos v1', () => {
   });
 });
 
-describe('placeholder de adaptadores (src/adapters/index.ts)', () => {
-  it('las rutas de datos responden 503 "Adaptador no implementado todavía"', async () => {
+describe('createAdapters (adaptadores reales, sin red)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetEdgeCacheMemory();
+  });
+
+  it('upstream 401 sin caché → /v1/subtes/estado 200 con sin_datos y meta.stale; 503 en alertas', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{"error":"Invalid Client"}', { status: 401 }));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { createAdapters } = await import('../src/adapters/index');
     const app = createApp({ adapters: createAdapters });
+
     const res = await app.request('/v1/subtes/estado', {}, testEnv());
-    // Si high-dev ya reemplazó el placeholder, esta prueba no aplica.
-    if (res.status === 503) {
-      expect(ErrorV1.parse(await res.json()).error.message).toBe(
-        'Adaptador no implementado todavía',
-      );
-    } else {
-      expect(res.status).not.toBe(500);
-    }
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).not.toContain(FAKE_SECRET);
+    const body = EstadoLineasResponseV1.parse(JSON.parse(text));
+    expect(new Set(body.data.lineas.map((l) => l.estado))).toEqual(new Set(['sin_datos']));
+    expect(body.meta).toMatchObject({ stale: true, sourceTimestamp: null });
+
+    const input = fetchSpy.mock.calls[0]?.[0];
+    const url = new URL(input instanceof Request ? input.url : String(input));
+    expect(url.pathname).toBe('/subtes/serviceAlerts');
+    expect(url.searchParams.get('json')).toBe('1');
+
+    const alertasRes = await app.request('/v1/subtes/alertas', {}, testEnv());
+    expect(alertasRes.status).toBe(503);
+    expect(await alertasRes.text()).not.toContain(FAKE_SECRET);
   });
 });

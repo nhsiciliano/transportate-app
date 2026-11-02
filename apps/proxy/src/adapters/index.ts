@@ -1,21 +1,31 @@
-// PLACEHOLDER: high-dev reemplaza este archivo con los adaptadores reales de subtes y
-// colectivos. Mantener la firma de `createAdapters`.
+// Composición de los adaptadores reales por request: una fuente `EdgeCachedFeedSource` (capa A)
+// con las credenciales de `env` y el índice estático sobre el bucket R2 `STATIC`.
+// Es barato: el estado caro (coalescing, copia en memoria, índices estáticos) vive por isolate.
 import type { Adapters } from '../container';
+import { EdgeCachedFeedSource } from '../sources/edge-cached';
+import { feedTtl } from '../sources/upstream';
+import { createColectivosAdapter } from './colectivos';
+import { r2Store } from './colectivos/static-index';
+import { createSubtesAdapter } from './subtes';
 import { createTransitoAdapter } from './transito';
-import { ApiError } from './types';
 
-function notImplemented(): Promise<never> {
-  return Promise.reject(
-    new ApiError('upstream_unavailable', 'Adaptador no implementado todavía', 503),
-  );
-}
-
-// El placeholder no usa `env` ni `ctx`; las implementaciones reales sí (secrets, waitUntil).
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function createAdapters(env: CloudflareBindings, ctx?: ExecutionContext): Adapters {
+  const ttlSeconds = feedTtl(env.FEED_TTL_SECONDS);
+  const staticTtlSeconds = feedTtl(env.STATIC_TTL_SECONDS, 86_400);
+  const source = new EdgeCachedFeedSource({
+    credentials: { clientId: env.GCBA_CLIENT_ID, clientSecret: env.GCBA_CLIENT_SECRET },
+    ctx,
+  });
+  const now = Date.now;
   return {
-    subtes: { estadoLineas: notImplemented, alertas: notImplemented, arribos: notImplemented },
-    colectivos: { lineas: notImplemented, posiciones: notImplemented, arribos: notImplemented },
+    subtes: createSubtesAdapter({ source, ttlSeconds, now }),
+    colectivos: createColectivosAdapter({
+      source,
+      store: r2Store(env.STATIC, ctx),
+      ttlSeconds,
+      staticTtlSeconds,
+      now,
+    }),
     transito: createTransitoAdapter(),
   };
 }
