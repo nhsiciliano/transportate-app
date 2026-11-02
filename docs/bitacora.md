@@ -54,9 +54,56 @@ Coordinación con Orca (run `run_71a886f27b3e`) desde la sesión `planner`. Las 
 - **Incidente menor de privacidad del equipo:** durante la tarea 1.11 un worker envió el email del usuario en el `User-Agent` de una consulta a Overpass (OSM). No quedó en el repo. Regla desde ahora: ningún script usa datos personales en headers; `User-Agent` genérico `transportate-tools`.
 - **Pendientes de decisión del usuario:** suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`; tipografía (Nunito vs Archivo); qué hacer con Tránsito sin cortes; fuente alternativa de GTFS de colectivos.
 
-## Fase 2 — Proxy
+## Fase 2 — Proxy · **en curso**
 
-_Sin iniciar._
+**Inicio:** 2026-11-01 · **Alcance:** `apps/proxy`, `packages/contracts`, `tools/gtfs`, tests, despliegue y documentación del proxy. Sin código de la app. **Esta entrada se actualiza hasta el cierre de la fase; todavía no hay cierre ni validación del usuario.**
+
+### Cómo se trabaja
+
+Mismo esquema que en la Fase 1: coordinación con Orca desde `planner`, workers por dificultad en sus worktrees (`nhsiciliano/Low-Dev`, `Mid-Dev`, `High-Dev`) y el coordinador integra a `main`. A `main` ya llegaron el scaffold, los contratos, el esqueleto y las rutas del proxy, los tests, el despliegue, el preprocesado estático y las tareas de low-dev (captura, versiones, ADR-0006, solicitud). Los adaptadores del proxy los está terminando high-dev en paralelo.
+
+### Hecho hasta ahora
+
+| Qué | Tarea | Dónde |
+|---|---|---|
+| Scaffold del monorepo pnpm (TS 6.0.3 estricto, ESLint 10, Prettier, `.editorconfig`, CI de lint/typecheck/test) | 2.2 | raíz, `.github/workflows/ci.yml` |
+| Contratos Zod v1 (sobre `EnvelopeV1` con `generatedAt`/`sourceTimestamp`, esquemas de subte, colectivos, tránsito, manifiesto estático y esquemas upstream laxos) | 2.3 | `packages/contracts` |
+| Esqueleto del Worker con Hono 4, `/v1/health`, errores tipados e interfaces de fuentes y adaptadores | 2.2/2.8 | `apps/proxy` |
+| Rutas `/v1/*` con ETag débil y 304, `Cache-Control` con `stale-while-revalidate`, rate limit con el binding nativo (clave = hash de la IP, sin persistirla) y estáticos desde R2 con Cache API; Tránsito como stub que responde 503 | 2.8/2.9 | `apps/proxy`, [`apps/proxy/README.md`](../apps/proxy/README.md) |
+| Tests Vitest dentro de workerd (`@cloudflare/vitest-plugin`): rutas, ETag/304, rate limit, estáticos y ausencia de fugas de secrets. Al 2026-11-02: 43 tests en `packages/contracts` y 37 en `apps/proxy`, `pnpm lint`, `pnpm typecheck` y `pnpm test` en verde | 2.11 (parcial) | `docs/09-testing.md` |
+| Despliegue: entornos `preview` y `production`, buckets R2 y secrets, workflow manual de GitHub Actions | 2.12 (parcial) | [`10-deploy.md`](10-deploy.md), `.github/workflows/deploy-proxy.yml` |
+| Preprocesado estático (paradas BA, líneas, subte, equivalencias `stop_id`, recorridos) a JSON versionado y script de subida a R2 | 2.10 | `tools/gtfs` |
+| Captura continua de `vehiclePositions` y muestras de `tripUpdates` (lanzada el 2026-11-01 a las 23:31 UTC; objetivo 24–48 h) | 2.0 | `tools/captura-posiciones` |
+| Versiones verificadas con Context7 y npm | 2.1 | [`versiones.md`](versiones.md) |
+| Límites de CPU y memoria de Workers (con medición local de decodificación) | 2.1 | [`04-escalabilidad.md`](04-escalabilidad.md) §9 |
+| ADR-0006 de paradas de colectivo (**Propuesta**) y borrador de solicitud del GTFS vigente al GCBA (**sin enviar**) | 2.0/2.1 | [`adr/ADR-0006-paradas-colectivos.md`](adr/ADR-0006-paradas-colectivos.md), [`solicitud-gtfs-gcba.md`](solicitud-gtfs-gcba.md) |
+| README raíz, índice de `docs/`, README de `tools/` y `.env.example` | 2.12 (parcial) | [`../README.md`](../README.md), [`README.md`](README.md), [`../tools/README.md`](../tools/README.md) |
+
+### Hallazgos y decisiones técnicas
+
+1. **Tests de Workers:** se usa `@cloudflare/vitest-plugin` 1.4.12, que reemplaza al deprecado `@cloudflare/vitest-pool-workers` (0.23.0, con peer `vitest ^4.1.0` y wrangler 4.124.0 desfasado). Versiones fijadas hoy en los `package.json`: Vitest 5.0.5, wrangler 4.156.1, Zod 4.6.7, Hono 4.13.16.
+2. **TypeScript 6.0.3**, no la 7.0.2: `typescript-eslint` 8.72.1 declara soporte `<6.1.0`.
+3. **`compatibility_date`:** `nodejs_compat` ya viene activado desde 2026-08-04 y `workerd` rechaza el flag con fechas posteriores; no se declara.
+4. **CPU en Workers Free:** decodificar `tripUpdates` completo (3,6 MB) costó 14–86 ms en una medición local en Node, contra un límite de 10 ms. El proxy filtra por `route_id` upstream y el feed completo se procesa solo en la capa B o fuera de línea (`04-escalabilidad.md` §9). La medición en `workerd` real sigue pendiente.
+5. **La compresión la hace el runtime de Cloudflare**, no el Worker (`hono/compress` queda fuera): evita gastar CPU sin beneficio (`apps/proxy/README.md`).
+6. **Paradas de colectivo:** catálogo oficial de BA + tabla de equivalencias aprendida; **sin OSM en el MVP** para no heredar ODbL (ADR-0006, a confirmar por el usuario).
+7. **Primer build de `tools/gtfs` con solo ~19 minutos de captura:** de las predicciones de `tripUpdates` ubicadas en CABA, el 74,6 % ya tiene parada BA; el 56,7 % de todas las predicciones sigue sin ubicar. Estas cifras mejoran al rehacer el build con las 24–48 h de captura (`tools/gtfs/README.md`).
+8. **Fallos de la captura:** en los primeros 40 minutos fallaron 2 de 35 snapshots de posiciones y 1 de 4 de `tripUpdates` (tras timeout de 20 s y un reintento), coherente con el 1–9 % de la Fase 1.
+
+### Pendiente en la Fase 2
+
+- Adaptadores reales de subte (2.5) y colectivos (2.6) en `apps/proxy/src/adapters/` (hoy `createAdapters` es un placeholder que responde 503) y las fuentes con caché, coalescing y último dato bueno (2.4), más sus tests con fixtures reales (2.11).
+- Prueba de carga con `autocannon` que muestre 1 request al upstream por TTL (2.12) y `docs/06-proxy.md`, que escribe mid-dev al cierre de la fase.
+- Dejar correr la captura 24–48 h, rehacer el build de `tools/gtfs` y actualizar la cobertura en `01b-gtfs-alternativos.md` y `tools/gtfs/README.md`.
+- Medir en `workerd` real el CPU de decodificar y probar `gtfs-realtime-bindings` dentro del Worker (hoy solo se probó en Node).
+- Primer despliegue real a `preview` (nadie lo hizo todavía: requiere `wrangler login` de la persona).
+
+### Pendiente de decisión del usuario
+
+- Confirmar ADR-0006 (paradas BA + equivalencias aprendidas, sin OSM).
+- Enviar (o no) la solicitud del GTFS vigente al GCBA (`solicitud-gtfs-gcba.md`): se manda desde su casilla, con sus datos.
+- Licencia del proyecto (el README raíz dice "a definir").
+- Siguen abiertas las suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`, heredadas de la Fase 1.
 
 ## Fase 3 — Base de la app
 

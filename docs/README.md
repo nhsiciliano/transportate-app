@@ -2,7 +2,7 @@
 
 Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y tránsito de CABA en tiempo real, sin cuentas ni datos personales. Esta carpeta reúne todo lo que se decide, se investiga y se verifica a lo largo del proyecto. El trabajo avanza por fases con freno y validación al final de cada una (ver `00-plan.md`).
 
-**Estado:** Fase 1 (investigación) completada el 2026-11-01, pendiente de validación del usuario. Ver `bitacora.md`.
+**Estado:** **Fase 2 (proxy) en curso.** La Fase 1 (investigación) se cerró el 2026-11-01. Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
 
 ## Cómo leer esto
 
@@ -11,18 +11,20 @@ Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y trán
 - ¿Cómo se ve y qué tokens usamos? → `02-obelisco-tokens.md`, `02b-colores-subte.md`
 - ¿Cómo está armado y cuánto aguanta? → `03-arquitectura.md`, `04-escalabilidad.md`
 - ¿Qué pasa con los datos de las personas? → `05-privacidad.md`
+- ¿Cómo se prueba y cómo se despliega? → `09-testing.md`, `10-deploy.md`
+- ¿Qué herramientas hay y cómo se corren? → [Herramientas](#herramientas) y [`../tools/README.md`](../tools/README.md)
 - ¿Por qué se decidió así? → `adr/`
 
 ## Índice
 
-Leyenda: ✅ escrito · ⏳ fases posteriores
+Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fases posteriores
 
 ### Plan y estado
 
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`00-plan.md`](00-plan.md) | Plan maestro: contexto, decisiones de arquitectura, fases, riesgos | ✅ |
-| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fase 1 cerrada) |
+| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fase 1 cerrada; Fase 2 en curso) |
 | [`versiones.md`](versiones.md) | Versiones fijadas y verificadas con Context7, y lo pendiente de fijar | ✅ |
 
 ### Investigación (Fase 1)
@@ -37,6 +39,7 @@ Leyenda: ✅ escrito · ⏳ fases posteriores
 | [`briefs/`](briefs/) | Un brief por pantalla del MVP (Impeccable `shape`), con estados y sin código | ✅ |
 | [`fuentes/`](fuentes/) | Materiales de origen, por ejemplo `api-transporte-v1.raml` (spec oficial de la API) | ✅ |
 | [`../tools/api-probe/`](../tools/api-probe/README.md) | Script reproducible del sondeo de la API (`node probe.mjs`) y `last-run.json` | ✅ |
+| [`solicitud-gtfs-gcba.md`](solicitud-gtfs-gcba.md) | Borrador de correo (sin enviar) al GCBA pidiendo el GTFS vigente de colectivos y consultando el estado de la API | ✅ |
 | [`../apps/proxy/test/fixtures/`](../apps/proxy/test/fixtures/README.md) | 32 fixtures reales (pb, json, geojson, errores) para los tests del proxy | ✅ |
 
 ### Diseño de la solución
@@ -47,6 +50,15 @@ Leyenda: ✅ escrito · ⏳ fases posteriores
 | [`04-escalabilidad.md`](04-escalabilidad.md) | Capa A / capa B, requests por día para 300 → 1.000.000 usuarios, límites y costos de Cloudflare, plan de migración | ✅ |
 | [`05-privacidad.md`](05-privacidad.md) | Principios, qué se guarda y qué no sale del teléfono, rate limiting, logs, texto de "Acerca de" | ✅ |
 
+### Fase 2 (proxy)
+
+| Documento | Contenido | Estado |
+|---|---|---|
+| [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd, fixtures reales), cómo se corre y qué queda afuera | ✅ |
+| [`10-deploy.md`](10-deploy.md) | Despliegue del proxy en Cloudflare (entornos, R2, secrets, workflow manual de GitHub Actions) y operación sin datos personales | ✅ |
+| [`../apps/proxy/README.md`](../apps/proxy/README.md) | Rutas v1, headers, composición, rate limit y estáticos del Worker | ✅ |
+| `06-proxy.md` | Rutas, adaptadores, caché y rate limit del Worker (documento de referencia) | 🚧 lo escribe mid-dev al cierre de la Fase 2 |
+
 ### Decisiones (ADR)
 
 | Documento | Decisión |
@@ -56,6 +68,7 @@ Leyenda: ✅ escrito · ⏳ fases posteriores
 | [`adr/ADR-0003-almacenamiento-mmkv.md`](adr/ADR-0003-almacenamiento-mmkv.md) | MMKV en vez de expo-sqlite |
 | [`adr/ADR-0004-iconos-material-symbols.md`](adr/ADR-0004-iconos-material-symbols.md) | Material Symbols Rounded como SVG en vez de fuente variable |
 | [`adr/ADR-0005-proxy-dos-capas.md`](adr/ADR-0005-proxy-dos-capas.md) | Proxy en dos capas con Durable Object `FeedHub` |
+| [`adr/ADR-0006-paradas-colectivos.md`](adr/ADR-0006-paradas-colectivos.md) | Paradas de colectivo: catálogo oficial de BA + tabla de equivalencias aprendida; sin OSM en el MVP (**Propuesta**, la confirma el usuario) |
 
 Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecuencias**. Los ADR no se reescriben: si una decisión cambia, se crea uno nuevo que reemplaza al anterior y se marca el estado.
 
@@ -63,11 +76,22 @@ Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecu
 
 | Documento | Fase | Contenido |
 |---|---|---|
-| `06-proxy.md` | 2 | Rutas, adaptadores, caché y rate limit del Worker |
 | `07-app.md` | 3 | Estructura y convenciones de la app |
 | `08-design-system.md` | 3 | Componentes Obelisco en React Native |
-| `09-testing.md` | 2–4 | Estrategia de tests (Vitest, Jest + RNTL) |
-| `10-deploy.md` | 2 y 5 | Despliegue del Worker, EAS Build, CI |
+
+`09-testing.md` y `10-deploy.md` ya existen y se amplían en las Fases 3 a 5 (tests de la app con Jest + RNTL, EAS Build y OTA).
+
+## Herramientas
+
+Cada una es un paquete **npm standalone** dentro de `tools/` (fuera del workspace pnpm), salvo `contraste`, que es un script de Python sin dependencias. Reglas comunes, estado de la captura y detalle de entradas y salidas: [`../tools/README.md`](../tools/README.md).
+
+| Herramienta | Qué hace | Cómo se corre (desde su carpeta) | Fase |
+|---|---|---|---|
+| [`tools/api-probe`](../tools/api-probe/README.md) | Sondea todos los endpoints de la API con credenciales, mide cadencia y fallos, y guarda los fixtures de `apps/proxy/test/fixtures/` | `npm install --no-package-lock && node probe.mjs` | 1 |
+| [`tools/gtfs-cruce`](../tools/gtfs-cruce/README.md) | Cruza GTFS y datasets de paradas candidatos con los IDs del tiempo real | `npm install && npm run cruce` | 1 |
+| [`tools/contraste`](../tools/contraste/contraste.py) | Calcula contraste WCAG de las paletas de Obelisco (clara, oscura derivada e histórica) | `python3 contraste.py` (`--check` falla si un par exigible de la paleta oscura no cumple) | 1 |
+| [`tools/captura-posiciones`](../tools/captura-posiciones/README.md) | Captura continua de `vehiclePositions` (cada 60 s) y muestras de `tripUpdates` (cada 10 min) a `~/.cache/transportate/capturas/` | `./start.sh`, `./status.sh`, `./stop.sh` | 2 |
+| [`tools/gtfs`](../tools/gtfs/README.md) | Preprocesa paradas BA, líneas, subte, equivalencias `stop_id` y recorridos a JSON versionado para R2 | `npm install && npm run build`; `./upload-r2.sh` sube a R2 | 2 |
 
 ## `PRODUCT.md` y `DESIGN.md` viven en la raíz
 
