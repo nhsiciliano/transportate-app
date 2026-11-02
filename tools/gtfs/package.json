@@ -8,10 +8,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "prebuild": "node scripts/check-contracts.mjs",
-    "build": "tsx src/cli.ts",
-    "pretest": "node scripts/check-contracts.mjs",
-    "test": "vitest run",
+    "build": "node scripts/check-contracts.mjs && tsx src/cli.ts",
+    "test": "node scripts/check-contracts.mjs && vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write .",
