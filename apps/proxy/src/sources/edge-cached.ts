@@ -124,6 +124,14 @@ export class EdgeCachedFeedSource implements FeedSource {
     const t0 = this.now();
     try {
       const fresh = await this.fetchWithRetry(req);
+      console.log(
+        JSON.stringify({
+          event: 'upstream_fetch',
+          key: req.key,
+          status: fresh.upstreamStatus,
+          ms: this.now() - t0,
+        }),
+      );
       remember(req.key, fresh);
       const retain = req.ttlSeconds + this.maxStaleSeconds;
       await runInBackground(
