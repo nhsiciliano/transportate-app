@@ -1,0 +1,10 @@
+{
+  "name": "@transportate/carga",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Prueba de carga local del proxy contra wrangler dev: coalescing (1 upstream por TTL) y rate limit (Fase 2, tarea 2.12).",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "carga": "node carga.mjs" },
+  "dependencies": { "autocannon": "8.0.0" }
+}
