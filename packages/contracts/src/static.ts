@@ -176,6 +176,21 @@ export const SubteEstacionesArchivoV1 = z.object({
 });
 export type SubteEstacionesArchivoV1 = z.infer<typeof SubteEstacionesArchivoV1>;
 
+/**
+ * Índice compacto para el proxy (`indice-colectivos.json`): lo único que necesita para
+ * posiciones y arribos, sin parsear `paradas.json` (1,7 MB) ni `equivalencias-paradas.json`
+ * en el Worker. Medido en workerd: el índice completo costaba ~27 ms de CPU en frío (el plan
+ * Free da 10 ms); ver apps/proxy/src/adapters/README.md.
+ */
+export const IndiceColectivosArchivoV1 = z.object({
+  version: z.literal(1),
+  /** Número de línea → `lineaId` con vehículos en CABA (ramales de esa línea). */
+  lineasPorNumero: z.record(z.string(), z.array(z.string())),
+  /** `paradaId` → [stop_id del tiempo real que la informan, números de línea que paran]. */
+  paradas: z.record(z.string(), z.tuple([z.array(z.string()), z.array(z.number().int())])),
+});
+export type IndiceColectivosArchivoV1 = z.infer<typeof IndiceColectivosArchivoV1>;
+
 /** Esquema de cada archivo JSON del paquete (los GeoJSON no tienen contrato v1). */
 export const ARCHIVOS_ESTATICOS_V1 = {
   'paradas.json': ParadasArchivoV1,
@@ -183,4 +198,5 @@ export const ARCHIVOS_ESTATICOS_V1 = {
   'equivalencias-paradas.json': EquivalenciasArchivoV1,
   'subte-lineas.json': SubteLineasArchivoV1,
   'subte-estaciones.json': SubteEstacionesArchivoV1,
+  'indice-colectivos.json': IndiceColectivosArchivoV1,
 } as const;

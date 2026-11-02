@@ -15,35 +15,35 @@ El feed completo de colectivos pesa 580 KB (`vehiclePositions`) y 3,6 MB (`tripU
 
 ## Índice estático (`static-index.ts`)
 
-Lee el paquete de `tools/gtfs` desde R2 (binding `STATIC`, solo lectura, con los helpers de `src/static/r2.ts` y la Cache API delante). Primero `latest/manifest.json` y después `<version>/<archivo>`; todo se valida con los contratos v1 (`ManifestV1`, `*ArchivoV1`).
+Lee el paquete de `tools/gtfs` desde R2 (binding `STATIC`, solo lectura, con los helpers de `src/static/r2.ts` y la Cache API delante): primero `latest/manifest.json` (validado con `ManifestV1`) y después `<version>/<archivo>`.
 
-- **Por isolate y por `version`:** el manifiesto se revisa como máximo cada `STATIC_TTL_SECONDS`. Si cambió la versión, se descartan los índices.
-- **Carga perezosa por archivo:**
+- **Por isolate y por `version`:** el manifiesto se revisa como máximo cada `STATIC_TTL_SECONDS`. Si cambió la versión, se descartan los índices. Se guardan **datos ya parseados**, nunca la promesa de una lectura de R2 (regla de workerd, `src/cache/README.md`).
+- **Solo dos archivos, cargados cuando hacen falta:**
 
-  | Ruta | Archivos que carga |
-  |---|---|
-  | `lineas()` | solo `lineas-colectivos.json` |
-  | `posiciones()` | ese y `equivalencias-paradas.json` (para `paradaId`) |
-  | `arribos()` | los tres, incluido `paradas.json` (1,7 MB) |
+  | Archivo | Bytes | Lo usan |
+  |---|---:|---|
+  | `lineas-colectivos.json` | 161 KB | `lineas()`, `posiciones()`, `arribos()` |
+  | `indice-colectivos.json` | 231 KB | `posiciones()` (`stop_id` → `paradaId`) y `arribos()` |
 
-  El primer request de cada isolate paga el parseo una sola vez. **Riesgo pendiente de medir en producción:** parsear y validar `paradas.json` puede pasar los 10 ms de CPU del plan Free en ese primer request.
+  `indice-colectivos.json` (contrato `IndiceColectivosArchivoV1`) lo genera `tools/gtfs` ya indexado: `paradaId → [stopIds, números de línea]` y `número → lineaIds` con vehículos en CABA. El proxy **ya no carga** `paradas.json` (1,7 MB) ni `equivalencias-paradas.json`; esos quedan para la app.
+- **Sin Zod en runtime:** `JSON.parse` + chequeo estructural mínimo (`version === 1` y tipo de las raíces). La validación completa contra los contratos la hace `tools/gtfs` antes de publicar, y cada archivo va con su sha256 en el manifiesto. Cifras de CPU antes y después: `../README.md`.
 - **Índices:**
 
   | Índice | Contenido |
   |---|---|
   | `porId` | `lineaId` → línea |
   | `porNumeroEmpresa` | `numero\|empresa normalizada` → `lineaIds` (para unir por nombre; nunca por `route_id` 2021) |
-  | `porNumeroCaba` | número → `lineaIds` con vehículos en CABA |
-  | paradas | `paradaId` → `{ parada, stopIds (inversa de equivalencias), lineaIds }` |
+  | `paradaDeStop` | `stop_id` → `paradaId` |
+  | `get(paradaId)` | `{ stopIds, lineaIds }`, resuelto al pedirla |
 
-  Los `lineaIds` de una parada salen de los números de línea del dataset BA (`L1…L6`) vía `porNumeroCaba`, intercalados por número: así una línea con muchos ramales no acapara el tope de 8.
+  Los `lineaIds` de una parada salen de sus números de línea del dataset BA vía `lineasPorNumero`, intercalados por número: así una línea con muchos ramales no acapara el tope de 8.
 - **Sin manifiesto en el bucket:** `ApiError('upstream_unavailable', 'Datos estáticos no cargados', 503)`.
 
 ## Rutas
 
 **`lineas()`:** el diccionario del índice como `LineaColectivoV1`, con `meta.ttlSeconds = STATIC_TTL_SECONDS` y `sourceTimestamp` = `generatedAt` del manifiesto.
 
-**`posiciones(lineaId)`:**
+**`posiciones(lineaId)`:** una sola request upstream, con el timeout de la fuente (5 s) + 1 reintento.
 
 - 404 `not_found` si la línea no está en el índice; en ese caso no se pide nada upstream.
 - Por cada vehículo: `rumbo: null` (el feed no trae bearing), `velocidad` solo si vino en el mensaje, `edadSegundos` desde `vehicle.timestamp` y `paradaId` si su `stop_id` tiene equivalencia.
@@ -54,7 +54,7 @@ Lee el paquete de `tools/gtfs` desde R2 (binding `STATIC`, solo lectura, con los
 
 - 404 si la parada no existe.
 - Si no tiene equivalencia `stop_id` → lista vacía con `meta` normal, sin pedir nada upstream (la app oculta los arribos).
-- Si tiene: pide `tripUpdates?route_id=` para hasta 8 líneas en paralelo (`Promise.allSettled`) y filtra los `stop_time_update` cuyo `stop_id` está entre los de la parada.
+- Si tiene: pide `tripUpdates?route_id=` para hasta 8 líneas en paralelo (`Promise.allSettled`) con un **presupuesto total de 5 s** (`FANOUT_BUDGET_MS`). Es un solo `AbortSignal.timeout` compartido: dentro del fan-out no hay reintento y el adaptador también compite contra el plazo, por si la fuente no lo respeta. Antes, una línea con timeout + reintento demoró la respuesta 16,4 s; ahora la respuesta sale en ≤ 5 s y a esa línea se la omite. Después filtra los `stop_time_update` cuyo `stop_id` está entre los de la parada.
 - **Por arribo:** `enSegundos` desde `arrival.time` (o `departure.time`); `retrasoSegundos` = `delay` e `incertidumbre` = `uncertainty`, solo si vinieron en el mensaje (protobufjs devuelve 0 para campos ausentes).
 - **Filtros y orden:** se descartan los de hace más de 60 s. Un viaje cuenta **una sola vez**, aunque pase por dos `stop_id` que apuntan a la misma parada (pasa con códigos AVL consecutivos). Máximo 10 por línea, todo ordenado por `enSegundos`.
 - **Fallos:** las líneas que fallan se omiten y la respuesta va con `meta.stale: true`. Si fallan **todas**, responde 503: una lista vacía se leería como "no viene ninguno".

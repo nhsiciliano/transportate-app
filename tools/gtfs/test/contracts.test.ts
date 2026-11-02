@@ -1,21 +1,17 @@
 // El paquete estático lo consume la app con los contratos v1 (@transportate/contracts):
 // estos tests impiden que tools/gtfs y packages/contracts vuelvan a divergir.
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import {
-  ARCHIVOS_ESTATICOS_V1,
   EquivalenciasArchivoV1,
+  IndiceColectivosArchivoV1,
   LineasColectivoArchivoV1,
-  ManifestV1,
   ParadasArchivoV1,
 } from '@transportate/contracts';
 import { describe, expect, it } from 'vitest';
-import { OUT_DIR } from '../src/config.js';
 import { buildLineas } from '../src/steps/lineas.js';
 import { buildParadas } from '../src/steps/paradas.js';
 import { toPublished } from '../src/steps/equivalencias.js';
+import { buildIndice } from '../src/steps/indice.js';
 
 describe('salidas de los pasos contra los contratos v1', () => {
   it('paradas.json', async () => {
@@ -85,25 +81,54 @@ describe('salidas de los pasos contra los contratos v1', () => {
   });
 });
 
-// Si hay un build en out/ (npm run build), se valida archivo por archivo, igual que la app.
-const built = existsSync(join(OUT_DIR, 'manifest.json'));
-describe.skipIf(!built)('out/ (último build) contra los contratos v1', () => {
-  const read = (f: string): unknown => JSON.parse(readFileSync(join(OUT_DIR, f), 'utf8'));
-  const manifest = built ? ManifestV1.parse(read('manifest.json')) : null;
+// El out/ real no se valida acá: depende del último build local (puede ser de otra versión).
+// Lo valida el propio build contra los mismos contratos antes de escribir cada archivo.
 
-  it('manifest.json: urls <version>/<archivo> y sha256 coinciden con los archivos', () => {
-    expect(manifest).not.toBeNull();
-    for (const [f, a] of Object.entries(manifest?.archivos ?? {})) {
-      expect(a.url).toBe(`${manifest?.version}/${f}`);
-      const buf = readFileSync(join(OUT_DIR, f));
-      expect(buf.length).toBe(a.bytes);
-      expect(createHash('sha256').update(buf).digest('hex')).toBe(a.sha256);
-    }
-  });
-
-  it.each(Object.entries(ARCHIVOS_ESTATICOS_V1))('%s', (file, schema) => {
-    if (!existsSync(join(OUT_DIR, file))) return;
-    const r = schema.safeParse(read(file));
-    expect(r.success, JSON.stringify(r.error?.issues.slice(0, 3))).toBe(true);
+describe('indice-colectivos.json', () => {
+  it('paradaId → [stopIds, números]; número → lineaIds de CABA; valida el contrato', () => {
+    const parada = (id: string, numeros: (number | null)[]) => ({
+      id,
+      calle: 'Defensa',
+      altura: 1524,
+      nombre: 'Defensa 1524',
+      lat: -34.6,
+      lon: -58.4,
+      comuna: 1,
+      barrio: 'San Telmo',
+      lineas: numeros.map((n) => ({ linea: String(n ?? 'EBUS'), numero: n, sentido: null })),
+    });
+    const lineas = [
+      { lineaId: '835', linea: '152', empresa: 'X', numero: 152, agencyId: null, enCaba: true },
+      { lineaId: '834', linea: '152', empresa: 'X', numero: 152, agencyId: null, enCaba: true },
+      { lineaId: '9', linea: '152', empresa: 'Y', numero: 152, agencyId: null, enCaba: false },
+    ];
+    const eq = [
+      {
+        stopId: 'S2',
+        paradaId: 'pa',
+        origen: 'aprendida' as const,
+        confianza: 0.7,
+        observaciones: 3,
+      },
+      {
+        stopId: 'S1',
+        paradaId: 'pa',
+        origen: 'ajustada-ba' as const,
+        confianza: 0.9,
+        observaciones: 1,
+      },
+    ];
+    const { indice, stats } = buildIndice(
+      [parada('pa', [152, null]), parada('pb', [99])],
+      lineas,
+      eq,
+    );
+    expect(indice).toEqual({
+      version: 1,
+      lineasPorNumero: { '152': ['834', '835'] },
+      paradas: { pa: [['S1', 'S2'], [152]], pb: [[], [99]] },
+    });
+    expect(stats).toMatchObject({ paradas: 2, paradasConStopIds: 1, stopIds: 2, numeros: 1 });
+    expect(IndiceColectivosArchivoV1.safeParse(indice).success).toBe(true);
   });
 });

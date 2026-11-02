@@ -99,7 +99,8 @@ export function createColectivosAdapter(deps: ColectivosDeps): ColectivosAdapter
 
     async posiciones(lineaId: string): Promise<EnvelopeV1<PosicionesLineaV1>> {
       const snap = await snapshot();
-      const [idx, stopToParada] = await Promise.all([snap.lineas(), snap.equivalencias()]);
+      const [idx, paradasIdx] = await Promise.all([snap.lineas(), snap.paradas()]);
+      const stopToParada = paradasIdx.paradaDeStop;
       const linea = idx.porId.get(lineaId);
       if (!linea) throw new ApiError('not_found', 'Línea inexistente', 404);
 

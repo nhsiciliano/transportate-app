@@ -8,7 +8,37 @@ Traducen upstream → contrato v1 (`@transportate/contracts`). Las interfaces (`
 | `colectivos/` | Líneas, posiciones y arribos por parada, siempre con el filtro `route_id` (tarea 2.6) | [`colectivos/README.md`](colectivos/README.md) |
 | `transito/` | Stub diferido: siempre 503 (tarea 2.7) | — |
 
-`index.ts` → `createAdapters(env, ctx?)` arma por request una `EdgeCachedFeedSource` con las credenciales de `env`, `FEED_TTL_SECONDS` (default 20) y `STATIC_TTL_SECONDS` (default 86400), y el `StaticStore` sobre el bucket `STATIC`. Es barato: el estado caro (coalescing, copia en memoria, índices estáticos) vive por isolate.
+`index.ts` → `createAdapters(env, ctx?)` arma por request una `EdgeCachedFeedSource` y el `StaticStore` sobre el bucket `STATIC`. La fuente recibe las credenciales de `env` y estas variables:
+
+| Variable | Default |
+|---|---:|
+| `FEED_TTL_SECONDS` | 20 |
+| `STATIC_TTL_SECONDS` | 86400 |
+| `UPSTREAM_TIMEOUT_MS` | 5000 |
+
+`UPSTREAM_TIMEOUT_MS` es opcional y **todavía no está en `wrangler.jsonc`**: mid-dev la agrega en `vars`. Armar los adaptadores es barato, porque las copias en memoria, los flags de refresco y los índices estáticos viven por isolate y son solo datos.
+
+## CPU del primer request por isolate (colectivos)
+
+**Límite:** el plan Free da 10 ms de CPU por request. **Cómo se mide:** `test/adapters/cpu-static.test.ts`, en workerd local (los timers avanzan durante el cómputo; desplegado no), con el paquete real de `tools/gtfs/out` (versión `4a6eba8c435f`). Mediana de 7 corridas en frío, en esta máquina (darwin-arm64). El test se saltea si no hay build.
+
+| | Archivos | Bytes | CPU |
+|---|---|---:|---:|
+| **Antes** | `paradas.json`: `JSON.parse` + Zod | 1.695.168 | 19 ms (4 de parse + ~14 de Zod) |
+| | `equivalencias-paradas.json`: `JSON.parse` + Zod | 501.281 | 5 ms |
+| | `lineas-colectivos.json`: `JSON.parse` + Zod | 160.955 | 1 ms |
+| | **Primer request de `arribos()`** | | **~25 ms** (más indexación: ~27 ms medidos en la versión anterior) |
+| **Después** | `lineas-colectivos.json`: `JSON.parse` + chequeo estructural + índice | 160.955 | 1 ms |
+| | `indice-colectivos.json`: `JSON.parse` + chequeo + `stop_id → paradaId` | 230.680 | 4 ms |
+| | **Primer request de `arribos()`** | | **~5 ms** |
+
+El test falla si el primer request supera los 10 ms. Los requests siguientes del isolate no repiten este costo. Detalles en `colectivos/README.md`.
+
+## Latencia ante fallos upstream
+
+- **`arribos(paradaId)`:** presupuesto total de 5 s para el fan-out. Antes demoraba 16,4 s cuando una línea hacía timeout (8 s) más el reintento (8 s); ahora responde en ≤ 5 s, sin la línea que no llegó y con `meta.stale: true`. Lo cubre el test "fan-out con una línea que nunca responde", que tarda unos 5,0 s.
+- **`posiciones()` y subtes:** una sola request upstream, con timeout de 5 s y 1 reintento.
+- **Verificado en `wrangler dev`** con upstream real: `/v1/colectivos/paradas/pfee923c699/arribos` respondió 200 en 5,03 s con una línea colgada.
 
 ## Verificación manual (2026-11-02, `wrangler dev` local con `.dev.vars`)
 

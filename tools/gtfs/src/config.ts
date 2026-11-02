@@ -88,6 +88,7 @@ export const OUTPUT_FILES = [
   'paradas.json',
   'lineas-colectivos.json',
   'equivalencias-paradas.json',
+  'indice-colectivos.json',
   'subte-lineas.json',
   'subte-estaciones.json',
   'subte-red.geojson',

@@ -158,6 +158,16 @@ beforeAll(async () => {
     },
     'paradas.json': { version: 1, fuente: 'test', paradas },
     'equivalencias-paradas.json': { version: 1, metodo: 'test', equivalencias },
+    // Índice compacto que usa el proxy (en producción lo genera tools/gtfs desde los archivos de arriba).
+    'indice-colectivos.json': {
+      version: 1,
+      lineasPorNumero: { '152': ['834', '835'] },
+      paradas: {
+        pconarribos1: [[STOP, 'S00081620'], [152]],
+        psinequival: [[], [152]],
+        psinlineas0: [['6861101775'], [999]],
+      },
+    },
   };
   const archivos: ManifestV1['archivos'] = {};
   for (const [name, data] of Object.entries(files)) {
