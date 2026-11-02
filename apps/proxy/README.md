@@ -1,6 +1,6 @@
 # transportate-proxy
 
-Proxy/BFF de Transportate sobre Cloudflare Workers con Hono 4. Arquitectura: `docs/03-arquitectura.md`; contrato JSON: `packages/contracts`.
+Proxy/BFF de Transportate sobre Cloudflare Workers con Hono 4. Referencia completa: [`docs/06-proxy.md`](../../docs/06-proxy.md). Arquitectura: `docs/03-arquitectura.md`. Contrato JSON: `packages/contracts`.
 
 ```sh
 cp ../../.dev.vars.example .dev.vars   # completar con las credenciales (nunca se commitea)
@@ -32,7 +32,10 @@ pnpm --filter transportate-proxy types  # regenera worker-configuration.d.ts tra
 
 - `Content-Type: application/json; charset=utf-8`
 - `Cache-Control: public, max-age=<meta.ttlSeconds>, stale-while-revalidate=<2×ttl>`
-- `ETag` débil (`W/"<sha1 del cuerpo>"`) y **304** sin cuerpo si coincide `If-None-Match` (comparación débil; acepta listas y `*`)
+- `ETag` débil (`W/"<sha1>"`) y **304** sin cuerpo si coincide `If-None-Match` (comparación débil; acepta listas y `*`).
+  - **ETag estable:** se calcula sobre `data` + `meta.sourceTimestamp` + `meta.stale`, no sobre el cuerpo completo.
+  - `meta.generatedAt` y `meta.ageSeconds` cambian en cada request aunque el dato servido desde caché sea el mismo, y **no invalidan el ETag**. Así, repetir la consulta dentro del TTL da 304 de verdad.
+  - La app calcula la frescura con `sourceTimestamp`.
 - `X-Transportate-Generated-At: <meta.generatedAt>` y `X-Transportate-Stale: 1` cuando el proxy sirvió el último dato bueno
 
 **Compresión:** no se usa `hono/compress`. El runtime de Workers aplica gzip o brotli automáticamente a la respuesta según el `Accept-Encoding` del cliente, y Cloudflare comprime por defecto los tipos de contenido JSON. Fuentes: [Fetch API, "How the Accept-Encoding header is handled"](https://developers.cloudflare.com/workers/runtime-apis/fetch/#how-the-accept-encoding-header-is-handled) y [Compression Rules](https://developers.cloudflare.com/rules/compression-rules/). Comprimir en el Worker gastaría CPU sin beneficio. En `wrangler dev` no hay compresión.
@@ -43,7 +46,15 @@ pnpm --filter transportate-proxy types  # regenera worker-configuration.d.ts tra
 - **Fijos** `{ subtes, colectivos, transito }`, para tests.
 - **Una fábrica `(env, ctx?) => Adapters`**, que se llama una vez por request (sin estado global que dependa del `env` de otra request).
 
-`src/index.ts` usa `createAdapters` de `src/adapters/index.ts`. Hoy es un **placeholder**: subtes y colectivos responden 503 "Adaptador no implementado todavía" hasta que estén las implementaciones reales. Los secrets llegan a los adaptadores solo por `env`.
+`src/index.ts` usa `createAdapters(env, ctx)` de `src/adapters/index.ts`. Arma por request una `EdgeCachedFeedSource` (capa A: memoria del isolate → Cache API → coalescing → upstream, con 1 reintento y último dato bueno) y el índice estático sobre el bucket `STATIC`. Los secrets llegan a los adaptadores solo por `env`.
+
+| Adaptador | Qué hace | Detalle |
+|---|---|---|
+| Subtes | Estado por línea derivado de `serviceAlerts?json=1`, alertas y arribos desde `forecastGTFS` (hoy congelado → `stale`) | [`src/adapters/subtes/README.md`](src/adapters/subtes/README.md) |
+| Colectivos | Líneas desde el paquete estático; posiciones y arribos siempre filtrados por `route_id` upstream; arribos solo en paradas con equivalencia `stop_id` → parada | [`src/adapters/colectivos/README.md`](src/adapters/colectivos/README.md) |
+| Tránsito | Stub diferido: siempre 503 | — |
+
+Fuente y caché: [`src/sources/README.md`](src/sources/README.md) y [`src/cache/README.md`](src/cache/README.md). Cada fetch upstream real loguea `{"event":"upstream_fetch","key","status","ms"}`, sin URL ni credenciales; con esos eventos la prueba de carga (`tools/carga`) cuenta las llamadas al GCBA.
 
 ## Rate limiting (`src/middleware/rate-limit.ts`)
 
@@ -102,6 +113,9 @@ Guía completa: [`docs/10-deploy.md`](../../docs/10-deploy.md) (buckets, secrets
 - `helpers.ts` define adaptadores falsos y `testEnv()`: los bindings reales del plugin (R2 local) más secrets ficticios y un `RATE_LIMITER` inyectado.
 - El binding `ratelimit` existe en el entorno local, pero sus contadores son compartidos y dependen del reloj. Para que los tests sean deterministas, `RATE_LIMITER` se reemplaza por un `{ limit }` falso.
 - Los tests de estáticos escriben en el R2 local (`env.STATIC.put`) y usan un host distinto por caso, porque la Cache API es real.
+- `etag.test.ts`: con el mismo `data` y distinto `generatedAt`, el segundo request da 304.
+- `sources/`, `adapters/`, `lib/`: fuente capa A y adaptadores reales con fixtures (las `.pb` se cargan inline en workerd), sin red.
+- Prueba de carga local (coalescing y rate limit): [`tools/carga/README.md`](../../tools/carga/README.md). Estrategia completa: `docs/09-testing.md`.
 
 ## Carpetas
 

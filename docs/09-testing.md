@@ -12,7 +12,10 @@ Versiones fijadas (Fase 2): Vitest **5.0.5**, `@cloudflare/vitest-plugin` **1.4.
 |---|---|---|---|
 | Contratos | `packages/contracts/test/` | Vitest (Node) | Cada esquema v1 acepta un ejemplo válido y rechaza uno inválido. `envelope()` arma el sobre. Los esquemas **upstream** laxos aceptan las fixtures reales |
 | Proxy: rutas y middlewares | `apps/proxy/test/*.test.ts` | Vitest dentro de **workerd** (`@cloudflare/vitest-plugin`) | Rutas `/v1` con adaptadores falsos, ETag/304, `Cache-Control`, rate limit, errores sin fuga de secrets, estáticos desde R2 local con Cache API real |
-| Proxy: adaptadores y fuentes | `apps/proxy/test/` (los agrega quien implementa `src/adapters/**`, `src/sources/**` y `src/cache/**`) | Vitest en workerd + **fixtures reales** | Traducción upstream → v1 con `test/fixtures/**`, caché, coalescing, último dato bueno, reintentos |
+| Proxy: fuente capa A | `apps/proxy/test/sources/edge-cached.test.ts` | Vitest en workerd, upstream y caché inyectados | Miss → upstream y hit dentro del TTL; coalescing (10 concurrentes → 1 fetch); último dato bueno con `stale`; 503 sin caché; reintento por timeout, red o 5xx, pero no por 4xx; credenciales ausentes de claves y logs |
+| Proxy: adaptadores | `apps/proxy/test/adapters/{subtes,colectivos}.test.ts`, `test/lib/gtfs-rt.test.ts` | Vitest en workerd + **fixtures reales**. Las `.pb` se importan inline (`?inline` → data URL → bytes con `test/lib/fixture-bytes.ts`), porque workerd no tiene `fs` | Reglas de estado de subte, alertas, arribos con forecast congelado; colectivos: líneas, posiciones filtradas, arribos por equivalencia, 404, fan-out parcial, decodificación GTFS-RT |
+| Proxy: carga | `tools/carga` (fuera de la suite) | autocannon 8.0.0 contra `wrangler dev` | 1 fetch upstream por clave y por TTL bajo carga, y rate limit 429. Ver §5 |
+| `tools/gtfs` contra contratos | `tools/gtfs/test/contracts.test.ts` (+ tests por paso) | Vitest (npm, fuera del workspace) | Cada archivo de `out/` valida contra su esquema de `ARCHIVOS_ESTATICOS_V1`, y el manifiesto contra `ManifestV1` |
 | Herramientas | `tools/*` | Ejecución manual (scripts standalone con npm, fuera del workspace) | Investigación y preprocesado; ver §5 |
 | App (Fase 3) | `apps/mobile` | Jest + React Native Testing Library | Ver §7 |
 
@@ -49,6 +52,10 @@ pnpm lint && pnpm typecheck && pnpm format:check
 
   El binding `ratelimit` existe en el entorno local, pero sus contadores son compartidos y dependen del reloj, así que los tests de rate limit inyectan su propio `{ limit }` para decidir el resultado y capturar la clave (que es un hash, nunca la IP).
 - **R2 y Cache API reales.** `test/static.test.ts` escribe con `env.STATIC.put(...)` y verifica 200/ETag/304/404. Como `caches.default` también es real y persiste dentro del archivo de test, **cada caso usa un host distinto** (`https://static-N.test`) para no compartir entradas de caché.
+- **ETag estable.** `test/etag.test.ts` usa un adaptador falso que devuelve el mismo `data` con `generatedAt` y `ageSeconds` distintos. Verifica tres cosas:
+  - el segundo request con `If-None-Match` da **304 sin cuerpo**;
+  - el ETag cambia si cambia `data`, `sourceTimestamp` o `stale`;
+  - un `sourceTimestamp` nuevo devuelve 200 con otro ETag.
 - **Fuga de secrets.** `test/errors.test.ts` fuerza un error cuyo mensaje contiene una URL upstream y el secret, y verifica que la respuesta (cuerpo y headers) no incluye ni el secret ni la URL ni `stack`.
 - **Adaptadores (los agrega quien los implementa).** Leen fixtures de `apps/proxy/test/fixtures/<servicio>/` y verifican la salida contra los esquemas v1 (`EstadoLineasResponseV1.parse(...)`, etc.). Para los casos de fallo, se reemplaza la `FeedSource` por una falsa que devuelve fixtures `.error.txt`, el protobuf corrupto (`subtes/serviceAlerts.pb`) o lanza excepciones. No hay `fetch` real en los tests.
 
@@ -74,12 +81,13 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
 | `tools/api-probe` | `node probe.mjs` (o `--only=subtes`); el `last-run.json` se compara con el anterior | Diagnóstico de la API y fixtures |
 | `tools/gtfs-cruce` | `node tools/gtfs-cruce/cruce.mjs` (lee la caché en `~/.cache/transportate/gtfs/`) | `last-run.json` con porcentajes de cruce (`docs/01b-gtfs-alternativos.md`) |
 | `tools/captura-posiciones` | `node captura.mjs --once` (un snapshot y termina); `./status.sh` para la captura larga | CSV en `~/.cache/transportate/capturas/` |
-| `tools/gtfs` (preprocesado) | Su propio README: el paquete generado en `out/` tiene que validar con `ManifestV1` y con los esquemas estáticos (`ParadaV1`, `EstacionSubteV1`, `EquivalenciaParadaV1`) antes de subirse a R2 | `out/<version>/*` + `manifest.json` |
+| `tools/gtfs` (preprocesado) | `npm run check` y `npm test`: Vitest sobre muestras chicas y, si existe `out/`, validación de cada archivo contra `ARCHIVOS_ESTATICOS_V1` (`ParadasArchivoV1`, `LineasColectivoArchivoV1`, `EquivalenciasArchivoV1`, `SubteLineasArchivoV1`, `SubteEstacionesArchivoV1`) y del manifiesto contra `ManifestV1`. Esquemas vigentes: `ManifestV1.archivos[x].url` = `<version>/<archivo>` relativo a `/v1/static/` (más `omitidos` y `fuentes` opcionales); `ParadaV1` con `altura` y `comuna` **numéricos** (o `null`) y `lineas[]` = `{ linea, numero, sentido: 'ida'\|'vuelta'\|null }`; `EquivalenciaParadaV1` solo con paradas (el origen `gtfs2021` está reservado y no se publica) | `out/<version>/*` + `manifest.json` |
+| `tools/carga` | Corre contra `wrangler dev` con el paquete estático en el R2 local (ver su README). Escenario A: 50 conexiones durante 10 o 45 s; cuenta los `upstream_fetch` del log. Escenario B: 100 requests con la misma IP → 429 | `tools/carga/README.md` con p50/p99, req/s, errores y fetches upstream |
 | `tools/contraste` | `python3 tools/contraste/contraste.py --check` (sale con 1 si falla un par de la paleta oscura) | Tablas de contraste de `docs/02-obelisco-tokens.md` |
 
 ## 6. Convenciones
 
-- Archivos `*.test.ts` en la carpeta `test/` de cada paquete. Un archivo por área (`routes`, `rate-limit`, `static`, `errors`, y uno por adaptador: `adapters-subtes`, `adapters-colectivos`…). Los helpers compartidos van en `test/helpers.ts`.
+- Archivos `*.test.ts` en la carpeta `test/` de cada paquete. Un archivo por área (`routes`, `rate-limit`, `static`, `errors`, `etag`), con subcarpetas por capa: `test/sources/`, `test/adapters/<servicio>.test.ts` y `test/lib/`. Los helpers compartidos van en `test/helpers.ts`.
 - Nombres de casos en castellano y en forma de comportamiento: `'responde 304 sin cuerpo si If-None-Match coincide'`.
 - Las respuestas se validan con los **esquemas de `@transportate/contracts`**, no con objetos copiados a mano: si el contrato cambia, el test lo nota.
 - Valores ficticios obvios en datos de prueba (`id-de-prueba`, `secreto-de-prueba-…`, IPs de documentación `203.0.113.0/24`). Nunca datos reales de personas ni credenciales.
@@ -92,7 +100,9 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
 - **Despliegue real ni bindings remotos** (R2 o rate limit de Cloudflare). Se usan los simulados del plugin. La verificación post-deploy es manual (`docs/10-deploy.md` §2).
 - **La Cache API en `*.workers.dev`**, que no tiene efecto allí. Se prueba la lógica en local; el comportamiento en producción depende del dominio propio.
 - **Compresión gzip/brotli**: la aplica el runtime de Workers, no nuestro código.
-- **Rendimiento y carga** en la suite unitaria. La prueba de carga (`autocannon`, tarea 2.12) se corre aparte contra `wrangler dev` y se documenta en `06-proxy.md`.
+- **Rendimiento y carga** en la suite unitaria. La prueba de carga (`tools/carga`, autocannon, tarea 2.12) se corre a mano contra `wrangler dev`, con el upstream real. Resultados en `tools/carga/README.md` y resumen en `docs/06-proxy.md`.
+  - Primera medición (2026-11-02): coalescing confirmado, con 30.435 requests → 5 fetches upstream en 45 s, y rate limit con 60 × 200 y 40 × 429.
+  - Hubo **57 respuestas 500** ("Worker's code had hung") por el coalescing entre requests. Está pendiente de corrección en `src/cache/` y se re-corre después.
 
 ## 8. Fase 3: la app
 
