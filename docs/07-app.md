@@ -3,6 +3,7 @@
 Referencia técnica de la app de Transportate al cierre de la Fase 3. Es la base sobre la que se construyen las features de la Fase 4. La guía de uso diario (instalar, correr, EAS) está en [`../apps/mobile/README.md`](../apps/mobile/README.md). El sistema de diseño en código está en [`08-design-system.md`](08-design-system.md) y los tests en [`09-testing.md`](09-testing.md) §8.
 
 **Stack:**
+
 - Expo SDK 58 (React Native 0.88.1, React 19.3.0) con New Architecture.
 - Expo Router 58 con rutas tipadas.
 - TypeScript 6 strict.
@@ -33,6 +34,7 @@ apps/mobile/
 ```
 
 **Reglas:**
+
 - `src/app/` solo tiene rutas y layouts. La lógica va en `features/<feature>` y lo reutilizable en `shared/`.
 - Los tests no van dentro de `src/app/`, porque todo archivo ahí es una ruta.
 - El alias `@/…` apunta a `src/…`. Lo resuelven TypeScript, Metro y Jest.
@@ -41,16 +43,16 @@ apps/mobile/
 
 Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs** de [`00-plan.md`](00-plan.md) ("Correcciones tras la Fase 1").
 
-| Ruta | Pantalla | Archivo |
-|---|---|---|
-| `/` | Redirige a `/inicio` | `src/app/index.tsx` |
-| `/inicio` | Inicio. Botón "Ajustes" en el header | `(tabs)/inicio/index.tsx` |
-| `/inicio/ajustes` → `/inicio/acerca` | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
-| `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada | `(tabs)/colectivos/…` |
-| `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id` | Subtes → línea → estación | `(tabs)/subtes/…` |
-| `/favoritos` | Favoritos | `(tabs)/favoritos/index.tsx` |
-| `/transito` | **Oculto** (no navegable) | `(tabs)/transito/…` |
-| cualquier otra | "No encontramos esta pantalla" + link a Inicio | `+not-found.tsx` |
+| Ruta                                                            | Pantalla                                         | Archivo                                   |
+| --------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
+| `/`                                                             | Redirige a `/inicio`                             | `src/app/index.tsx`                       |
+| `/inicio`                                                       | Inicio. Botón "Ajustes" en el header             | `(tabs)/inicio/index.tsx`                 |
+| `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
+| `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada                      | `(tabs)/colectivos/…`                     |
+| `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea → estación                        | `(tabs)/subtes/…`                         |
+| `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
+| `/transito`                                                     | **Oculto** (no navegable)                        | `(tabs)/transito/…`                       |
+| cualquier otra                                                  | "No encontramos esta pantalla" + link a Inicio   | `+not-found.tsx`                          |
 
 - **Tabs nativas** (`NativeTabs` de `expo-router/native-tabs`): UITabBarController en iOS y la barra de Material en Android.
   - No tienen header: cada tab anida su `Stack`, con back nativo y `headerBackTitle` "Atrás" en iOS.
@@ -67,7 +69,7 @@ El layout raíz (`src/app/_layout.tsx`):
 2. Espera las fuentes (`useAppFonts`) y oculta el splash cuando cargan **o fallan**.
 3. Monta los providers.
 
-Orden previsto, de afuera hacia adentro:
+Orden, de afuera hacia adentro (`src/app/_layout.tsx`):
 
 ```
 SafeAreaProvider
@@ -78,7 +80,7 @@ SafeAreaProvider
                 └── Stack (tabs + not-found) + StatusBar automática
 ```
 
-> El montaje de `ThemeProvider`, `QueryProvider`, `RefreshIntervalProvider` y `FavoritosProvider` lo hace la tarea **3.9** (high-dev). Cuando se integre, este diagrama se ajusta a lo que quede en el código.
+> Montado en la tarea **3.9**. Los stores de tema e intervalo se crean una vez sobre `getDefaultKeyValueStore()` (MMKV); el detalle de datos y red está en `apps/mobile/src/shared/query/README.md`.
 
 Todos los providers reciben sus dependencias por prop, con un default de producción (MMKV). Los tests pasan versiones en memoria: `MemoryKeyValueStore`, `createMemoryPreferenceStore`. Ningún provider lee estado global oculto.
 
@@ -116,12 +118,12 @@ Todos los providers reciben sus dependencias por prop, con un default de producc
   - Sin cifrado: no hay datos personales ([`05-privacidad.md`](05-privacidad.md)).
 - **Claves:** todas versionadas. Si cambia el formato, se sube el sufijo o se agrega una migración.
 
-  | Clave | Contenido | Dueño |
-  |---|---|---|
-  | `transportate.favoritos.v1` | `FavoritosDocV1` (JSON) | `features/favoritos` |
-  | `transportate.pref.theme.v1` | `"system" \| "light" \| "dark"` | `shared/storage/preferences.ts` |
-  | `transportate.pref.refreshInterval.v1` | `15 \| 20 \| 30 \| 60` | `shared/storage/preferences.ts` |
-  | `transportate.query-cache.v1` | caché de TanStack Query (persister, throttle de 1 s) | `shared/storage/queryPersister.ts` |
+  | Clave                                  | Contenido                                            | Dueño                              |
+  | -------------------------------------- | ---------------------------------------------------- | ---------------------------------- |
+  | `transportate.favoritos.v1`            | `FavoritosDocV1` (JSON)                              | `features/favoritos`               |
+  | `transportate.pref.theme.v1`           | `"system" \| "light" \| "dark"`                      | `shared/storage/preferences.ts`    |
+  | `transportate.pref.refreshInterval.v1` | `15 \| 20 \| 30 \| 60`                               | `shared/storage/preferences.ts`    |
+  | `transportate.query-cache.v1`          | caché de TanStack Query (persister, throttle de 1 s) | `shared/storage/queryPersister.ts` |
 
 - **Preferencias:** `createThemePreferenceStore(kv)` y `createRefreshIntervalStore(kv)` tienen la forma `PreferenceStore<T>` (`get`/`set`/`subscribe`).
   - Validan con Zod al leer (un valor inválido da el default) y al escribir (un valor fuera de la lista tira).
@@ -147,6 +149,7 @@ Todos los providers reciben sus dependencias por prop, con un default de producc
 > **Se completa al cierre de la tarea 3.9** (high-dev: `src/shared/api`, `src/shared/query`).
 
 Lo previsto, según [`03-arquitectura.md`](03-arquitectura.md) y [`versiones.md`](versiones.md):
+
 - Cliente tipado con los esquemas de `@transportate/contracts`, con la URL base de `EXPO_PUBLIC_API_URL`.
 - `QueryClient` con `focusManager` (AppState) y `onlineManager` (NetInfo).
 - Polling solo en primer plano, con el intervalo de `RefreshIntervalStore` y jitter.
@@ -155,9 +158,9 @@ Lo previsto, según [`03-arquitectura.md`](03-arquitectura.md) y [`versiones.md`
 
 ## 10. Variables de entorno
 
-| Variable | Default (`apps/mobile/.env.example`) | Uso |
-|---|---|---|
-| `EXPO_PUBLIC_API_URL` | `http://localhost:8787` | URL base del proxy (`wrangler dev`). En un dispositivo, usá la IP de la red local; en el emulador de Android, `10.0.2.2` |
+| Variable              | Default (`apps/mobile/.env.example`) | Uso                                                                                                                      |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `EXPO_PUBLIC_API_URL` | `http://localhost:8787`              | URL base del proxy (`wrangler dev`). En un dispositivo, usá la IP de la red local; en el emulador de Android, `10.0.2.2` |
 
 Las variables `EXPO_PUBLIC_*` quedan embebidas en el bundle. Nunca van secretos.
 
@@ -175,26 +178,26 @@ La app necesita **dev client** porque MMKV y Nitro son nativos; no anda en Expo 
 
 **Decisiones:**
 
-| # | Decisión | Motivo |
-|---|---|---|
-| D1 | Tabs nativas (`NativeTabs`) en lugar de `Tabs` JS | Plataforma "adaptive" de `PRODUCT.md`; estable en SDK 58 |
-| D2 | pnpm con linker aislado (sin `hoisted`) | Expo lo soporta desde SDK 54; verificado con `expo-doctor` y `expo export` |
-| D3 | `@types/jsdom` fuera del hoisting (`pnpm-workspace.yaml`) | Si se iza, mete `lib.dom` en el typecheck del proxy y rompe `caches.default` |
-| D4 | Fuentes con `useFonts`, no con el plugin | Mismo `fontFamily` en iOS, Android y Jest |
-| D5 | Persister asíncrono de TanStack Query sobre MMKV | El síncrono está deprecado; el asíncrono acepta métodos síncronos |
-| D6 | Nitro 0.37.1 como dependencia directa | Una sola copia en `node_modules`. Falta confirmarlo en el primer dev build; el fallback es 0.35.9 |
-| D7 | Sin `eslint-plugin-react` ni `eslint-config-expo` | No soportan ESLint 10; se usa solo `eslint-plugin-react-hooks` 7.1.1 |
-| D8 | Botón "Ajustes" como `Pressable` + `router.push`, no `Link asChild` | `Link` le pone `role="link"` |
+| #   | Decisión                                                            | Motivo                                                                                            |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| D1  | Tabs nativas (`NativeTabs`) en lugar de `Tabs` JS                   | Plataforma "adaptive" de `PRODUCT.md`; estable en SDK 58                                          |
+| D2  | pnpm con linker aislado (sin `hoisted`)                             | Expo lo soporta desde SDK 54; verificado con `expo-doctor` y `expo export`                        |
+| D3  | `@types/jsdom` fuera del hoisting (`pnpm-workspace.yaml`)           | Si se iza, mete `lib.dom` en el typecheck del proxy y rompe `caches.default`                      |
+| D4  | Fuentes con `useFonts`, no con el plugin                            | Mismo `fontFamily` en iOS, Android y Jest                                                         |
+| D5  | Persister asíncrono de TanStack Query sobre MMKV                    | El síncrono está deprecado; el asíncrono acepta métodos síncronos                                 |
+| D6  | Nitro 0.37.1 como dependencia directa                               | Una sola copia en `node_modules`. Falta confirmarlo en el primer dev build; el fallback es 0.35.9 |
+| D7  | Sin `eslint-plugin-react` ni `eslint-config-expo`                   | No soportan ESLint 10; se usa solo `eslint-plugin-react-hooks` 7.1.1                              |
+| D8  | Botón "Ajustes" como `Pressable` + `router.push`, no `Link asChild` | `Link` le pone `role="link"`                                                                      |
 
 **Suposiciones:**
 
-| # | Suposición | Referencia |
-|---|---|---|
-| S2 | Ajustes y Acerca de se apilan dentro del tab Inicio | `briefs/README.md` |
-| S16 | Alias de hasta 30 caracteres. **Fase 3:** el repositorio recorta espacios y **trunca** a 30 caracteres (contando caracteres, no unidades UTF-16); la UI muestra el contador | `briefs/README.md`, `features/favoritos/README.md` |
-| S17 | Intervalos de 15, 20 (default), 30 y 60 s; un valor guardado inválido da 20 | `briefs/README.md` |
-| S18 | Tema Sistema (default) / Claro / Oscuro; un valor guardado inválido da Sistema | `briefs/README.md` |
-| S19 | Deshacer con `remove` + `restore`, no con un diálogo | `briefs/README.md` |
-| F3-a | Id de favorito `tipo:refId` (agregar dos veces devuelve el existente) | `features/favoritos/model.ts` |
-| F3-b | Splash con fondo `#ffffff` en claro y `#1d3343` en oscuro, sin imagen hasta que estén los assets de marca | `app.config.ts` |
-| F3-c | Identificador nativo `app.transportate.mobile`, provisorio y a confirmar por el usuario | `app.config.ts` |
+| #    | Suposición                                                                                                                                                                  | Referencia                                         |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| S2   | Ajustes y Acerca de se apilan dentro del tab Inicio                                                                                                                         | `briefs/README.md`                                 |
+| S16  | Alias de hasta 30 caracteres. **Fase 3:** el repositorio recorta espacios y **trunca** a 30 caracteres (contando caracteres, no unidades UTF-16); la UI muestra el contador | `briefs/README.md`, `features/favoritos/README.md` |
+| S17  | Intervalos de 15, 20 (default), 30 y 60 s; un valor guardado inválido da 20                                                                                                 | `briefs/README.md`                                 |
+| S18  | Tema Sistema (default) / Claro / Oscuro; un valor guardado inválido da Sistema                                                                                              | `briefs/README.md`                                 |
+| S19  | Deshacer con `remove` + `restore`, no con un diálogo                                                                                                                        | `briefs/README.md`                                 |
+| F3-a | Id de favorito `tipo:refId` (agregar dos veces devuelve el existente)                                                                                                       | `features/favoritos/model.ts`                      |
+| F3-b | Splash con fondo `#ffffff` en claro y `#1d3343` en oscuro, sin imagen hasta que estén los assets de marca                                                                   | `app.config.ts`                                    |
+| F3-c | Identificador nativo `app.transportate.mobile`, provisorio y a confirmar por el usuario                                                                                     | `app.config.ts`                                    |

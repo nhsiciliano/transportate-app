@@ -1,6 +1,7 @@
 // Intervalo de refresco elegido por la persona (S17: 15, 20, 30 o 60 s; default 20 s). Mismo
-// patrón que la preferencia de tema: un store inyectable (Ajustes lo implementa sobre el
-// `KeyValueStore`), en memoria por defecto, leído con `useSyncExternalStore`.
+// patrón que la preferencia de tema: un store inyectable, en memoria por defecto, leído con
+// `useSyncExternalStore`. En la app el store es `createRefreshIntervalStore(kv)` de
+// `shared/storage/preferences.ts` (MMKV), que cumple esta interfaz; los valores salen de ahí.
 import {
   createContext,
   useContext,
@@ -10,9 +11,13 @@ import {
   type ReactNode,
 } from 'react';
 
-export const REFRESH_INTERVALS = [15, 20, 30, 60] as const;
-export type RefreshIntervalSeconds = (typeof REFRESH_INTERVALS)[number];
-export const DEFAULT_REFRESH_INTERVAL: RefreshIntervalSeconds = 20;
+import {
+  DEFAULT_REFRESH_INTERVAL,
+  REFRESH_INTERVALS,
+  type RefreshIntervalSeconds,
+} from '../storage/preferences';
+
+export { DEFAULT_REFRESH_INTERVAL, REFRESH_INTERVALS, type RefreshIntervalSeconds };
 
 export function isRefreshInterval(value: unknown): value is RefreshIntervalSeconds {
   return REFRESH_INTERVALS.some((v) => v === value);

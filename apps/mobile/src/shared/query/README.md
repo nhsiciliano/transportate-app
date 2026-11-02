@@ -16,7 +16,7 @@ SafeAreaProvider → ThemeProvider → QueryProvider → RefreshIntervalProvider
   - Solo se persisten las consultas exitosas.
   - Al montarse llama a `connectQueryManagers()`.
 - **`RefreshIntervalProvider`:** intervalo de refresco de S17 (15, 20, 30 o 60 s; default 20 s).
-  - Usa un `RefreshIntervalStore { get, set, subscribe? }` inyectable, igual que la preferencia de tema. Por defecto el store es en memoria; Ajustes lo va a implementar sobre el `KeyValueStore` con `createRefreshIntervalStore(kv)` (tarea 3.11).
+  - Usa un `RefreshIntervalStore { get, set, subscribe? }` inyectable, igual que la preferencia de tema. En la app, `_layout.tsx` le pasa `createRefreshIntervalStore(getDefaultKeyValueStore())` (`shared/storage/preferences.ts`, MMKV); Ajustes escribe en la misma clave y el provider se entera por `subscribe`. Sin store, usa uno en memoria (tests).
   - `useRefreshInterval()` devuelve `{ seconds, setSeconds }`.
 
 ## React Native

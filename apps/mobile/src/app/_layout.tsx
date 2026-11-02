@@ -6,17 +6,23 @@
 //
 // Providers (tarea 3.9), de afuera hacia adentro: áreas seguras → tema (Sistema/Claro/Oscuro,
 // S18) → datos (TanStack Query + caché persistida en MMKV, src/shared/query) → intervalo de
-// refresco (S17) → favoritos (MMKV). Las preferencias de tema e intervalo usan stores en memoria
-// hasta que Ajustes las guarde (`src/shared/storage/preferences.ts`, tarea 3.11).
+// refresco (S17) → favoritos (MMKV). Tema e intervalo se guardan en MMKV con los stores de
+// `src/shared/storage/preferences.ts`; Ajustes escribe en las mismas claves y los providers se
+// enteran por `subscribe`.
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { FavoritosProvider } from '@/features/favoritos';
 import { useAppFonts } from '@/shared/fonts';
 import { QueryProvider, RefreshIntervalProvider } from '@/shared/query';
+import { getDefaultKeyValueStore } from '@/shared/storage/kv';
+import {
+  createRefreshIntervalStore,
+  createThemePreferenceStore,
+} from '@/shared/storage/preferences';
 import { ThemeProvider } from '@/shared/theme';
 
 // En el scope del módulo, sin await: dentro de un componente podría llegar tarde
@@ -25,6 +31,8 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { loaded, error } = useAppFonts();
+  const [themeStore] = useState(() => createThemePreferenceStore(getDefaultKeyValueStore()));
+  const [intervalStore] = useState(() => createRefreshIntervalStore(getDefaultKeyValueStore()));
 
   useEffect(() => {
     if (!loaded && !error) return;
@@ -38,9 +46,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
+      <ThemeProvider store={themeStore}>
         <QueryProvider>
-          <RefreshIntervalProvider>
+          <RefreshIntervalProvider store={intervalStore}>
             <FavoritosProvider>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />
