@@ -104,10 +104,51 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
   - Primera medición (2026-11-02): coalescing confirmado, con 30.435 requests → 5 fetches upstream en 45 s, y rate limit con 60 × 200 y 40 × 429.
   - Hubo **57 respuestas 500** ("Worker's code had hung") por el coalescing entre requests. Está pendiente de corrección en `src/cache/` y se re-corre después.
 
-## 8. Fase 3: la app
+## 8. App (`apps/mobile`)
 
-- **Jest + React Native Testing Library** en `apps/mobile` (`jest-expo`; versiones a verificar con Context7 al inicio de la Fase 3 y anotar en `versiones.md`).
-- **`FavoritosRepository`:** tests de alta, alias, reorden, borrado con deshacer y migración de esquema, contra una implementación en memoria y contra MMKV mockeado (plan, tarea 3.10).
-- **Cliente API (`shared/api`):** parseo con los mismos esquemas de `@transportate/contracts`, manejo de `ErrorV1`, uso de `ETag`/304 y de `X-Transportate-Stale`. El `fetch` se mockea con respuestas armadas con los ejemplos de los tests de contratos.
-- **Componentes y estados:** skeleton, vacío, error con reintento, dato viejo, sin conexión (briefs de `docs/briefs/`). Accesibilidad básica: roles, labels y áreas táctiles.
-- No se testea MapLibre ni módulos nativos en Jest: se mockean. Lo nativo se verifica en dev client y en el `audit` de Fase 5.
+### Herramientas
+
+- **jest-expo 58.0.13 + Jest 30.5.2 + @testing-library/react-native 14.1.0.**
+  - En RNTL 14 la API es **asíncrona**: `await render(…)`, `await renderHook(…)`, `await act(…)` y `await userEvent.setup().press(…)`.
+  - Matchers: `toBeOnTheScreen`, `toHaveTextContent`, `toHaveStyle`, `toBeSelected`, `toBeDisabled`, `toBeBusy`.
+- **Rutas:** `renderRouter` de `expo-router/testing-library` con un sistema de archivos en memoria (layouts y pantallas reales) y el matcher `toHavePathname`.
+- **`jest.config.js`:**
+  - `transformIgnorePatterns` de la doc de Expo para pnpm (incluye `.pnpm`), más `standard-navigation` (ESM) y `@material-symbols/*`.
+  - Alias `@/` en `moduleNameMapper`.
+- **SVG mockeado:** `test/mocks/svg-transformer.js` reemplaza cada `.svg` por un `View` con `testID="svg:<archivo>"` y las mismas props. Así se verifica qué ícono, tamaño y color se usa sin parsear XML.
+- **Nitro/MMKV:**
+  - `react-native-mmkv` 4 usa su propio mock en memoria cuando detecta Jest.
+  - Pero `react-native-nitro-modules` busca el TurboModule nativo al importarse y tira, así que `jest.setup.ts` lo reemplaza por un stub.
+  - Los tests de lógica usan `MemoryKeyValueStore`.
+- **Fuentes:** jest-expo mockea el módulo nativo de `expo-font`, pero los `.ttf` no quedan en el registro de assets y `loadAsync` rechaza.
+  - Eso prueba el camino de error real: el splash se oculta igual.
+  - El camino de éxito se prueba mockeando `useFonts`.
+- **Hápticos y splash:** se mockean con `jest.mock` (`expo-haptics`, `expo-splash-screen`) donde el test verifica la llamada.
+
+### Cómo correr
+
+```sh
+pnpm --filter @transportate/mobile test             # jest --ci
+cd apps/mobile && npx jest --ci test/integracion.test.tsx   # un archivo
+cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; borrá coverage/ después)
+```
+
+### Qué cubren (190 tests en 18 archivos, 2026-11-02)
+
+| Archivo | Cubre |
+|---|---|
+| `test/inicio.test.tsx`, `test/navegacion.test.tsx` | Inicio renderiza su título; stack Inicio → Ajustes → Acerca de; ruta inexistente → "no encontrado" |
+| `test/layout.test.tsx`, `test/fonts.test.tsx` | Splash oculto al cargar o fallar las fuentes; los 6 pesos exactos |
+| `test/icons.test.tsx` | Mapa curado y `Icon` (tamaño, color, accesibilidad) |
+| `test/storage.test.ts` | `KeyValueStore` (memoria y mock oficial de MMKV) y persister de TanStack Query |
+| `test/favoritos.test.tsx` | Repositorio: alta y duplicados, alias (trunca a 30), reorden, borrado + restore, `clear`, persistencia entre instancias, JSON corrupto, migración ficticia 0 → 1, `useFavoritos` |
+| `test/preferences.test.tsx` | Stores de tema e intervalo: defaults, persistencia, validación, suscripción, `usePreference` |
+| `test/integracion.test.tsx` | La app arranca con `ThemeProvider` + `FavoritosProvider` y tabs nativas en Inicio; cambio de tema → `useTheme().scheme` + persistencia; favoritos de punta a punta; `FreshnessLabel` viejo en warning oscuro; `OfflineBanner` |
+| `src/shared/theme/__tests__/*` | Contrastes de DESIGN.md §2 en claro y oscuro; `ThemeProvider` |
+| `src/shared/ui/__tests__/*` | Componentes: Alert, Button, FreshnessLabel, SearchInput, StatusChip, vitrina en los dos esquemas, y (`Estados.test.tsx`) Chip, SegmentedControl, ErrorState, EmptyState, LineBadge, OfflineBanner y Skeleton |
+
+**Cobertura** (`jest --coverage`, informativa y sin umbral, 2026-11-02): **93,2 % statements, 88,2 % branches, 86,9 % funciones, 94,8 % líneas**.
+
+**Pendiente:**
+- Tests del cliente API y del `QueryClient` (tarea 3.9): `fetch` mockeado, `ErrorV1`, ETag/304 y `stale` ante un 503.
+- No se testean en Jest las tabs nativas en profundidad, MapLibre ni los módulos nativos reales. Eso se verifica en el dev client y en el `audit` de la Fase 5.

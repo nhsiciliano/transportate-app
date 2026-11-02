@@ -56,7 +56,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd, fixtures reales), cómo se corre y qué queda afuera | ✅ |
+| [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd con fixtures reales; Jest + RNTL en la app), cómo se corre y qué queda afuera | ✅ |
 | [`10-deploy.md`](10-deploy.md) | Despliegue del proxy en Cloudflare (entornos, R2, secrets, workflow manual de GitHub Actions) y operación sin datos personales | ✅ |
 | [`../apps/proxy/README.md`](../apps/proxy/README.md) | Rutas v1, headers, composición, rate limit y estáticos del Worker | ✅ |
 | [`06-proxy.md`](06-proxy.md) | Referencia del Worker: rutas, adaptadores, fuente con caché, estáticos, rate limit, límites de CPU, cómo agregar un servicio | ✅ |
@@ -79,8 +79,8 @@ Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecu
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| `07-app.md` | Estructura y convenciones de la app. Todavía no existe el archivo: lo escribe la tarea 3.11 (mientras tanto, [`../apps/mobile/README.md`](../apps/mobile/README.md)) | 🚧 |
-| [`08-design-system.md`](08-design-system.md) | Componentes Obelisco en React Native. Hoy tiene la sección "Íconos (mapa curado)" y cómo usar `Icon`; el resto lo completa la tarea 3.11 | 🚧 |
+| [`07-app.md`](07-app.md) | Referencia de la app: estructura, navegación, providers, tema, fuentes, almacenamiento (MMKV), favoritos, decisiones y suposiciones de la Fase 3 | ✅ |
+| [`08-design-system.md`](08-design-system.md) | Sistema de diseño en código: tokens, componentes de `shared/ui` y cuándo usarlos, accesibilidad, háptica e íconos (mapa curado) | ✅ |
 
 `09-testing.md` y `10-deploy.md` ya existen y se amplían en las Fases 3 a 5 (tests de la app con Jest + RNTL, EAS Build y OTA).
 

@@ -1,6 +1,98 @@
 # 08 — Sistema de diseño en React Native
 
-> **Estado: 🚧 parcial.** Este documento arranca con una sola sección, **"Íconos (mapa curado)"**, que sale de la investigación de la tarea 3.5. **El resto del documento (tokens en código, tipografías cargadas, componentes de `shared/ui`, estados, accesibilidad, ejemplos y capturas) lo completa la tarea 3.11** cuando los componentes ya existan. Hasta entonces, la referencia visual es [`../DESIGN.md`](../DESIGN.md) y los tokens con cita están en [`02-obelisco-tokens.md`](02-obelisco-tokens.md).
+> **Estado: ✅ Fase 3.** Describe lo que hay **en código** (`apps/mobile/src/shared/{theme,ui,icons}`).
+>
+> - Los **valores** (colores, escala, contrastes verificados) están en [`../DESIGN.md`](../DESIGN.md).
+> - El **origen** de cada token, con cita, está en [`02-obelisco-tokens.md`](02-obelisco-tokens.md).
+> - Los **patrones de uso** (frescura, skeleton, errores, offline) están en [`briefs/README.md`](briefs/README.md).
+>
+> Este documento no repite valores: remite a esas fuentes.
+
+## Tokens en código
+
+`apps/mobile/src/shared/theme/tokens.ts` exporta los tokens tipados. Cada valor lleva un comentario con la cita de `02-obelisco-tokens.md`.
+
+| Export | Qué es | Valores |
+|---|---|---|
+| `primitives` | Paletas de Obelisco (blue, slate, orange…) | DESIGN.md §2 |
+| `light`, `dark`, `schemes` | Esquemas de color por rol: `text.*`, `surface.*`, `border.*`, `role.<primary\|secondary\|tertiary\|danger\|success\|warning\|info>.{base,on,container,onContainer,text}`, foco | DESIGN.md §2.1–2.2 (claro y oscuro) / `02-obelisco-tokens.md` §6 (paleta oscura) |
+| `fontFamily`, `typography`, `typeStyle()` | Familias por peso y escala h1–h6, headline lg/md/sm, text xl–xs | DESIGN.md §3.1 |
+| `maxFontSizeMultiplier` | Tope de Dynamic Type: `heading` 1.2, `text` 1.3 | DESIGN.md §3.2 |
+| `space`, `radius`, `borderWidth`, `elevation`, `hitSlop` (44) | Espaciado (n × 4), radios (Card 16 en nativo), bordes, área táctil mínima | DESIGN.md §4 (4.4 alturas y áreas táctiles) |
+| `component` | Medidas de componentes (alturas de botón, badge, input…) | DESIGN.md §7 |
+| `motion` | Duraciones (pulso del skeleton) | DESIGN.md §5 (Movimiento) |
+
+**Uso:**
+- Siempre a través de `useTheme()`, que devuelve el esquema activo. Ningún componente escribe un hex.
+- Para texto, `textStyle(variant)` + `fontScaleCap(variant)`, o directamente el componente `Text`.
+- La preferencia de tema (Sistema / Claro / Oscuro) se persiste con `createThemePreferenceStore` ([`07-app.md`](07-app.md) §4 y §7).
+
+Los contrastes se fijan en tests: `theme/__tests__/tokens.test.ts` verifica los pares de DESIGN.md §2 en claro y oscuro (texto ≥ 4.5:1, bordes y foco ≥ 3:1).
+
+## Componentes (`shared/ui`)
+
+Resumen de [`../apps/mobile/src/shared/ui/README.md`](../apps/mobile/src/shared/ui/README.md), que tiene la tabla completa de props y estados. Regla: **ninguna pantalla inventa su variante**.
+
+| Componente | Cuándo usarlo |
+|---|---|
+| `Text` | Todo texto de la app. `variant` de la escala y `tone` del tema; `heading.*` se anuncia como encabezado |
+| `Button` | Acciones. `primary` para la acción principal de la pantalla (una sola), `secondary`/`tertiary`/`outline` para el resto, `danger` para destructivas, `link` en línea. `haptic="success"` solo al guardar un favorito |
+| `Card` | Agrupar una unidad tocable (línea, parada, favorito). Toda la tarjeta es el área táctil, con `accessibilityLabel` |
+| `Alert` | Mensajes en línea con rol (`success`/`danger`/`warning`/`info`): interrupciones de servicio, dato muy viejo. `system` para los avisos fuertes |
+| `Badge` | Etiquetas no interactivas (conteos, "Nuevo") |
+| `LineBadge` | La insignia de una línea: letra de subte con su color GTFS, o número de colectivo sobre neutro. Siempre con texto adentro |
+| `StatusChip` | Estado de servicio de una línea de subte (`EstadoServicioV1`): ícono + texto, nunca solo color |
+| `Chip` | Filtros seleccionables (p. ej. líneas en un mapa). Háptico de selección |
+| `SearchInput` | Búsqueda de líneas o paradas, con botón para borrar |
+| `SegmentedControl` / `Tabs` | Alternar 2–4 vistas o valores (Lista/Mapa, Tema en Ajustes) |
+| `Skeleton` / `SkeletonGroup` | Primera carga sin datos guardados. Nunca en recargas con datos en pantalla |
+| `EmptyState` | Vacío real (sin favoritos, búsqueda sin resultados). No para errores |
+| `ErrorState` | Error de carga sin datos que mostrar, con "Volver a intentar" si es reintentable |
+| `FreshnessLabel` | Junto a todo dato en tiempo real. Calcula la edad con `meta.sourceTimestamp` y el intervalo R de Ajustes |
+| `OfflineBanner` | Arriba del contenido cuando no hay conexión; la app sigue mostrando lo guardado |
+
+**Estados de una pantalla con datos** (patrones de `briefs/README.md`):
+
+| Estado | Qué se muestra |
+|---|---|
+| Carga inicial | `Skeleton` |
+| Con datos | Contenido + `FreshnessLabel` |
+| Dato viejo | Contenido + `FreshnessLabel` en warning; si es muy viejo (> 10 min), también una `Alert` warning |
+| Error sin datos | `ErrorState` |
+| Error con datos | Contenido + aviso |
+| Sin conexión | `OfflineBanner` + último dato guardado |
+| Vacío | `EmptyState` |
+
+## Accesibilidad
+
+- **Área táctil ≥ 44×44 pt (48 dp en Android).** Botones y chips más bajos amplían con `hitSlop` (`hitSlopFor`). Los segmentos y el botón de borrar búsqueda miden 44 o más.
+- **Dynamic Type / escala de fuente:**
+  - `allowFontScaling` siempre activo, con `maxFontSizeMultiplier` de **1.3 en texto** y **1.2 en títulos y etiquetas de tab/segmento**, por componente y no global (DESIGN.md §3.2).
+  - Con escala grande, las filas crecen en alto: nunca se trunca el estado ni la frescura.
+- **Roles y estados:**
+  - Roles: `header` en títulos, `button`, `tab`/`tablist`, `alert` en `Alert`/`ErrorState`, `progressbar` ocupado en `SkeletonGroup`.
+  - Estados: `accessibilityState` con `selected`/`disabled`/`busy`.
+  - Cada control tiene `accessibilityLabel` en voseo.
+- **Nunca solo color:** `StatusChip` y `FreshnessLabel` llevan glifo y texto, y `LineBadge` lleva la letra o el número.
+- **Reduce Motion:** el único movimiento es el pulso del `Skeleton`, que se apaga con "Reducir movimiento" (`useReduceMotion`, que arranca en `true` hasta conocer la preferencia).
+- **Lectura de la frescura:** `FreshnessLabel` se lee como "Actualizado hace 12 segundos" al enfocarlo y no se re-anuncia en cada tick.
+- **Pendiente detectado en la Fase 3:** `OfflineBanner` declara `accessibilityRole="alert"` en un `View` que no es `accessible`, así que el rol no se expone como elemento (RNTL no lo encuentra con `getByRole('alert')`). Está reportado a la tarea de componentes.
+
+## Háptica
+
+`triggerHaptic(kind)` (`shared/ui/haptics.ts`, `expo-haptics`; suposición S25):
+- **`selection`** al cambiar un segmento o un filtro (`SegmentedControl`, `Chip`).
+- **`success`** al guardar un favorito (`Button haptic="success"`).
+- **Nunca** en refrescos automáticos ni en errores.
+
+Si el dispositivo no tiene motor o la persona los desactivó, no pasa nada (los errores se ignoran).
+
+## Cómo agregar un componente o un ícono
+
+1. **Componente:**
+   - Va en `shared/ui/<Nombre>.tsx`, con colores solo de `useTheme()`, área táctil ≥ 44 y rol y etiqueta de accesibilidad.
+   - Agregalo a `index.ts`, sumá una fila en el README de `shared/ui` y en la tabla de arriba, y escribí su test en `shared/ui/__tests__/` (render en claro y oscuro con `renderThemed`).
+2. **Ícono:** sumá la fila en la tabla de "Íconos" (verificando el archivo) y la entrada en `shared/icons/map.ts`.
 
 ## Íconos (mapa curado)
 
@@ -105,7 +197,7 @@ Con significado propio (por ejemplo, el estado de una línea o un botón-ícono)
 </Pressable>
 ```
 
-Reglas: `size` es 16, 20, 24 (default) o 32; el color sale siempre de los tokens del tema; el área táctil de un botón-ícono la pone el botón (≥ 44×44 pt / 48×48 dp). Los ejemplos suponen un `colors` que sale de `useTheme()` (tarea 3.3); los nombres exactos de los roles los define el tema, no este documento. Hasta que exista, el color por default de `Icon` es `#000000`, provisorio.
+Reglas: `size` es 16, 20, 24 (default) o 32; el color sale siempre de los tokens del tema; el área táctil de un botón-ícono la pone el botón (≥ 44×44 pt / 48×48 dp). Los ejemplos suponen un `colors` que sale de `useTheme()` (tarea 3.3); los nombres exactos de los roles los define el tema, no este documento. El color por default de `Icon` todavía es `#000000`, provisorio (TODO en `Icon.tsx`): pasale siempre `color` desde el tema.
 
 ### Cómo se dibujan
 
@@ -118,7 +210,3 @@ Reglas: `size` es 16, 20, 24 (default) o 32; el color sale siempre de los tokens
 - `@material-symbols/svg-400` declara **Apache-2.0** (campo `license` del `package.json` publicado y archivo `LICENSE` del paquete, consultados el 2026-11-02). Es una redistribución de los íconos de Google hecha por <https://github.com/marella/material-symbols>; el paquete no trae un archivo `NOTICE` (HTTP 404 en `NOTICE` y `NOTICE.md`).
 - Apache-2.0 permite uso comercial y redistribución, y pide conservar el aviso de licencia al redistribuir. Como los trazos quedan embebidos en la app, **la pantalla "Acerca de" tiene que mencionar "Íconos: Material Symbols (Google), licencia Apache 2.0" y enlazar al texto de la licencia** *(suposición: lo pide la licencia, pero la forma exacta es decisión del usuario; sumarlo al texto de `docs/05-privacidad.md` / Acerca de en la Fase 4)*.
 - Las tipografías Nunito y Open Sans (campo `license` de `@expo-google-fonts/nunito` y `/open-sans` en npm: `MIT AND OFL-1.1`) también van en esa lista de licencias.
-
-## Pendiente (tarea 3.11)
-
-Se completa con: tokens y cómo usarlos; escala tipográfica cargada y límites de Dynamic Type; cada componente de `shared/ui` con props, estados y ejemplos; patrones de estado (carga, vacío, error, stale, offline); accesibilidad probada; y cómo agregar un componente o un ícono nuevo.

@@ -100,7 +100,7 @@ La app solo habla con el proxy (`apps/proxy`). La URL sale de `EXPO_PUBLIC_API_U
   - Los hooks exponen `sourceTimestamp` (para `FreshnessLabel`) y `ageSeconds`.
   - La edad se calcula con `sourceTimestamp`, nunca con `generatedAt`.
 - **Polling:** solo en primer plano.
-  - Intervalo: el que elige la persona (S17: 15, 20, 30 o 60 s; default 20 s, `RefreshIntervalProvider`), con ±10 % de jitter en cada ciclo.
+  - Intervalo: el que elige la persona (S17: 15, 20, 30 o 60 s; default 20 s, `RefreshIntervalProvider` con `createRefreshIntervalStore` sobre MMKV, ver "Preferencias"), con ±10 % de jitter en cada ciclo.
   - En segundo plano se detiene: `refetchIntervalInBackground: false`, con `focusManager` conectado a `AppState`. Al volver a primer plano se refresca lo vencido.
   - Las líneas de colectivo y el manifiesto son estáticos: no hacen polling.
 - **Offline:**
@@ -113,6 +113,23 @@ La app solo habla con el proxy (`apps/proxy`). La URL sale de `EXPO_PUBLIC_API_U
   - **Último dato bueno:** si falla una actualización y había datos, el hook conserva `data` y marca `isRefreshError`. La pantalla muestra la Alert en línea, no el ErrorState.
 - **Tests:** `test/api/` (cliente, hooks, persistencia) y `src/shared/{api,query}/__tests__`, siempre con `fetch` mockeado.
   - NetInfo se mockea globalmente en `jest.setup.ts` con el mock oficial de la librería: sin su módulo nativo, tira el proceso de Jest.
+
+## Preferencias (tema e intervalo)
+
+Las preferencias viven en `src/shared/storage/preferences.ts`, sobre el mismo `KeyValueStore` (MMKV):
+
+| Store | Clave | Valores | Default |
+|---|---|---|---|
+| `createThemePreferenceStore(kv)` | `transportate.pref.theme.v1` | `'system' \| 'light' \| 'dark'` (S18) | `'system'` |
+| `createRefreshIntervalStore(kv)` | `transportate.pref.refreshInterval.v1` | `15 \| 20 \| 30 \| 60` (S17) | `20` |
+
+- Los dos tienen la forma `PreferenceStore<T>` (`get`/`set`/`subscribe`). El de tema implementa `ThemePreferenceStore` de `shared/theme`, y `RefreshIntervalStore` es el que consume el polling (tarea 3.9).
+- **Validación:**
+  - Al leer, con Zod: un valor guardado inválido da el default.
+  - Al escribir: un valor fuera de la lista tira, así nunca se guarda algo ilegible.
+- **Ajustes:** `src/features/ajustes` exporta `usePreference(store)` y las opciones con su copy: `THEME_OPTIONS` (Sistema, Claro, Oscuro) y `REFRESH_INTERVAL_OPTIONS` (15, 20, 30, 60 s).
+
+La referencia completa de la app (providers, claves, decisiones) está en [`docs/07-app.md`](../../docs/07-app.md).
 
 ## Tests, lint y tipos
 
@@ -130,6 +147,14 @@ pnpm typecheck   # tsc --noEmit
 - Las tabs nativas no se prueban en Jest, porque necesitan el módulo nativo.
 - `test/fonts.test.tsx` y `test/layout.test.tsx` cubren la carga de fuentes y que el splash se oculte también con error. En Jest los `.ttf` no están en el registro de assets y `loadAsync` rechaza: así se prueba el camino de error real, y el de éxito se prueba mockeando `useFonts`.
 - `test/storage.test.ts` prueba `KeyValueStore` (memoria y mock oficial de MMKV) y el persister.
+- `test/preferences.test.tsx` prueba los stores de tema e intervalo y `usePreference`.
+- `test/integracion.test.tsx` cubre:
+  - providers reales con tabs nativas en Inicio;
+  - cambio de tema persistido;
+  - favoritos de punta a punta;
+  - `FreshnessLabel` en tema oscuro;
+  - `OfflineBanner`.
+- La estrategia completa de tests está en [`docs/09-testing.md`](../../docs/09-testing.md) §8.
 - `test/favoritos.test.tsx` cubre el alta, los duplicados, el alias, el reorden, el borrado con restore, `clear`, la persistencia entre instancias, el JSON corrupto, las migraciones y `useFavoritos`.
 
 ## Estructura
