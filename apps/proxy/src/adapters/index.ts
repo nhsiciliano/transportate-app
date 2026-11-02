@@ -13,9 +13,10 @@ import { createTransitoAdapter } from './transito';
  * `UPSTREAM_TIMEOUT_MS` (ms por intento upstream, default 5000). Todavía no está en
  * wrangler.jsonc: se lee de forma opcional para no depender de los tipos generados.
  */
-export function upstreamTimeoutMs(env: CloudflareBindings): number {
-  const raw = 'UPSTREAM_TIMEOUT_MS' in env ? env.UPSTREAM_TIMEOUT_MS : undefined;
-  return feedTtl(typeof raw === 'string' ? raw : undefined, DEFAULT_UPSTREAM_TIMEOUT_MS);
+export function upstreamTimeoutMs(env: { UPSTREAM_TIMEOUT_MS?: string }): number {
+  // Tipo estructural a propósito: `wrangler types` genera el literal "5000" para la var
+  // y los tests necesitan pasar otros valores.
+  return feedTtl(env.UPSTREAM_TIMEOUT_MS, DEFAULT_UPSTREAM_TIMEOUT_MS);
 }
 
 export function createAdapters(env: CloudflareBindings, ctx?: ExecutionContext): Adapters {
