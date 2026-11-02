@@ -36,6 +36,7 @@
   "vars": {
     "FEED_TTL_SECONDS": "20",
     "STATIC_TTL_SECONDS": "86400",
+    "UPSTREAM_TIMEOUT_MS": "5000",
     "ENVIRONMENT": "dev",
   },
   // Entornos desplegables (`wrangler deploy --env preview|production`). Los bindings y
@@ -61,6 +62,7 @@
       "vars": {
         "FEED_TTL_SECONDS": "20",
         "STATIC_TTL_SECONDS": "86400",
+        "UPSTREAM_TIMEOUT_MS": "5000",
         "ENVIRONMENT": "preview",
       },
     },
@@ -85,6 +87,7 @@
       "vars": {
         "FEED_TTL_SECONDS": "20",
         "STATIC_TTL_SECONDS": "86400",
+        "UPSTREAM_TIMEOUT_MS": "5000",
         "ENVIRONMENT": "production",
       },
     },
