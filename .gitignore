@@ -21,3 +21,9 @@ build/
 
 # Salida del preprocesado estático
 tools/gtfs/out/
+
+# App móvil (Expo): proyectos nativos generados por prebuild / expo run, tipos generados y env local
+apps/mobile/ios/
+apps/mobile/android/
+apps/mobile/.env
+expo-env.d.ts

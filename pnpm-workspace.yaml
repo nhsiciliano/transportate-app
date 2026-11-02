@@ -6,6 +6,9 @@ packages:
 allowBuilds:
   esbuild: true
   workerd: true
+  # Dependencia de jest-haste-map (jest-expo). Trae binarios precompilados por plataforma
+  # (@parcel/watcher-<os>-<arch>); su script de build solo compila con node-gyp si faltan.
+  '@parcel/watcher': false
 minimumReleaseAgeExclude:
   - '@cloudflare/vitest-plugin@1.4.12'
   - '@cloudflare/workerd-darwin-64@1.20261101.1'
@@ -18,3 +21,10 @@ minimumReleaseAgeExclude:
   - miniflare@5.20261101.0-beta
   - workerd@1.20261101.1
   - wrangler@4.156.1
+# `@types/jsdom` (lo trae jest-expo vía jest-environment-jsdom para apps/mobile) NO se iza a
+# `node_modules/.pnpm/node_modules`. Si se iza, `vitest/optional-types.d.ts` (que importa
+# 'jsdom') lo encuentra subiendo directorios, arrastra `lib.dom` al proxy y pisa los tipos de
+# Workers (`caches.default`). https://pnpm.io/settings#hoistpattern (acepta exclusiones con `!`).
+hoistPattern:
+  - '*'
+  - '!@types/jsdom'
