@@ -1,16 +1,25 @@
-// Capa A de acceso al upstream (tarea 2.4): Cache API por colo + coalescing por isolate +
-// último dato bueno. Implementa `FeedSource`; la capa B (Durable Object FeedHub) tendrá la misma
-// interfaz.
+// Capa A de acceso al upstream (tarea 2.4): Cache API por colo + copia en memoria del isolate +
+// un solo refresco por clave + último dato bueno. Implementa `FeedSource`; la capa B (Durable
+// Object FeedHub) tendrá la misma interfaz.
 //
-// Orden de lectura: memoria del isolate → `caches.default` → upstream. La copia en memoria existe
-// porque la Cache API no tiene efecto en `*.workers.dev` (hoy el deploy está ahí): sin ella, cada
-// request iría al upstream.
+// Regla de workerd (src/cache/README.md): el I/O (fetch, Cache API, waitUntil) pertenece a la
+// request que lo inició. Una request que awaitea una promesa de I/O de OTRA request queda colgada
+// si aquella termina ("Worker's code had hung"). Por eso NO se comparten promesas entre requests:
+// a nivel de módulo solo se guardan DATOS (copias de respuestas) y un flag de "refrescando".
 //
-// Privacidad y secretos: las credenciales se agregan a la URL solo al hacer el fetch. Nunca
-// aparecen en claves de caché (URL ficticia derivada de `req.key`), errores ni logs; el log de
-// fallo upstream solo lleva { event, key, status, ms }.
+// - Hay copia vencida (≤ maxStale) y nadie refresca → esta request toma el flag, refresca con su
+//   propio I/O y devuelve el dato nuevo. Las requests concurrentes no esperan: sirven la copia.
+// - Arranque en frío (nada en memoria ni en Cache API) y otra request está refrescando → se sondea
+//   la memoria del isolate hasta `coldWaitMs` (500 ms) y, si no llegó, se hace un fetch propio
+//   (duplicados solo en frío, por isolate).
+//
+// La copia en memoria existe además porque la Cache API no tiene efecto en `*.workers.dev`.
+//
+// Secretos: las credenciales se agregan a la URL solo al hacer el fetch. Nunca aparecen en claves
+// de caché (URL ficticia derivada de `req.key`), errores ni logs; los logs solo llevan
+// { event, key, status, ms }.
 import { ApiError } from '../adapters/types';
-import { Coalescer } from '../cache/coalesce';
+import { DeadlineExceeded, raceAbort } from '../cache/deadline';
 import {
   feedCacheKey,
   fromCacheResponse,
@@ -20,7 +29,25 @@ import {
 import { runInBackground } from '../lib/http';
 import type { FeedRequest, FeedResult, FeedSource } from './types';
 
+/** Opciones por llamada (extensión compatible de `FeedSource.fetch`). */
+export interface FetchOptions {
+  /** Plazo del llamador (p. ej. el presupuesto de un fan-out). */
+  signal?: AbortSignal;
+  /** Reintentar una vez ante timeout, 5xx o error de red (default true). */
+  retry?: boolean;
+}
+
+/** `FeedSource` que además acepta plazo y control de reintento por llamada. */
+export interface DeadlineFeedSource extends FeedSource {
+  fetch(req: FeedRequest, opts?: FetchOptions): Promise<FeedResult>;
+}
+
 export const USER_AGENT = 'transportate-proxy/0.1';
+/** Timeout por intento si `env.UPSTREAM_TIMEOUT_MS` no lo define. */
+export const DEFAULT_UPSTREAM_TIMEOUT_MS = 5_000;
+
+const unavailable = (ttlSeconds: number): ApiError =>
+  new ApiError('upstream_unavailable', 'Servicio del GCBA no disponible', 503, ttlSeconds);
 
 export interface Credentials {
   clientId: string;
@@ -32,10 +59,12 @@ export interface EdgeCachedOptions {
   ctx?: ExecutionContext | undefined;
   /** Edad máxima (s) de una entrada vencida que se sirve si el upstream falla. Default 300. */
   maxStaleSeconds?: number;
-  /** Timeout por intento (ms). Default 8000. */
+  /** Timeout por intento (ms). Default 5000 (`UPSTREAM_TIMEOUT_MS`). */
   timeoutMs?: number;
   /** Pausa antes del reintento (ms). Default 300. */
   retryDelayMs?: number;
+  /** Espera máxima (ms) en frío mientras otra request refresca la misma clave. Default 500. */
+  coldWaitMs?: number;
   /** Inyectables para tests. */
   cache?: Cache;
   now?: () => number;
@@ -52,10 +81,12 @@ class UpstreamFailure extends Error {
   }
 }
 
-// Estado por isolate (compartido entre requests; los adaptadores se arman por request).
-const coalescer = new Coalescer<FeedResult>();
+// ---------------------------------------------------------------- estado por isolate (solo datos)
+
 const MEMORY_MAX_ENTRIES = 256;
 const memory = new Map<string, CachedFeed>();
+/** Clave → epoch ms (reloj real) hasta el que una request tiene tomado el refresco. */
+const refreshing = new Map<string, number>();
 
 function remember(key: string, entry: CachedFeed): void {
   memory.delete(key);
@@ -66,9 +97,23 @@ function remember(key: string, entry: CachedFeed): void {
   }
 }
 
-/** Solo para tests: vacía la copia en memoria del isolate. */
+/** Toma el flag de refresco si está libre (o vencido). No hay promesas: solo un timestamp. */
+function tryAcquire(key: string, holdMs: number): boolean {
+  const until = refreshing.get(key);
+  const t = Date.now();
+  if (until !== undefined && until > t) return false;
+  refreshing.set(key, t + holdMs);
+  return true;
+}
+
+function release(key: string): void {
+  refreshing.delete(key);
+}
+
+/** Solo para tests: vacía la memoria del isolate y los flags de refresco. */
 export function resetEdgeCacheMemory(): void {
   memory.clear();
+  refreshing.clear();
 }
 
 const ACCEPT: Record<NonNullable<FeedRequest['accept']>, string> = {
@@ -81,31 +126,41 @@ const sleep = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
-export class EdgeCachedFeedSource implements FeedSource {
+const asResult = (e: CachedFeed, fromCache: boolean, stale: boolean): FeedResult => ({
+  body: e.body.slice(0),
+  fetchedAt: e.fetchedAt,
+  upstreamStatus: e.upstreamStatus,
+  fromCache,
+  stale,
+});
+
+export class EdgeCachedFeedSource implements DeadlineFeedSource {
   private readonly maxStaleSeconds: number;
   private readonly timeoutMs: number;
   private readonly retryDelayMs: number;
+  private readonly coldWaitMs: number;
   private readonly now: () => number;
 
   constructor(private readonly opts: EdgeCachedOptions) {
     this.maxStaleSeconds = opts.maxStaleSeconds ?? 300;
-    this.timeoutMs = opts.timeoutMs ?? 8_000;
+    this.timeoutMs = opts.timeoutMs ?? DEFAULT_UPSTREAM_TIMEOUT_MS;
     this.retryDelayMs = opts.retryDelayMs ?? 300;
+    this.coldWaitMs = opts.coldWaitMs ?? 500;
     this.now = opts.now ?? Date.now;
-  }
-
-  fetch(req: FeedRequest): Promise<FeedResult> {
-    return coalescer.run(req.key, () => this.load(req));
   }
 
   private cache(): Cache {
     return this.opts.cache ?? caches.default;
   }
 
+  private ageMs(e: CachedFeed): number {
+    return this.now() - e.fetchedAt;
+  }
+
   /** Memoria del isolate si está fresca; si no, la más nueva entre memoria y Cache API. */
   private async readCached(key: string, ttlMs: number): Promise<CachedFeed | null> {
     const mem = memory.get(key) ?? null;
-    if (mem && this.now() - mem.fetchedAt < ttlMs) return mem;
+    if (mem && this.ageMs(mem) < ttlMs) return mem;
     const hit = await this.cache().match(feedCacheKey(key));
     const fromEdge = hit ? await fromCacheResponse(hit) : null;
     // Gana la más nueva (otro isolate del colo pudo haber refrescado la Cache API).
@@ -114,16 +169,48 @@ export class EdgeCachedFeedSource implements FeedSource {
     return fromEdge;
   }
 
-  private async load(req: FeedRequest): Promise<FeedResult> {
-    const cached = await this.readCached(req.key, req.ttlSeconds * 1000);
-    const ageMs = cached ? this.now() - cached.fetchedAt : Infinity;
-    if (cached && ageMs < req.ttlSeconds * 1000) {
-      return { ...cached, body: cached.body.slice(0), fromCache: true, stale: false };
-    }
+  /**
+   * `opts.signal`: si el plazo se vence antes de que llegue el dato, se devuelve el último dato
+   * bueno (`stale: true`) o 503. `opts.retry` (default true): reintentar una vez.
+   */
+  async fetch(req: FeedRequest, opts: FetchOptions = {}): Promise<FeedResult> {
+    const ttlMs = req.ttlSeconds * 1000;
+    const cached = await this.readCached(req.key, ttlMs);
+    if (cached && this.ageMs(cached) < ttlMs) return asResult(cached, true, false);
+    const usable = cached && this.ageMs(cached) <= this.maxStaleSeconds * 1000 ? cached : null;
 
+    // Ventana del refresco: el peor caso de un intento + reintento.
+    const holdMs = this.timeoutMs * 2 + this.retryDelayMs + 1_000;
+    if (!tryAcquire(req.key, holdMs)) {
+      // Otra request de este isolate está refrescando: no se espera su promesa.
+      if (usable) return asResult(usable, true, this.ageMs(usable) > ttlMs * 2);
+      const waited = await this.waitForMemory(req.key, ttlMs);
+      if (waited) return asResult(waited, true, false);
+      // Sigue sin dato: fetch propio (sin tomar el flag, que tiene otra request).
+      return this.refresh(req, opts, usable, false);
+    }
+    return this.refresh(req, opts, usable, true);
+  }
+
+  /** Sondea la memoria del isolate (datos, no I/O) mientras otra request trae el dato en frío. */
+  private async waitForMemory(key: string, ttlMs: number): Promise<CachedFeed | null> {
+    const until = Date.now() + this.coldWaitMs;
+    while (Date.now() < until) {
+      await sleep(25);
+      const mem = memory.get(key);
+      if (mem && this.ageMs(mem) < ttlMs) return mem;
+    }
+    return null;
+  }
+
+  private async refresh(
+    req: FeedRequest,
+    opts: FetchOptions,
+    fallback: CachedFeed | null,
+    holdsLock: boolean,
+  ): Promise<FeedResult> {
     const t0 = this.now();
-    try {
-      const fresh = await this.fetchWithRetry(req);
+    const work = this.fetchWithRetry(req, opts.retry ?? true).then(async (fresh) => {
       console.log(
         JSON.stringify({
           event: 'upstream_fetch',
@@ -138,29 +225,46 @@ export class EdgeCachedFeedSource implements FeedSource {
         this.opts.ctx,
         this.cache().put(feedCacheKey(req.key), toCacheResponse(fresh, retain)),
       );
-      return { ...fresh, body: fresh.body.slice(0), fromCache: false, stale: false };
+      return fresh;
+    });
+    try {
+      const fresh = await raceAbort(work, opts.signal);
+      return asResult(fresh, false, false);
     } catch (err) {
+      const deadline = err instanceof DeadlineExceeded;
+      // Si el plazo venció, el fetch sigue en esta misma request y llena la caché al terminar.
+      if (deadline) void work.catch(() => undefined);
       const status = err instanceof UpstreamFailure ? err.status : null;
       console.error(
-        JSON.stringify({ event: 'upstream_error', key: req.key, status, ms: this.now() - t0 }),
+        JSON.stringify({
+          event: deadline ? 'upstream_deadline' : 'upstream_error',
+          key: req.key,
+          status,
+          ms: this.now() - t0,
+        }),
       );
-      if (cached && ageMs <= this.maxStaleSeconds * 1000) {
-        return { ...cached, body: cached.body.slice(0), fromCache: true, stale: true };
+      if (fallback) return asResult(fallback, true, true);
+      throw unavailable(req.ttlSeconds);
+    } finally {
+      if (holdsLock) {
+        // Con plazo vencido el flag se libera cuando termina el fetch (no antes: evita duplicados).
+        void work.then(
+          () => {
+            release(req.key);
+          },
+          () => {
+            release(req.key);
+          },
+        );
       }
-      throw new ApiError(
-        'upstream_unavailable',
-        'Servicio del GCBA no disponible',
-        503,
-        req.ttlSeconds,
-      );
     }
   }
 
-  private async fetchWithRetry(req: FeedRequest): Promise<CachedFeed> {
+  private async fetchWithRetry(req: FeedRequest, retry: boolean): Promise<CachedFeed> {
     try {
       return await this.attempt(req);
     } catch (err) {
-      if (!(err instanceof UpstreamFailure) || !err.retryable) throw err;
+      if (!retry || !(err instanceof UpstreamFailure) || !err.retryable) throw err;
       await sleep(this.retryDelayMs);
       return this.attempt(req);
     }
@@ -171,26 +275,30 @@ export class EdgeCachedFeedSource implements FeedSource {
     const url = new URL(req.url);
     url.searchParams.set('client_id', this.opts.credentials.clientId);
     url.searchParams.set('client_secret', this.opts.credentials.clientSecret);
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      controller.abort();
-    }, this.timeoutMs);
+    const t0 = Date.now();
     try {
       const res = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT, Accept: ACCEPT[req.accept ?? 'json'] },
-        signal: controller.signal,
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
       if (res.status >= 500) throw new UpstreamFailure(res.status, true);
       if (!res.ok) throw new UpstreamFailure(res.status, false);
       const body = await res.arrayBuffer();
+      // Un evento por fetch real (lo cuenta tools/carga). Nunca la URL: lleva el secret.
+      console.log(
+        JSON.stringify({
+          event: 'upstream_fetch',
+          key: req.key,
+          status: res.status,
+          ms: Date.now() - t0,
+        }),
+      );
       return { body, fetchedAt: this.now(), upstreamStatus: res.status };
     } catch (err) {
       if (err instanceof UpstreamFailure) throw err;
-      // Timeout (AbortError), ECONNRESET y demás errores de red: reintentables. No se propaga el
-      // mensaje original porque puede incluir la URL con el secret.
+      // Timeout, ECONNRESET y demás errores de red: reintentables. No se propaga el mensaje
+      // original porque puede incluir la URL con el secret.
       throw new UpstreamFailure(null, true);
-    } finally {
-      clearTimeout(timer);
     }
   }
 }

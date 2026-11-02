@@ -25,6 +25,7 @@ import {
   type FeedEntityInit,
   type FeedMessage,
 } from '../../src/lib/gtfs-rt';
+import type { DeadlineFeedSource } from '../../src/sources/edge-cached';
 import type { FeedRequest, FeedResult, FeedSource } from '../../src/sources/types';
 import { fixtureBytes } from '../lib/fixture-bytes';
 
@@ -157,6 +158,16 @@ beforeAll(async () => {
     },
     'paradas.json': { version: 1, fuente: 'test', paradas },
     'equivalencias-paradas.json': { version: 1, metodo: 'test', equivalencias },
+    // Índice compacto que usa el proxy (en producción lo genera tools/gtfs desde los archivos de arriba).
+    'indice-colectivos.json': {
+      version: 1,
+      lineasPorNumero: { '152': ['834', '835'] },
+      paradas: {
+        pconarribos1: [[STOP, 'S00081620'], [152]],
+        psinequival: [[], [152]],
+        psinlineas0: [['6861101775'], [999]],
+      },
+    },
   };
   const archivos: ManifestV1['archivos'] = {};
   for (const [name, data] of Object.entries(files)) {
@@ -323,6 +334,36 @@ describe('ColectivosAdapter.arribos', () => {
     const { colectivos } = adapter({}, NOW_TU);
     await expect(colectivos.arribos('pnoexiste00')).rejects.toMatchObject({ status: 404 });
   });
+
+  it('fan-out con una línea que nunca responde → responde en < 6 s con las otras y stale (presupuesto 5 s)', async () => {
+    const base = fakeSource({ 'colectivos:tripUpdates:route=834': filtered(TU, '834') });
+    const calls: { key: string; retry: boolean | undefined; hasSignal: boolean }[] = [];
+    const source: DeadlineFeedSource = {
+      fetch(req, opts) {
+        calls.push({ key: req.key, retry: opts?.retry, hasSignal: Boolean(opts?.signal) });
+        // La 835 se cuelga para siempre (y no respeta el signal): el adaptador no debe esperarla.
+        if (req.key.endsWith('route=835')) return new Promise<FeedResult>(() => undefined);
+        return base.fetch(req);
+      },
+    };
+    const colectivos = createColectivosAdapter({
+      source,
+      store: r2Store(env.STATIC),
+      ttlSeconds: 20,
+      staticTtlSeconds: 86_400,
+      now: () => NOW_TU,
+    });
+    const t0 = performance.now();
+    const res = await colectivos.arribos('pconarribos1');
+    const ms = performance.now() - t0;
+    expect(ms).toBeLessThan(6_000);
+    expect(ms).toBeGreaterThanOrEqual(4_900);
+    expect(res.meta.stale).toBe(true);
+    expect(res.data.arribos.length).toBeGreaterThan(0);
+    expect(new Set(res.data.arribos.map((a) => a.lineaId))).toEqual(new Set(['834']));
+    // Dentro del fan-out no se reintenta y todas las llamadas llevan el plazo compartido
+    expect(calls.every((c) => c.retry === false && c.hasSignal)).toBe(true);
+  }, 10_000);
 
   it('todas las líneas fallan → 503', async () => {
     const { colectivos } = adapter({}, NOW_TU);

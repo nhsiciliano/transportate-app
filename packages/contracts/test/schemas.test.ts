@@ -10,6 +10,7 @@ import {
   EquivalenciaParadaV1,
   EquivalenciasArchivoV1,
   ErrorV1,
+  IndiceColectivosArchivoV1,
   EstacionSubteV1,
   EstadoLineasV1,
   EstadoLineaV1,
@@ -257,6 +258,16 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
     SubteEstacionesArchivoV1,
     { version: 1, fuente: 'x', estaciones: [estacion] },
     { version: 1, fuente: 'x', estaciones: [{ ...estacion, linea: 'A', lineas: undefined }] },
+  ],
+  [
+    'IndiceColectivosArchivoV1',
+    IndiceColectivosArchivoV1,
+    {
+      version: 1,
+      lineasPorNumero: { '152': ['834', '835'] },
+      paradas: { pabb406ba9f: [['6441111945'], [22, 152]], p0000000000: [[], [10]] },
+    },
+    { version: 1, lineasPorNumero: {}, paradas: { x: [['1']] } },
   ],
   [
     'LineasColectivoArchivoV1',

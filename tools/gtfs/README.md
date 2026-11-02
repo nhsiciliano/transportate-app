@@ -15,28 +15,30 @@ Es un paquete standalone (npm, fuera del workspace pnpm). TypeScript strict se e
 ## Cómo correr
 
 ```sh
-pnpm --filter @transportate/contracts build   # una vez: tools/gtfs valida contra contracts/dist
+pnpm install                         # en la raíz: instala el workspace y compila packages/contracts
 cd tools/gtfs
-npm install                          # Node ≥ 24
-npm run build                        # todos los pasos → out/ + last-build.json
+npm ci                               # Node ≥ 24 (no corre scripts de dependencias: ver .npmrc)
+npm run build                        # todos los pasos → out/ (incluye out/last-build.json)
 npm run build -- --solo paradas      # solo algunos pasos (separados por coma):
                                      #   paradas, lineas, equivalencias, subte, recorridos
-npm test                             # Vitest sobre muestras chicas + validación de out/ si existe
+npm test                             # Vitest sobre muestras chicas (hermético: no lee out/)
 npm run check                        # typecheck + lint + prettier + tests
 ./upload-r2.sh                       # sube out/ a R2 (requiere wrangler login; ver abajo)
 ```
+
+**Contratos primero.** `tools/gtfs` valida su salida contra `packages/contracts/dist` (`@transportate/contracts`, dependencia `file:`), que es la única fuente de verdad. `npm test` y `npm run build` corren primero `scripts/check-contracts.mjs` (en línea, no como `pre*`: con `ignore-scripts` npm saltea esos hooks): si `dist` falta, si está desactualizado respecto de `src/` o si `packages/contracts` no tiene sus dependencias, cortan con un mensaje que dice qué correr (`pnpm install` o `pnpm --filter @transportate/contracts build`). El `.npmrc` (`ignore-scripts=true`) evita que `npm ci` dispare el `prepare` de contratos, que fallaba con `tsc: command not found` cuando faltaba `pnpm install`. Verificado en un clon limpio: `pnpm install && cd tools/gtfs && rm -rf node_modules && npm ci && npm test && npm run build`, todo en verde y sin modificar archivos versionados.
 
 `--solo` reescribe solo los archivos de esos pasos; el `manifest.json` se regenera siempre con lo que haya en `out/`, y antes revalida cada archivo contra su esquema. Variables opcionales:
 
 - `CAPTURAS_DIR`: carpeta de capturas (default `~/.cache/transportate/capturas`);
 - `TRANSPORTATE_CACHE`: raíz de las entradas (default `~/.cache/transportate`).
 
-**Tiempos y memoria** (esta máquina, darwin-arm64, Node 24.20, build `48dd847ac387`): ~3,5 s en total y ~300 MB de RSS máximo.
+**Tiempos y memoria** (esta máquina, darwin-arm64, Node 24.20, build de referencia `14e3950b001f`): ~6,7 s en total y ~356 MB de RSS máximo.
 
 | Paso | Tiempo |
 |---|---|
-| Recorridos (inflar y simplificar `shapes.txt` en streaming) | 1,1 s |
-| Lectura de capturas (150 mil filas) | 2,1 s |
+| Recorridos (inflar y simplificar `shapes.txt` en streaming) | 1,0 s |
+| Lectura de capturas (346 mil filas; crece con la captura) | 4,8 s |
 | Resto | < 0,2 s cada uno |
 
 Ningún zip se carga entero: `src/lib/zip.ts` lee el directorio central e infla en streaming solo las entradas necesarias. `stop_times.txt` de colectivos (1,4 GB) nunca se abre.
@@ -60,13 +62,14 @@ Las capturas se leen por nombre de columna: `snapshot_ts, vehicle_id, trip_id, r
 
 La app consume estos archivos directamente desde R2, así que **su contrato es el de `@transportate/contracts`** (`packages/contracts/src/static.ts`: `ManifestV1` y los `*ArchivoV1`). Es la única fuente de verdad. El build valida cada archivo contra esos esquemas antes de escribirlo, y `test/contracts.test.ts` vuelve a validar el `out/` real (si existe) para que tools/gtfs y los contratos no diverjan. Solo los GeoJSON tienen esquema local, porque no tienen contrato v1.
 
-Todas son JSON sin espacios, con coordenadas de 6 decimales. Tamaños del build `48dd847ac387`:
+Todas son JSON sin espacios, con coordenadas de 6 decimales. Tamaños del build de referencia `14e3950b001f`:
 
 | Archivo | Bytes | gzip -9 | Contrato | Contenido |
 |---|---:|---:|---|---|
 | `paradas.json` | 1.696.448 | 212.692 | `ParadasArchivoV1` | 6.961 paradas de CABA: `id`, `calle`, `altura`, `nombre` ("Defensa 1524"), `lat`, `lon`, `comuna`, `barrio`, `lineas[{linea, numero, sentido}]` |
 | `lineas-colectivos.json` | 161.434 | 20.708 | `LineasColectivoArchivoV1` | 936 líneas (`LineaColectivoV1` + `numero`, `agencyId`, `enCaba`): `lineaId` (= `route_id`), `linea`, `ramal` (ausente si no hay), `empresa`, `cabeceras[]` |
-| `equivalencias-paradas.json` | 413.697 | 48.462 | `EquivalenciasArchivoV1` | 4.023 `stop_id` → `paradaId`, `origen`, `confianza`, `observaciones` (cantidad). Solo filas con parada BA |
+| `equivalencias-paradas.json` | 518.897 | 62.476 | `EquivalenciasArchivoV1` | 5.039 `stop_id` → `paradaId`, `origen`, `confianza`, `observaciones` (cantidad). Solo filas con parada BA |
+| `indice-colectivos.json` | 232.473 | 83.097 | `IndiceColectivosArchivoV1` | Para el proxy: `paradaId → [stopIds, números]` (6.961 paradas, 4.320 con stop_id) y `número → lineaIds` en CABA (110 números). Evita parsear `paradas.json` y `equivalencias-paradas.json` en el Worker: el primer request pasa de ~25 ms a ~5 ms de CPU (`apps/proxy/src/adapters/README.md`) |
 | `subte-lineas.json` | 4.847 | 1.073 | `SubteLineasArchivoV1` | 8 líneas (A–H y los 2 ramales del Premetro): `routeId`, `tipo`, `color`, `colorTexto`, `estacionIds[]` ordenadas, `sentidos[{directionId, cabecera, estacionIds}]`, más `feedEndDate` |
 | `subte-estaciones.json` | 17.379 | 3.550 | `SubteEstacionesArchivoV1` | 108 estaciones: `nombre` (con tildes), `nombreGtfs`, `lat`, `lon`, `lineas[]`, `andenes`, `accesible` |
 | `subte-red.geojson` | 7.260 | 2.002 | local | `FeatureCollection` de 8 `LineString` simplificados a 5 m, con `linea`, `routeId` y `color` |
@@ -75,11 +78,11 @@ Todas son JSON sin espacios, con coordenadas de 6 decimales. Tamaños del build 
 
 - **`version` es determinista:** las mismas entradas dan la misma versión (verificado con dos corridas sobre capturas congeladas) y no depende de `generatedAt`.
 - **Recorridos:** si `recorridos-colectivos.geojson` pasara de 5 MB, se omite y se anota en `manifest.omitidos`.
-- **Estadísticas:** cada build deja las suyas en `last-build.json` (se commitea como referencia; no tiene datos ni rutas absolutas).
+- **Estadísticas:** cada build deja las suyas en `out/last-build.json`, ignorado por git como todo `out/`. Las cifras de referencia se copian a mano a este README; así los builds no ensucian el árbol. `upload-r2.sh` sube solo los archivos del manifiesto, no el reporte.
 
-## Estadísticas (build `48dd847ac387`)
+## Estadísticas (build de referencia `14e3950b001f`)
 
-Capturas usadas: 27 snapshots entre 2026-11-01 23:31 y 2026-11-02 00:01 UTC (~30 minutos, 149.584 lecturas). **Es muy poco:** el plan pide 24–48 h. Los números de aprendizaje van a crecer al volver a correr el build con más captura.
+Capturas usadas: 65 snapshots entre 2026-11-01 23:31 y 2026-11-02 00:45 UTC (~74 minutos, 346.181 lecturas). **Sigue siendo poco:** el plan pide 24–48 h ([ADR-0007](../../docs/adr/ADR-0007-aprendizaje-paradas.md)). Los números de aprendizaje crecen con cada build que tenga más captura.
 
 **Paradas**
 
@@ -103,37 +106,37 @@ Además se normalizan los 51 valores de barrio a los 48 oficiales (`VILLA ORTUZA
 | Empresas con mojibake reparado | 79 |
 | Líneas con algún vehículo en CABA | 379 |
 
-**Equivalencias** (5.531 calculadas dentro de CABA; **4.023 publicadas**, las que tienen parada BA)
+**Equivalencias** (6.667 calculadas dentro de CABA; **5.039 publicadas**, las que tienen parada BA)
 
 | Origen | Calculadas | Publicadas | Qué es |
 |---|---:|---:|---|
-| `ajustada-ba` | 3.454 | 3.454 | Coordenada 2021 ajustada a parada BA (≤ 40 m, misma línea) |
-| `aprendida` | 805 | 569 | Parada elegida por los votos de las capturas (sin semilla o corrigiéndola) |
-| `gtfs2021` | 1.272 | 0 | Coordenada 2021 sin parada BA cerca: no se publica |
+| `ajustada-ba` | 3.615 | 3.615 | Coordenada 2021 ajustada a parada BA (≤ 40 m, misma línea) |
+| `aprendida` | 1.796 | 1.424 | Parada elegida por los votos de las capturas (sin semilla o corrigiéndola) |
+| `gtfs2021` | 1.256 | 0 | Coordenada 2021 sin parada BA cerca: no se publica |
 
-Las 1.508 filas sin parada (1.272 `gtfs2021` y 236 `aprendida` sin parada) quedan solo en `last-build.json` como conteo (`equivalencias.noPublicadasSinParada`).
+Las 1.628 filas sin parada (1.256 `gtfs2021` y 372 `aprendida` sin parada) quedan solo en `out/last-build.json` como conteo (`equivalencias.noPublicadasSinParada`).
 
 | Detalle de la semilla y el aprendizaje | |
 |---|---:|
-| `stop_id` numéricos del tiempo real que existen en el GTFS 2021 | 14.187 de 31.710 |
+| `stop_id` numéricos del tiempo real que existen en el GTFS 2021 | 14.590 de 32.256 |
 | Descartados a más de 1 km de los vehículos que los informan (ID reasignado) | 371 |
-| `stop_id` aprendidos de capturas | 2.893 (1.640 con parada BA) |
-| Semillas confirmadas por las capturas | 872 |
-| Semillas corregidas por las capturas | 34 |
-| Equivalencias nuevas sin semilla | 1.186 |
+| `stop_id` aprendidos de capturas | 8.092 (3.934 con parada BA) |
+| Semillas confirmadas por las capturas | 1.956 |
+| Semillas corregidas por las capturas | 118 |
+| Equivalencias nuevas sin semilla | 3.898 |
 
-**Validación del aprendizaje:** donde hay una semilla ajustada a BA y una parada aprendida (993 casos), coinciden en el **87,8 %**.
+**Validación del aprendizaje:** donde hay una semilla ajustada a BA y una parada aprendida (2.256 casos), coinciden en el **86,7 %**.
 
 **Cobertura sobre `tripUpdates`** (105.325 predicciones de arribo, todo el AMBA)
 
 | Predicciones | Cantidad | % |
 |---|---:|---:|
-| Con parada BA | 18.763 | 17,8 |
-| Con coordenada en CABA | 24.841 | 23,6 |
-| Ubicadas fuera de CABA | 24.711 | 23,5 |
-| Sin ubicar | 55.773 | 53,0 |
+| Con parada BA | 22.215 | 21,1 |
+| Con coordenada en CABA | 28.163 | 26,7 |
+| Ubicadas fuera de CABA | 35.079 | 33,3 |
+| Sin ubicar | 42.083 | 40,0 |
 
-La métrica útil para la app: **de las predicciones ubicadas en CABA, el 75,5 % tiene parada BA**. Las "sin ubicar" son `stop_id` sin semilla válida que todavía no aprendió la captura: es lo que tiene que cubrir la captura de 24–48 h.
+La métrica útil para la app: **de las predicciones ubicadas en CABA, el 78,9 % tiene parada BA**. Las "sin ubicar" son `stop_id` sin semilla válida que todavía no aprendió la captura: es lo que tiene que cubrir la captura de 24–48 h.
 
 **Subte**
 
@@ -201,7 +204,7 @@ Salen solo del tiempo real. Los `route_id` 2021 están reasignados: de 252 compa
 
 ### Subte
 
-- **Colores:** salen de `docs/02b-colores-subte.md` §3. El build compara contra `route_color` y `route_text_color` del GTFS y reporta cualquier diferencia en `last-build.json` (`subte.coloresDistintosDelGtfs`).
+- **Colores:** salen de `docs/02b-colores-subte.md` §3. El build compara contra `route_color` y `route_text_color` del GTFS y reporta cualquier diferencia en `out/last-build.json` (`subte.coloresDistintosDelGtfs`).
 - **Orden por sentido:** viaje más largo (más `stop_times`) de cada `direction_id`, con andenes mapeados a su estación (`parent_station`).
 - **Orden de la línea:** unión de los dos sentidos. Si una estación falta en un sentido, se inserta donde menos alarga el recorrido. Es el caso de Alberti y Pasco en la A, donde cada sentido saltea una.
 - **Nombres:** GTFS con tildes restituidas por una lista curada de palabras (`TILDES` en `src/steps/subte.ts`). No se usan los nombres de `forecastGTFS` porque traen errores ("Carlos Pelegrini", "Scalabrini Ortíz") y recortes ("Moreno" en vez de "Jose Maria Moreno"). Queda `Humberto 1` tal cual lo trae el GTFS.
