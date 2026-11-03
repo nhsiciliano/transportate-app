@@ -11,20 +11,47 @@
 //   versión nueva se pisa la anterior (no se acumulan versiones).
 // - **Validación con Zod solo al descargar.** Leer de MMKV no vuelve a validar (`JSON.parse` de
 //   1,7 MB: ~6 ms en Node; Zod sobre 7.000 paradas: ~15 ms más, que en Hermes se multiplica). Una
-//   copia rota (JSON inválido o sin `version: 1`) se borra y se vuelve a bajar.
+//   copia rota (JSON inválido, sin `version: 1` o un `.geojson` que no es `FeatureCollection`) se
+//   borra y se vuelve a bajar. Los `.geojson` (`GEOJSON_ESTATICOS_V1`) se validan con su esquema.
 // - **Un administrador compartido:** el JSON se parsea una vez por sesión y todas las pantallas
 //   ven el mismo estado (`useSyncExternalStore`), incluido el progreso de descarga.
 // - **Versión nueva:** se baja en segundo plano y la vieja se sigue mostrando hasta que termina.
-import { ARCHIVOS_ESTATICOS_V1 } from '@transportate/contracts';
+import { ARCHIVOS_ESTATICOS_V1, GEOJSON_ESTATICOS_V1 } from '@transportate/contracts';
 import type { z } from 'zod';
 
 import { ContractError, toApiError, type ApiError, type ArchivoEstatico } from '../api';
 import type { KeyValueStore } from '../storage/kv';
 import { STATIC_FILE_ROUTE, type StaticDownloader } from './downloader';
-import type { ArchivoData } from './lastKnown';
 
-export interface LargeFileState<K extends ArchivoEstatico = ArchivoEstatico> {
-  data: ArchivoData<K> | undefined;
+/** Los `.geojson` del paquete (`GEOJSON_ESTATICOS_V1`): mapa de subte y recorridos de colectivos. */
+export type ArchivoGeoJson = keyof typeof GEOJSON_ESTATICOS_V1;
+/** Todo lo que puede manejar el administrador: los JSON con contrato y los `.geojson`. */
+export type ArchivoGrande = ArchivoEstatico | ArchivoGeoJson;
+/** Tipo del contenido validado de cada archivo. */
+export type ArchivoGrandeData<K extends ArchivoGrande> = K extends ArchivoEstatico
+  ? z.infer<(typeof ARCHIVOS_ESTATICOS_V1)[K]>
+  : K extends ArchivoGeoJson
+    ? z.infer<(typeof GEOJSON_ESTATICOS_V1)[K]>
+    : never;
+
+const isGeoJson = (archivo: ArchivoGrande): archivo is ArchivoGeoJson =>
+  archivo in GEOJSON_ESTATICOS_V1;
+
+/** Esquema de validación (Zod) del archivo. */
+function schemaFor(archivo: ArchivoGrande): z.ZodType {
+  return isGeoJson(archivo) ? GEOJSON_ESTATICOS_V1[archivo] : ARCHIVOS_ESTATICOS_V1[archivo];
+}
+
+/** Chequeo barato al leer de MMKV (sin Zod): forma mínima del archivo. */
+function looksValid(archivo: ArchivoGrande, data: unknown): boolean {
+  if (typeof data !== 'object' || data === null) return false;
+  return isGeoJson(archivo)
+    ? (data as { type?: unknown }).type === 'FeatureCollection'
+    : (data as { version?: unknown }).version === 1;
+}
+
+export interface LargeFileState<K extends ArchivoGrande = ArchivoGrande> {
+  data: ArchivoGrandeData<K> | undefined;
   /** Versión de `data`. */
   version: string | undefined;
   savedAt: number | undefined;
@@ -45,7 +72,7 @@ interface Meta {
   bytes: number;
 }
 
-export function largeFileKeys(archivo: ArchivoEstatico) {
+export function largeFileKeys(archivo: ArchivoGrande) {
   return {
     data: `transportate.static.file.${archivo}.data`,
     meta: `transportate.static.file.${archivo}.meta`,
@@ -64,8 +91,8 @@ const EMPTY: LargeFileState = {
 };
 
 export class LargeFileManager {
-  private readonly states = new Map<ArchivoEstatico, LargeFileState>();
-  private readonly listeners = new Map<ArchivoEstatico, Set<() => void>>();
+  private readonly states = new Map<ArchivoGrande, LargeFileState>();
+  private readonly listeners = new Map<ArchivoGrande, Set<() => void>>();
 
   constructor(
     private readonly kv: KeyValueStore,
@@ -73,11 +100,11 @@ export class LargeFileManager {
     private readonly now: () => number = Date.now,
   ) {}
 
-  getState<K extends ArchivoEstatico>(archivo: K): LargeFileState<K> {
+  getState<K extends ArchivoGrande>(archivo: K): LargeFileState<K> {
     return this.states.get(archivo) ?? EMPTY;
   }
 
-  subscribe(archivo: ArchivoEstatico, listener: () => void): () => void {
+  subscribe(archivo: ArchivoGrande, listener: () => void): () => void {
     const set = this.listeners.get(archivo) ?? new Set();
     set.add(listener);
     this.listeners.set(archivo, set);
@@ -86,13 +113,13 @@ export class LargeFileManager {
     };
   }
 
-  private set(archivo: ArchivoEstatico, patch: Partial<LargeFileState>) {
+  private set(archivo: ArchivoGrande, patch: Partial<LargeFileState>) {
     this.states.set(archivo, { ...this.getState(archivo), ...patch });
     for (const l of this.listeners.get(archivo) ?? []) l();
   }
 
   /** Lee la copia guardada (una vez por sesión). Síncrono: MMKV lo es. */
-  loadStored(archivo: ArchivoEstatico): void {
+  loadStored(archivo: ArchivoGrande): void {
     if (this.getState(archivo).loaded) return;
     const keys = largeFileKeys(archivo);
     let patch: Partial<LargeFileState> = { loaded: true };
@@ -105,13 +132,11 @@ export class LargeFileManager {
         const ok =
           typeof meta.version === 'string' &&
           typeof meta.savedAt === 'number' &&
-          typeof data === 'object' &&
-          data !== null &&
-          (data as { version?: unknown }).version === 1;
+          looksValid(archivo, data);
         if (ok) {
           patch = {
             loaded: true,
-            data: data as ArchivoData<typeof archivo>,
+            data: data as ArchivoGrandeData<typeof archivo>,
             version: meta.version,
             savedAt: meta.savedAt,
           };
@@ -125,7 +150,7 @@ export class LargeFileManager {
     this.set(archivo, patch);
   }
 
-  private removeStored(archivo: ArchivoEstatico) {
+  private removeStored(archivo: ArchivoGrande) {
     const keys = largeFileKeys(archivo);
     try {
       this.kv.remove(keys.meta);
@@ -139,7 +164,7 @@ export class LargeFileManager {
    * Baja `version` si no es la que hay y no hay otra descarga en curso. Una versión que falló no
    * se reintenta sola: hace falta `retry`.
    */
-  ensure(archivo: ArchivoEstatico, version: string, bytes?: number): Promise<void> {
+  ensure(archivo: ArchivoGrande, version: string, bytes?: number): Promise<void> {
     const s = this.getState(archivo);
     if (s.version === version || s.downloading || s.failedVersion === version) {
       return Promise.resolve();
@@ -147,13 +172,13 @@ export class LargeFileManager {
     return this.download(archivo, version, bytes);
   }
 
-  retry(archivo: ArchivoEstatico, version: string, bytes?: number): Promise<void> {
+  retry(archivo: ArchivoGrande, version: string, bytes?: number): Promise<void> {
     if (this.getState(archivo).downloading) return Promise.resolve();
     this.set(archivo, { failedVersion: undefined, error: null });
     return this.ensure(archivo, version, bytes);
   }
 
-  private async download(archivo: ArchivoEstatico, version: string, bytes?: number) {
+  private async download(archivo: ArchivoGrande, version: string, bytes?: number) {
     this.set(archivo, { downloading: true, progress: 0, error: null, failedVersion: undefined });
     try {
       const text = await this.downloader.download(version, archivo, {
@@ -170,7 +195,7 @@ export class LargeFileManager {
       } catch {
         throw new ContractError(STATIC_FILE_ROUTE, ['(json)']);
       }
-      const schema: z.ZodType = ARCHIVOS_ESTATICOS_V1[archivo];
+      const schema = schemaFor(archivo);
       const result = schema.safeParse(parsed);
       if (!result.success) {
         throw new ContractError(
@@ -187,7 +212,7 @@ export class LargeFileManager {
         // Sin espacio: queda en memoria por esta sesión y se vuelve a bajar la próxima.
       }
       this.set(archivo, {
-        data: result.data as ArchivoData<typeof archivo>,
+        data: result.data as ArchivoGrandeData<typeof archivo>,
         version,
         savedAt,
         loaded: true,

@@ -199,3 +199,78 @@ describe('useStaticArchivoGrande', () => {
     expect(manifest().archivos['paradas.json']).toBeDefined();
   });
 });
+
+describe('archivos .geojson (GEOJSON_ESTATICOS_V1)', () => {
+  const recorridos = JSON.stringify({
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        id: 'r-601',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [-58.38, -34.6],
+            [-58.39, -34.61],
+          ],
+        },
+        properties: { lineaId: '601' },
+      },
+    ],
+  });
+
+  it('baja, valida con su esquema y guarda igual que los JSON', async () => {
+    const kv = new MemoryKeyValueStore();
+    const { downloader, calls } = createFakeDownloader({
+      'recorridos-colectivos.geojson': recorridos,
+    });
+    const manager = new LargeFileManager(kv, downloader);
+    manager.loadStored('recorridos-colectivos.geojson');
+    await manager.ensure('recorridos-colectivos.geojson', 'v1');
+    expect(calls).toEqual(['v1/recorridos-colectivos.geojson']);
+    expect(manager.getState('recorridos-colectivos.geojson').data?.features).toHaveLength(1);
+    expect(kv.getString(largeFileKeys('recorridos-colectivos.geojson').data)).toBe(recorridos);
+    // Otra sesión: lo lee de MMKV sin bajarlo.
+    const otra = new LargeFileManager(kv, createFakeDownloader({}).downloader);
+    otra.loadStored('recorridos-colectivos.geojson');
+    expect(otra.getState('recorridos-colectivos.geojson').version).toBe('v1');
+  });
+
+  it('un .geojson fuera de esquema es ContractError', async () => {
+    const malo = createFakeDownloader({
+      'recorridos-colectivos.geojson': '{"type":"FeatureCollection","features":[{"type":"Nope"}]}',
+    });
+    const manager = new LargeFileManager(new MemoryKeyValueStore(), malo.downloader);
+    await manager.ensure('recorridos-colectivos.geojson', 'v1');
+    expect(manager.getState('recorridos-colectivos.geojson').error?.kind).toBe('contract');
+  });
+
+  it('con el hook: misma API (data, progress, isPending)', async () => {
+    const h = createHarness(
+      {
+        ...defaultRoutes(),
+        '/v1/static/manifest': () => {
+          const m = manifest();
+          m.archivos['recorridos-colectivos.geojson'] = {
+            url: 'v1abc/recorridos-colectivos.geojson',
+            bytes: recorridos.length,
+            sha256: 'e'.repeat(64),
+          };
+          return jsonResponse(m);
+        },
+      },
+      {
+        downloader: createFakeDownloader({ 'recorridos-colectivos.geojson': recorridos })
+          .downloader,
+      },
+    );
+    const { result } = await renderHook(
+      () => useStaticArchivoGrande('recorridos-colectivos.geojson'),
+      { wrapper: h.Wrapper },
+    );
+    await waitFor(() => {
+      expect(result.current.data?.type).toBe('FeatureCollection');
+    });
+    expect(result.current).toMatchObject({ version: 'v1abc', isPending: false, progress: null });
+  });
+});

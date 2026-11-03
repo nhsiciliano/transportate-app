@@ -2,8 +2,8 @@
 // descarga (README.md, "Archivos grandes"). El estado lo guarda `LargeFileManager`.
 import { useEffect, useSyncExternalStore } from 'react';
 
-import { useManifest, type ApiError, type ArchivoEstatico } from '../api';
-import type { ArchivoData } from './lastKnown';
+import { useManifest, type ApiError } from '../api';
+import type { ArchivoGrande, ArchivoGrandeData } from './largeFiles';
 import { useLargeFileManager } from './StaticStoreProvider';
 import { versionFromManifest } from './useStaticArchivo';
 
@@ -27,13 +27,15 @@ export interface StaticArchivoGrandeQuery<T> {
 }
 
 /**
- * Archivo grande del paquete estático (`paradas.json`, `lineas-colectivos.json`…). Con
+ * Archivo grande del paquete estático: los JSON con contrato (`paradas.json`,
+ * `lineas-colectivos.json`…) o un `.geojson` de `GEOJSON_ESTATICOS_V1`
+ * (`recorridos-colectivos.geojson`, `subte-red.geojson`). Con
  * `enabled: false` solo lee lo que ya esté en memoria: no carga de MMKV ni baja nada.
  */
-export function useStaticArchivoGrande<K extends ArchivoEstatico>(
+export function useStaticArchivoGrande<K extends ArchivoGrande>(
   archivo: K,
   { enabled = true }: { enabled?: boolean } = {},
-): StaticArchivoGrandeQuery<ArchivoData<K>> {
+): StaticArchivoGrandeQuery<ArchivoGrandeData<K>> {
   const manager = useLargeFileManager();
   const state = useSyncExternalStore(
     (cb) => manager.subscribe(archivo, cb),
@@ -72,7 +74,7 @@ export function useStaticArchivoGrande<K extends ArchivoEstatico>(
 }
 
 /** Avance combinado de varias descargas (para Ajustes); `null` si no baja ninguna. */
-export function useStaticDownloadProgress(archivos: readonly ArchivoEstatico[]): number | null {
+export function useStaticDownloadProgress(archivos: readonly ArchivoGrande[]): number | null {
   const manager = useLargeFileManager();
   const snapshot = useSyncExternalStore(
     (cb) => {

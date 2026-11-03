@@ -19,7 +19,8 @@ export const staticKeys = {
 /** `archivos[archivo].url` = `<version>/<archivo>` → `version`. */
 export function versionFromManifest(
   manifest: ManifestV1 | undefined,
-  archivo: ArchivoEstatico,
+  /** Cualquier archivo del manifiesto (JSON o `.geojson`). */
+  archivo: string,
 ): string | undefined {
   const url = manifest?.archivos[archivo]?.url;
   if (url === undefined) return undefined;

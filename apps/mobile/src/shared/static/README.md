@@ -37,7 +37,7 @@ lineas.data.lineas; // SubteLineasArchivoV1
 
 ## Archivos grandes (tarea 4.5)
 
-`paradas.json` (1,7 MB) y `lineas-colectivos.json` (161 KB) **no** pasan por la caché de TanStack Query: su persister guarda toda la caché en una sola clave MMKV y la reescribe entera en cada cambio. Con 2 MB adentro, cada refresco del estado del subte reescribiría 2 MB.
+`paradas.json` (1,7 MB), `lineas-colectivos.json` (161 KB) y los `.geojson` de `GEOJSON_ESTATICOS_V1` (`recorridos-colectivos.geojson`, 742 KB; `subte-red.geojson`) **no** pasan por la caché de TanStack Query: su persister guarda toda la caché en una sola clave MMKV y la reescribe entera en cada cambio. Con 2 MB adentro, cada refresco del estado del subte reescribiría 2 MB.
 
 ```tsx
 const paradas = useStaticArchivoGrande('paradas.json');
@@ -63,6 +63,7 @@ paradas.data?.paradas; // ParadasArchivoV1
   - Timeout de 60 s y el mismo criterio de privacidad que el cliente: solo `Accept`, y errores con la ruta plantilla.
 - **Versión nueva:** se baja en segundo plano y la vieja se sigue mostrando hasta que termina (`fromLastKnown: true`). Sin manifiesto (offline), se usa la copia guardada.
 - **Errores:** una versión cuya descarga falló no se reintenta sola en cada render; `refetch()` la reintenta.
+- **`.geojson`:** `useStaticArchivoGrande('recorridos-colectivos.geojson')` devuelve el `FeatureCollection` validado con su esquema de `GEOJSON_ESTATICOS_V1`. El almacenamiento es el mismo (un par de claves por archivo y una versión), y al leer de MMKV solo se chequea `type: 'FeatureCollection'`. Tipos: `ArchivoGrande = ArchivoEstatico | ArchivoGeoJson` y `ArchivoGrandeData<K>`.
 - **`useStaticDownloadProgress(archivos)`:** avance combinado, para la fila del índice en Ajustes.
 - **Tests:** `StaticStoreProvider` acepta `largeFiles` (un `LargeFileManager` con un descargador falso). Sin provider se usan MMKV y XHR.
 

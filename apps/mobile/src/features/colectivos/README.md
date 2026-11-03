@@ -2,6 +2,8 @@
 
 Colectivos: búsqueda local de líneas y paradas, paradas cercanas y detalle de parada (Fase 4, tareas 4.1, 4.5, 4.7, 4.11 y 4.12). Brief de diseño: [`docs/briefs/02-colectivos.md`](../../../../../docs/briefs/02-colectivos.md). El detalle de línea con el mapa (`LineaScreen`, tarea 4.6) es de otra tarea.
 
+**Para el detalle de línea (tarea 4.6):** la ruta es `/colectivos/[linea]`, con `linea` = `lineaId` (el `route_id` del proxy). Desde una parada se suma el query param **`parada`** (constante `PARAM_PARADA` de `navigation.ts`, exportada en `@/features/colectivos`) con el id de la parada BA, para centrar la cámara ahí: `/colectivos/601?parada=p749f7ff366`.
+
 ## Brief operativo (tarea 4.1)
 
 **Raíz "Colectivos"** (`ColectivosScreen`):

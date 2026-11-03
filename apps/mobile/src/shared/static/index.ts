@@ -26,7 +26,14 @@ export {
   type DownloadOptions,
   type StaticDownloader,
 } from './downloader';
-export { LargeFileManager, largeFileKeys, type LargeFileState } from './largeFiles';
+export {
+  LargeFileManager,
+  largeFileKeys,
+  type ArchivoGeoJson,
+  type ArchivoGrande,
+  type ArchivoGrandeData,
+  type LargeFileState,
+} from './largeFiles';
 export {
   useStaticArchivoGrande,
   useStaticDownloadProgress,
