@@ -49,6 +49,15 @@ export {
   type SnackbarController,
   type SnackbarProps,
 } from './Snackbar';
+export {
+  SIGN_BAND,
+  SignBand,
+  signBandPalette,
+  type SignBandProps,
+  type SignBandStatus,
+  type SignBandStatusTone,
+  type SignBandVariant,
+} from './SignBand';
 export { Skeleton, SkeletonGroup, type SkeletonGroupProps, type SkeletonProps } from './Skeleton';
 export { STATUS, StatusChip, type StatusChipProps, type StatusInfo } from './StatusChip';
 export { Text, type TextProps, type TextTone } from './Text';

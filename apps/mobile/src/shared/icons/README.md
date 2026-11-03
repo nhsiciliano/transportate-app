@@ -22,7 +22,7 @@ import { Icon } from '@/shared/icons';
 
 | Archivo | Qué hace |
 |---|---|
-| `map.ts` | Mapa curado: 45 usos sobre 42 SVG de `@material-symbols/svg-400` 0.48.2. **Cada SVG se importa de forma explícita**, así que Metro empaqueta solo esos. Exporta `iconMap` y `IconName`. |
+| `map.ts` | Mapa curado: 46 usos sobre 42 SVG de `@material-symbols/svg-400` 0.48.2. **Cada SVG se importa de forma explícita**, así que Metro empaqueta solo esos. Exporta `iconMap` y `IconName`. |
 | `Icon.tsx` | Componente. `View` contenedor de `size` × `size` con las props de accesibilidad y el `Svg` adentro. |
 | `svg.d.ts` | Declara `*.svg` como `FC<SvgProps>`. |
 | `index.ts` | Exporta `Icon`, `IconProps`, `IconSize`, `iconMap`, `IconName`. |

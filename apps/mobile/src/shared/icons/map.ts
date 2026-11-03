@@ -8,7 +8,8 @@
 // Únicas excepciones a FILL 1: `favoritoOff` usa `star.svg` (contorno) para que "no es favorito"
 // no dependa solo del color (`docs/08-design-system.md`, nota 1).
 // Nombres repetidos a propósito: `favoritos`/`favoritoOn` (estrella llena), `acercaDe`/`info`
-// (info) y `subtes`/`estacion` (subway) comparten glifo pero son usos distintos.
+// (info), `subtes`/`estacion` (subway) y `sentidoHacia`/`irA` (arrow_forward) comparten glifo pero
+// son usos distintos.
 import HomeFillSvg from '@material-symbols/svg-400/rounded/home-fill.svg';
 import DirectionsBusFillSvg from '@material-symbols/svg-400/rounded/directions_bus-fill.svg';
 import SubwayFillSvg from '@material-symbols/svg-400/rounded/subway-fill.svg';
@@ -83,6 +84,7 @@ export const iconMap = {
   anden: TransferWithinAStationFillSvg, // Andén (arribos por andén)
   sentidoAlternar: SwapHorizFillSvg, // Sentido: alternar
   sentidoHacia: ArrowForwardFillSvg, // Sentido: hacia la cabecera
+  irA: ArrowForwardFillSvg, // Ir al detalle: flecha al borde de la banda de señal (SignBand, Inicio)
   refrescar: RefreshFillSvg, // Refrescar
   alerta: WarningFillSvg, // Alerta / advertencia
   info: InfoFillSvg, // Información (Alert info, "Con novedades")
