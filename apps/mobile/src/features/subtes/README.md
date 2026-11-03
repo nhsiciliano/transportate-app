@@ -42,5 +42,6 @@ Pull to refresh nativo en las tres pantallas (refresca estado, alertas y arribos
 
 - **Datos:** el estático sale de `useStaticArchivo` (`src/shared/static`); el tiempo real, solo de los hooks de `shared/api`. Los colores de línea son los únicos que no vienen del tema: llegan como datos del estático.
 - **Arribos:** se recalculan con `horaEstimada` contra un reloj que avanza cada 15 s, así un dato de la caché no muestra "2 min" de hace un rato. Se descartan los que pasaron hace más de 30 s, igual que el proxy.
-- **Pendiente para otras tareas:** mapa de la red (4.3, `subtes/mapa.tsx`); combinaciones ("Combinás con D"), porque el estático no trae `transfers.txt`; "El servicio no está funcionando a esta hora", porque el estático no trae horarios.
+- **Mapa de la red (4.3):** hecho, en `MapaRedScreen.tsx` (ruta `subtes/mapa.tsx`; ver `shared/map/README.md`).
+- **Pendiente para otras tareas:** combinaciones ("Combinás con D"), porque el estático no trae `transfers.txt`; "El servicio no está funcionando a esta hora", porque el estático no trae horarios.
 - **Tests:** `test/subtes/` (pantallas y `useStaticArchivo`) y `__tests__/model.test.ts`.

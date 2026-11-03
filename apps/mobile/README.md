@@ -2,7 +2,7 @@
 
 App de Transportate para iOS y Android: **Expo SDK 58** (React Native 0.88, React 19.3) con **Expo Router** y TypeScript strict. Consume el proxy de `apps/proxy` con el contrato JSON v1 de `packages/contracts`.
 
-Estado: **Fase 3**. Están el scaffold, la navegación y los íconos (tareas 3.2, 3.8 y 3.5); las pantallas son placeholders. Tema, fuentes, componentes, cliente API y favoritos llegan en las otras tareas de la fase (`docs/00-plan.md`).
+Estado: **Fase 4 cerrada técnicamente (2026-11-03)**. La base (Fase 3) y las features están: Inicio, Subtes (raíz, línea, estación y mapa de la red), Colectivos (búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real), Favoritos (alias, Deshacer, búsqueda, datos vivos y reorden por arrastre), Ajustes, Acerca de y Licencias. Tránsito sigue oculto (tarea 4.8 diferida). Falta validar en el iPhone: [`docs/11-prueba-manual.md`](../../docs/11-prueba-manual.md). Referencia técnica: [`docs/07-app.md`](../../docs/07-app.md); tests: [`docs/09-testing.md`](../../docs/09-testing.md) §8 (600 tests en 59 suites).
 
 ## Instalar
 
@@ -139,7 +139,8 @@ pnpm lint        # ESLint (config de la raíz + react-hooks)
 pnpm typecheck   # tsc --noEmit
 ```
 
-- Los tests viven en `test/` y no en `src/app/`, porque todo archivo dentro de `src/app/` es una ruta.
+- Los tests viven en `test/` y en `src/**/__tests__/`, y nunca en `src/app/`, porque todo archivo dentro de `src/app/` es una ruta.
+- Hay carpetas de tests por área (`test/api`, `test/subtes`, `test/colectivos`, `test/map`) con sus fixtures y harness, helpers compartidos en `test/helpers/` y los mocks nativos (MapLibre, `expo-location`, Reanimated/Worklets, Gesture Handler, `react-native-reorderable-list`) en `test/mocks/`.
 - `test/inicio.test.tsx` es el test de humo: renderiza Inicio y encuentra su título.
 - `test/navegacion.test.tsx` usa `renderRouter` de `expo-router/testing-library` con los layouts reales del stack de Inicio:
   - recorre Inicio → Ajustes (botón del header) → Acerca de;
@@ -175,13 +176,13 @@ apps/mobile/
     │   ├── +not-found.tsx
     │   └── (tabs)/
     │       ├── _layout.tsx            # NativeTabs: Inicio, Colectivos, Subtes, Favoritos (+ Tránsito oculto)
-    │       ├── inicio/                # index, ajustes, acerca
+    │       ├── inicio/                # index, ajustes, acerca, licencias
     │       ├── colectivos/            # index, [linea], parada/[id]
-    │       ├── subtes/                # index, [linea], estacion/[id]
+    │       ├── subtes/                # index, [linea], estacion/[id], mapa
     │       ├── favoritos/             # index
     │       └── transito/              # index (tab oculto)
-    ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, transito, favoritos, ajustes)
-    └── shared/            # theme, ui, icons, fonts, storage, api, query
+    ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, transito, favoritos, ajustes, ubicacion)
+    └── shared/            # theme, ui, icons, fonts, storage, api, query, static, map
 ```
 
 **Alias:** `@/…` apunta a `src/…`. Lo resuelven TypeScript (`paths`), Metro (`experiments.tsconfigPaths`) y Jest (`moduleNameMapper`).
@@ -189,9 +190,9 @@ apps/mobile/
 | URL                                                           | Pantalla                                                    |
 | ------------------------------------------------------------- | ----------------------------------------------------------- |
 | `/inicio`                                                     | Inicio. Botón "Ajustes" en el header                        |
-| `/inicio/ajustes` → `/inicio/acerca`                          | Ajustes → Acerca de (stack dentro de Inicio, suposición S2) |
+| `/inicio/ajustes` → `/inicio/acerca` → `/inicio/licencias`    | Ajustes → Acerca de → Licencias (stack dentro de Inicio, suposición S2) |
 | `/colectivos`, `/colectivos/:linea`, `/colectivos/parada/:id` | Colectivos → línea → parada                                 |
-| `/subtes`, `/subtes/:linea`, `/subtes/estacion/:id`           | Subtes → línea → estación                                   |
+| `/subtes`, `/subtes/:linea`, `/subtes/estacion/:id`, `/subtes/mapa` | Subtes → línea → estación; mapa de la red            |
 | `/favoritos`                                                  | Favoritos                                                   |
 
 ## Decisiones
@@ -241,8 +242,8 @@ Tarea 4.0. Están instaladas todas juntas para reconstruir el dev client **una s
 - **Después de cambiar algo de esta tabla** (versión o plugin) hay que reconstruir el dev client: `npx eas-cli@27.2.0 build --profile development`. Un `expo start` no alcanza.
 - **Sin `babel.config.js`** y sin cambios en `metro.config.js`.
 - **Comprobado:** `npx expo-doctor` 20/20, `expo export` para iOS y Android, y `expo prebuild --clean` (el `Info.plist` y el `AndroidManifest.xml` generados tienen solo los permisos de arriba, más los de la plantilla de Expo).
-- **Bottom sheet:** se usa la `formSheet` nativa de Expo Router; `@gorhom/bottom-sheet` no se instala.
-- **Reorden:** se usa `react-native-reorderable-list`, que es JS puro y la instala 4.9. Las dos decisiones están explicadas en `src/shared/map/README.md`.
+- **Panel inferior del mapa de línea:** es un `BottomPanel` propio (`shared/map`, Gesture Handler + Reanimated), no la `formSheet` nativa ni `@gorhom/bottom-sheet`, que no se instaló (F4-colectivos-mapa-1).
+- **Reorden:** `react-native-reorderable-list` 0.18.3, JS puro, instalada en 4.9 sin rebuild. Las decisiones están explicadas en `src/shared/map/README.md`.
 - **Jest:**
   - `jest.setup.ts` registra el mock de MapLibre (`test/mocks/maplibre.tsx`) y el de `expo-location` (`test/mocks/expo-location.ts`, con `locationMock`). También carga `setUpTests()` de Reanimated, el mock oficial de Worklets y el `jestSetup` de Gesture Handler.
   - `test/mocks/setup-after-env.ts` reinicia la ubicación y los refs del mapa antes de cada test.

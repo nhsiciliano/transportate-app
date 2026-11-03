@@ -1,5 +1,5 @@
 // ¿La persona ya dio permiso de ubicación "mientras se usa"? Solo CONSULTA: el mapa nunca pide
-// el permiso (el pedido en contexto es de "Paradas cercanas", tarea 4.7, S32). Se vuelve a
+// el permiso (el pedido en contexto lo hace `useUbicacion().request()` desde "Paradas cercanas" y "Centrar en mi ubicación", S32). Se vuelve a
 // consultar al volver la app a primer plano, por si lo activó desde Configuración.
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';

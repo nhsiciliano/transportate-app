@@ -136,6 +136,7 @@ Los registra `jest.setup.ts`; `test/mocks/setup-after-env.ts` (`setupFilesAfterE
 | `test/mocks/expo-location.ts` | `expo-location` con estado: `locationMock.setPermission('granted' \| 'denied' \| 'undetermined', { canAskAgain })`, `setRequestAnswer`, `setPosition`, `emitPosition` (a cada `watchPositionAsync`), `activeWatchers`. Los métodos de segundo plano y geofencing tiran: un test falla si la app los pidiera |
 | Reanimated 4 y Worklets | `jest.setup.ts` hace `setUpTests()` de Reanimated y usa el mock de `react-native-worklets`. `test/mocks/resolver.js` compone el resolver de Reanimated con el de `jest-expo` (con pnpm la carpeta de Reanimated contiene el nombre de Worklets y el resolver los confundía) |
 | Gesture Handler | `jest.setup.ts` carga su `jestSetup.js` oficial |
+| `test/mocks/reorderable-list.tsx` | `react-native-reorderable-list` (arrastre de Favoritos): la librería llama a `useAnimatedRef()` como función y, en Jest, Reanimated devuelve un objeto. El mock es un `FlatList` con todas sus props a la vista (`onReorder`, `dragEnabled`, `animationDuration`), así un test simula el soltar con `props.onReorder({ from, to })`; `useReorderableDrag` devuelve el `jest.fn` `reorderableListMock.drag` |
 | `test/mocks/native-deps.test.tsx` | Humo de todo lo anterior y de `app.config.ts` (ubicación solo "mientras se usa") |
 | `test/helpers/ajustes.tsx` | `renderWithApp(ui, { fetch, favoritos, online })`: tema, `QueryClient`, cliente del proxy, intervalo y favoritos sobre un `MemoryKeyValueStore`. Lo usan Ajustes y la navegación de Inicio |
 | `test/subtes/fixtures.tsx` | Estático mínimo de las 7 líneas, respuestas del proxy (`estado`, `alertas`, `arribos`, `posiciones`), `createHarness(routes)` con todos los providers y `renderSubtes(url)`. Lo reutilizan Favoritos, Inicio y los datos vivos |
@@ -153,9 +154,9 @@ cd apps/mobile && npx jest --ci test/integracion.test.tsx   # un archivo
 cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; borrá coverage/ después)
 ```
 
-### Qué cubren (mobile: 561 tests en 55 archivos, 2026-11-03, tras la reconciliación F4-MID-D)
+### Qué cubren (mobile: 600 tests en 59 archivos, 2026-11-03, cierre de la Fase 4)
 
-Totales por paquete en esa fecha: **mobile 561 tests en 55 suites** (`jest --ci` completo en una corrida, unos 28 s; también en verde con `--randomize` en tres corridas con semillas distintas), **proxy 86 + 1 skipped en 11 archivos** y **contracts 76 en 3 archivos**.
+Totales por paquete al cierre de la Fase 4 (2026-11-03, cada uno por separado): **mobile 600 tests en 59 suites** (`jest --ci` completo; antes, en la reconciliación, 561 en 55, también en verde con `--randomize`; en la corrida de cierre hubo un fallo transitorio por tiempo en `test/subtes/static.test.tsx` que suelto pasa 8/8 y la corrida siguiente fue 600/600), **proxy 86 + 1 skipped en 11 archivos** y **contracts 74 + 2 skipped en 3 archivos**. Monorepo: 760 tests que corren (en la Fase 3 eran 432).
 
 | Archivo | Cubre |
 |---|---|
@@ -175,6 +176,8 @@ Totales por paquete en esa fecha: **mobile 561 tests en 55 suites** (`jest --ci`
 | `test/inicio.test.tsx` | Inicio: 7 filas fijas, Alert destacada (una, varias, las 7), skeleton, `ErrorState` dentro del bloque con favoritos visibles, Alert de actualización fallida, sin favoritos, 5 + "Ver todos (N)" |
 | `src/features/colectivos/__tests__/model.test.ts` | Índice de colectivos, búsqueda con ranking, paradas cercanas con filtro por rectángulo (grilla de 7.027 paradas) |
 | `test/colectivos/*` | `LargeFileManager` y `useStaticArchivoGrande` (progreso, MMKV por archivo, versión nueva, errores, `.geojson`); raíz de Colectivos (índice descargando, error, búsqueda, cercanas con y sin permiso, fuera de CABA, recientes), parada con y sin arribos, favorito de parada huérfano |
+| `src/features/colectivos/__tests__/lineaModel.test.ts`, `test/colectivos/linea.test.tsx` | Línea de colectivos con mapa (4.6): fuentes y capas del mock de MapLibre, polling solo con la pantalla a la vista, 0 vehículos, agrupamiento con más de 80, atenuación por vehículo y por feed, error con reintento, feed no disponible, "Seguir", lista accesible, cambio de ramal, apertura desde una parada, "Centrar en mi ubicación" con permiso en contexto y el botón del panel |
+| `test/favoritos-arrastre.test.tsx`, `src/features/favoritos/__tests__/FavoritosServicio.test.tsx` | Arrastre en Favoritos (solo en edición y sin filtro, orden persistido en `repository.reorder`, manija) y Alert única de servicio caído (todas en error, mezcla, 404, reintentar) |
 | `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx` | Dato vivo por tipo (datos, carga, error, viejo) y huérfano con el criterio único |
 | `src/shared/ui/__tests__/Snackbar.test.tsx` | `Snackbar` y `SnackbarProvider` con timers falsos (5 s / 8 s, acción, reemplazo) |
 | `src/shared/map/__tests__/*`, `test/map/*` | `MapView` compartido y mapa de la red de subte contra el mock de MapLibre |
