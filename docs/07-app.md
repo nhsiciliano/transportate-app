@@ -48,6 +48,7 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | `/`                                                             | Redirige a `/inicio`                             | `src/app/index.tsx`                       |
 | `/inicio`                                                       | Inicio. Botón "Ajustes" en el header             | `(tabs)/inicio/index.tsx`                 |
 | `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
+| `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
 | `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada                      | `(tabs)/colectivos/…`                     |
 | `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea → estación                        | `(tabs)/subtes/…`                         |
 | `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
@@ -218,3 +219,20 @@ La app necesita **dev client** porque MMKV y Nitro son nativos; no anda en Expo 
 | F3-a | Id de favorito `tipo:refId` (agregar dos veces devuelve el existente)                                                                                                       | `features/favoritos/model.ts`                      |
 | F3-b | Splash con la marca de `design/brand/` (200 px, `contain`) sobre `#ffffff` en claro y `#1d3343` en oscuro                                                                   | `app.config.ts`                                    |
 | F3-c | Identificador nativo `app.transportate.mobile`, confirmado por el usuario el 2026-11-02                                                                                      | `app.config.ts`                                    |
+
+## 13. Ajustes y Acerca de
+
+Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/inicio/licencias`) son finas y montan las pantallas de [`src/features/ajustes/`](../apps/mobile/src/features/ajustes/README.md), que tiene el brief operativo, los estados con su copy y las suposiciones `F4-ajustes-n`.
+
+| Ajuste | De dónde sale | Dónde se guarda |
+| --- | --- | --- |
+| Tema (Sistema / Claro / Oscuro, S18) | `useTheme().setPreference` | MMKV, `transportate.pref.theme.v1`. Se aplica al instante |
+| Actualizar cada (15 / 20 / 30 / 60 s, S17) | `useRefreshInterval().setSeconds` | MMKV, `transportate.pref.refreshInterval.v1`. El polling lo toma en el próximo ciclo |
+| Índice de líneas y paradas | `useManifest()` + `useIsOnline()` | Caché de TanStack Query. Estados: carga, datos, error y sin conexión |
+| Limpiar datos guardados | `queryClient.clear()` + `clearPersistedQueryCache(store)` | Borra la clave `transportate.query-cache.v1`. **No** toca favoritos ni preferencias |
+| Borrar todos los favoritos (S19) | `Alert.alert` nativo → `repository.clear()` | Antes guarda `list()`; "Deshacer" llama a `restore()` por cada uno, en orden |
+
+- **Acerca de:** la versión sale de `expo-constants` (`expoConfig.version` y `nativeBuildVersion`). La licencia de los datos es CC BY 2.5 AR, con la aclaración de que no es una app oficial (S27). La privacidad repite los puntos de [`05-privacidad.md`](05-privacidad.md) para la persona.
+- **Licencias:** `pnpm licencias` (en `apps/mobile`) genera `licencias.json` a partir de las `dependencies` directas, con el texto de `LICENSE*`. Hay que regenerarlo cuando cambian las dependencias.
+- **`Snackbar`:** componente compartido (`shared/ui/Snackbar.tsx`, ver su fila en [`shared/ui/README.md`](../apps/mobile/src/shared/ui/README.md)). Hoy lo monta `AjustesScreen` (F4-ajustes-1).
+- **Pendiente:** la fila **Ubicación** llega con `expo-location` (4.7) y el progreso de descarga del índice con 4.5.
