@@ -35,7 +35,7 @@ export function SubtesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Subtes', headerLargeTitle: true }} />
+      <Stack.Screen options={{ title: 'Subtes', headerLargeTitleEnabled: true }} />
       <ScreenScroll refreshing={refreshing} onRefresh={onRefresh} testID="subtes-screen">
         <SearchInput
           value={consulta}
