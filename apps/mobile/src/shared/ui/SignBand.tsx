@@ -285,7 +285,13 @@ function BandContent({
 
   return (
     <View style={[styles.content, isLead ? styles.contentLead : styles.contentNext]}>
+      {/* Contenedor decorativo: la información la lleva el pictograma (16,69:1 contra el cuadrado).
+          No es un elemento accesible aparte: la banda entera es el único (F5-inicio-7). */}
       <View
+        testID="signband-pictograma"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
         style={[
           styles.pictogram,
           { backgroundColor: palette.pictogram, borderRadius: SIGN_BAND.pictogramRadius },

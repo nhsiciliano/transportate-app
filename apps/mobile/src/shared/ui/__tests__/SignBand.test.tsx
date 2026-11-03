@@ -48,6 +48,16 @@ describe('SignBand', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('el cuadrado del pictograma es decorativo: la banda es el único elemento accesible', async () => {
+    await renderThemed(<SignBand {...base} variant="lead" value="4 min" />);
+    const cuadrado = screen.getByTestId('signband-pictograma', { includeHiddenElements: true });
+    expect(cuadrado.props.accessible).toBe(false);
+    expect(cuadrado.props.importantForAccessibility).toBe('no-hide-descendants');
+    expect(cuadrado).toHaveStyle({ width: 40, height: 40, backgroundColor: light.text.primary });
+    expect(screen.queryByTestId('signband-pictograma')).toBeNull();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
+
   it('sin etiqueta propia compone mensaje, rótulo, valor y estado', async () => {
     await renderThemed(
       <SignBand
