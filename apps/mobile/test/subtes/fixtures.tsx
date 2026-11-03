@@ -25,10 +25,24 @@ import EstacionRoute from '@/app/(tabs)/subtes/estacion/[id]';
 import SubtesRoute from '@/app/(tabs)/subtes/index';
 import MapaRoute from '@/app/(tabs)/subtes/mapa';
 import { FavoritosProvider, MmkvFavoritosRepository } from '@/features/favoritos';
-import { ApiClientProvider, createApiClient } from '@/shared/api';
+import { ApiClientProvider, createApiClient, HttpError } from '@/shared/api';
 import { createMemoryRefreshIntervalStore, RefreshIntervalProvider } from '@/shared/query';
-import { createLastKnownStore, StaticStoreProvider, type LastKnownStore } from '@/shared/static';
+import {
+  createRecientesStore,
+  RecientesProvider,
+  type RecientesStore,
+} from '@/features/colectivos';
+import {
+  createLastKnownStore,
+  LargeFileManager,
+  STATIC_FILE_ROUTE,
+  StaticStoreProvider,
+  type LastKnownStore,
+  type StaticDownloader,
+} from '@/shared/static';
 import { MemoryKeyValueStore } from '@/shared/storage/kv';
+
+import { ARCHIVOS_TEXTO } from '../colectivos/data';
 import { createMemoryPreferenceStore, ThemeProvider } from '@/shared/theme';
 
 // ---------------------------------------------------------------- estático
@@ -136,6 +150,17 @@ export function manifest(version = VERSION) {
         url: `${version}/subte-estaciones.json`,
         bytes: 1,
         sha256: 'b'.repeat(64),
+      },
+      // Archivos grandes de Colectivos (los sirve el descargador falso del harness).
+      'paradas.json': {
+        url: `${version}/paradas.json`,
+        bytes: ARCHIVOS_TEXTO['paradas.json']?.length ?? 1,
+        sha256: 'c'.repeat(64),
+      },
+      'lineas-colectivos.json': {
+        url: `${version}/lineas-colectivos.json`,
+        bytes: ARCHIVOS_TEXTO['lineas-colectivos.json']?.length ?? 1,
+        sha256: 'd'.repeat(64),
       },
     },
   });
@@ -272,13 +297,41 @@ export interface Harness {
   queryClient: QueryClient;
   kv: MemoryKeyValueStore;
   lastKnown: LastKnownStore;
+  largeFiles: LargeFileManager;
+  recientes: RecientesStore;
   fetchMock: ReturnType<typeof createFetch>;
   repository: MmkvFavoritosRepository;
 }
 
+/**
+ * Descargador falso de archivos grandes: sirve `ARCHIVOS_TEXTO` en dos pasos de progreso.
+ * `gate` permite frenar la descarga hasta que el test la suelte.
+ */
+export function createFakeDownloader(
+  archivos: Record<string, string> = ARCHIVOS_TEXTO,
+  { fail = false, gate }: { fail?: boolean; gate?: Promise<void> } = {},
+) {
+  const calls: string[] = [];
+  const downloader: StaticDownloader = {
+    async download(version, archivo, { onProgress } = {}) {
+      calls.push(`${version}/${archivo}`);
+      const text = archivos[archivo];
+      if (fail || text === undefined) throw new HttpError(STATIC_FILE_ROUTE, 503, null, null);
+      onProgress?.(Math.floor(text.length / 2), null);
+      if (gate !== undefined) await gate;
+      onProgress?.(text.length, null);
+      return text;
+    },
+  };
+  return { downloader, calls };
+}
+
 export function createHarness(
   routes: Routes,
-  { kv = new MemoryKeyValueStore() }: { kv?: MemoryKeyValueStore } = {},
+  {
+    kv = new MemoryKeyValueStore(),
+    downloader = createFakeDownloader().downloader,
+  }: { kv?: MemoryKeyValueStore; downloader?: StaticDownloader } = {},
 ): Harness & { Wrapper: (props: { children: ReactNode }) => ReactNode } {
   const fetchMock = createFetch(routes);
   const api = createApiClient({
@@ -289,6 +342,8 @@ export function createHarness(
     defaultOptions: { queries: { retry: false, gcTime: Infinity } },
   });
   const lastKnown = createLastKnownStore(kv);
+  const largeFiles = new LargeFileManager(kv, downloader);
+  const recientes = createRecientesStore(kv);
   const repository = new MmkvFavoritosRepository(kv);
   const themeStore = createMemoryPreferenceStore('light');
   const intervalStore = createMemoryRefreshIntervalStore(20);
@@ -298,8 +353,10 @@ export function createHarness(
         <QueryClientProvider client={queryClient}>
           <ApiClientProvider client={api}>
             <RefreshIntervalProvider store={intervalStore}>
-              <StaticStoreProvider store={lastKnown}>
-                <FavoritosProvider repository={repository}>{children}</FavoritosProvider>
+              <StaticStoreProvider store={lastKnown} largeFiles={largeFiles}>
+                <RecientesProvider store={recientes}>
+                  <FavoritosProvider repository={repository}>{children}</FavoritosProvider>
+                </RecientesProvider>
               </StaticStoreProvider>
             </RefreshIntervalProvider>
           </ApiClientProvider>
@@ -307,7 +364,7 @@ export function createHarness(
       </ThemeProvider>
     );
   }
-  return { queryClient, kv, lastKnown, fetchMock, repository, Wrapper };
+  return { queryClient, kv, lastKnown, largeFiles, recientes, fetchMock, repository, Wrapper };
 }
 
 /** Monta el stack real de Subtes en `initialUrl`. */

@@ -1,11 +1,6 @@
-import { Text, View } from 'react-native';
+// Ruta fina: la pantalla vive en `src/features/colectivos`.
+import { ColectivosScreen } from '@/features/colectivos';
 
-// Placeholder: los componentes de UI llegan con la tarea 3.7.
-export default function ColectivosScreen() {
-  return (
-    <View>
-      <Text accessibilityRole="header">Colectivos</Text>
-      <Text>Acá vas a buscar una línea de colectivo o una parada.</Text>
-    </View>
-  );
+export default function ColectivosRoute() {
+  return <ColectivosScreen />;
 }

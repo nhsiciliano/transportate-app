@@ -162,7 +162,7 @@ describe('useStaticArchivo', () => {
 describe('versionFromManifest y lastKnown', () => {
   it('saca la versión de la url del archivo', () => {
     expect(versionFromManifest(manifest('abc'), 'subte-lineas.json')).toBe('abc');
-    expect(versionFromManifest(manifest('abc'), 'paradas.json')).toBeUndefined();
+    expect(versionFromManifest(manifest('abc'), 'equivalencias-paradas.json')).toBeUndefined();
     expect(versionFromManifest(undefined, 'subte-lineas.json')).toBeUndefined();
   });
 
