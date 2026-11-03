@@ -230,12 +230,13 @@ _Iniciada el 2026-11-03._ Coordinación con Orca (Run `run_6bc551486d73`), misma
 | `shared/map` (MapView sobre MapLibre 11 con estilo positron/dark según el tema, atribución, controles de 48 pt, Reducir movimiento, franja para el gesto de volver) y mapa de la red de subte en `/subtes/mapa` (trazos con colores GTFS y contorno del tema, estaciones, navegación); `GestureHandlerRootView` en el layout raíz; esquema GeoJSON mínimo en `@transportate/contracts` y `client.staticGeoJson`; N2 resuelta; suposiciones `F4-mapa-1…7` | 4.3 | high-dev | merge de `nhsiciliano/High-Dev` · [`../apps/mobile/src/shared/map/README.md`](../apps/mobile/src/shared/map/README.md), [`07-app.md`](07-app.md) |
 | `features/ubicacion` (`useUbicacion` sobre `expo-location`, posición solo en memoria, `isInsideCaba`, `distanceMeters`, `PermisoUbicacionBloque`), fila Ubicación en Ajustes, colores de subte y favorito huérfano en Favoritos, datos vivos conectados en las filas visibles con `FreshnessLabel` global y pull to refresh; `09-testing.md` al día; suposiciones `F4-ubicacion-1…6`, `F4-favoritos-9…12` | 4.7 (base), 4.9, 4.11 | low-dev | merge de `nhsiciliano/Low-Dev` · [`07-app.md`](07-app.md), [`09-testing.md`](09-testing.md) |
 | Colectivos sin mapa: índice grande por archivo en MMKV (`useStaticArchivoGrande`, descarga XHR con progreso, una versión por archivo, también `.geojson`), raíz con "Preparando el listado…" y barra, búsqueda local con ranking, paradas cercanas (bbox + haversine, permiso en contexto, fuera de CABA), líneas recientes, parada con arribos solo si existen, progreso en `IndiceRow`; suposiciones `F4-colectivos-1…7` | 4.5, 4.7 | mid-dev | merge de `nhsiciliano/Mid-Dev` · [`../apps/mobile/src/features/colectivos/README.md`](../apps/mobile/src/features/colectivos/README.md), [`07-app.md`](07-app.md) |
+| `headerLargeTitleEnabled` en Subtes (opción vigente), Alert única "El servicio de la Ciudad no responde" en Favoritos cuando todas las filas visibles fallan con error reintentable, guía de prueba manual en dispositivo (`11-prueba-manual.md`); suposición `F4-favoritos-13` | 4.11, 4.12 | low-dev | merge de `nhsiciliano/Low-Dev` · [`11-prueba-manual.md`](11-prueba-manual.md) |
 
 ### En curso
 
 - mid-dev: reconciliación tras integrar (una sola ubicación con `features/ubicacion`, un solo criterio de huérfano), suite completa de la app en una corrida (4.12) y estado final de `07-app.md`.
 - high-dev: 4.6 línea de colectivos con mapa en tiempo real + arrastre de 4.9 en Favoritos.
-- low-dev: opción vigente del large title, Alert única de servicio caído en Favoritos y guía de prueba manual (`docs/11-prueba-manual.md`).
+- low-dev: sin tarea (queda el cierre documental de la fase).
 
 ### Hallazgos que cambian el plan
 
@@ -455,6 +456,7 @@ _Iniciada el 2026-11-03._ Coordinación con Orca (Run `run_6bc551486d73`), misma
 
 - Los tipos generados de rutas (`.expo/types/router.d.ts`, gitignored) quedan viejos cuando se agrega una ruta desde otro worktree y rompen `tsc` en el worktree del coordinador: se borran y `expo start` los regenera.
 - Con la máquina muy cargada (load average 40–65 con tres workers corriendo Jest a la vez), `integracion`, `navegacion` y `layout` de `apps/mobile` superan el timeout; pasan solos. Sigue siendo un riesgo de CI (ver Fase 3).
+- Tras integrar Colectivos (mid-dev) sobre la Favoritos de low-dev, 1 test de `FavoritosScreen.test.tsx` falla en `main` por los dos criterios de huérfano (`status: 'orphan'` del dato vivo y `isOrphan` de la fila): lo unifica la tarea de reconciliación de mid-dev.
 
 ## Fase 5 — Pulido y escalado
 
