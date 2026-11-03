@@ -125,15 +125,20 @@ export function LineaScreen({ lineaParam }: { lineaParam: string | undefined }) 
   );
 }
 
+/** El título en negrita con el ícono; debajo, la descripción solo si agrega algo, y el período.
+ *  GCBA suele mandar `header_text` y `description_text` iguales: el texto va una sola vez. */
 function AlertaCompleta({ alerta, interrumpida }: { alerta: AlertaV1; interrumpida: boolean }) {
   const periodo = periodoAlerta(alerta);
-  const texto = alerta.descripcion === alerta.titulo ? '' : alerta.descripcion;
+  const titulo = alerta.titulo.trim();
+  const descripcion = alerta.descripcion.trim();
+  const texto =
+    descripcion.toLocaleLowerCase('es') === titulo.toLocaleLowerCase('es') ? '' : descripcion;
   const message = [texto, periodo].filter((x) => x !== undefined && x !== '').join('\n');
   return (
     <AvisoAlert
       role={interrumpida ? 'danger' : 'warning'}
-      title={alerta.titulo}
-      message={message === '' ? alerta.titulo : message}
+      title={titulo}
+      {...(message === '' ? {} : { message })}
       testID={`alerta-${alerta.id}`}
     />
   );

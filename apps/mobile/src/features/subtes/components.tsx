@@ -82,7 +82,7 @@ export function AvisoAlert({
   role: AlertRole;
   variant?: 'standard' | 'system';
   title?: string;
-  message: string;
+  message?: string;
   action?: { label: string; onPress: () => void };
   testID?: string;
 }) {
@@ -95,7 +95,7 @@ export function AvisoAlert({
       variant={variant}
       testID={testID}
       icon={<Icon name={icon} size={24} color={fg} />}
-      message={message}
+      {...(message === undefined ? {} : { message })}
       {...(title === undefined ? {} : { title })}
       {...(action === undefined ? {} : { action })}
     />

@@ -286,9 +286,22 @@ Corridas por paquete (`pnpm --filter … test` y `pnpm exec jest --ci`), de a un
 - **Sin audit nativo ni pruebas E2E:** la accesibilidad con VoiceOver/TalkBack, el modo avión y Dynamic Type grande solo se probaron por tests de RNTL; el `audit` de Impeccable y Maestro (o similar) son de la Fase 5.
 - Heredados: licencias de terceros solo de dependencias directas; sin menú contextual con long press en Favoritos e Inicio; el "Deshacer" de Ajustes/Favoritos se pierde al salir de la pantalla.
 
+### Correcciones tras la validación en el iPhone (2026-11-03)
+
+El usuario probó la fase en el iPhone con el dev client `cabc9c80` (el primer intento corría todavía el build `ece33dd7`, sin `expo-location` ni MapLibre; se verificó con los logs de EAS y se reinstaló). Tres defectos, corregidos por el coordinador directamente en `main`, con tests primero y sin tocar código nativo (no hace falta rebuild):
+
+| Defecto | Causa | Corrección |
+| --- | --- | --- |
+| Subtes › Línea: cada alerta repetía el texto (negrita con ícono y de nuevo en chico) | GCBA manda `header_text` y `description_text` iguales y sin período; `AlertaCompleta` descartaba la descripción repetida y rellenaba el mensaje vacío con el título | `message` pasa a opcional en `Alert`/`AvisoAlert`; la alerta muestra el título una sola vez y debajo solo la descripción si agrega algo (comparación con `trim` y sin mayúsculas) y el período. Tests en `LineaEstacion.test.tsx` y `Alert.test.tsx` |
+| Colectivos › Línea: "Colectivos en servicio" no ordenaba por cercanía | `ordenarVehiculos` ordenaba a propósito por dato más reciente (F4-colectivos-mapa-11) y `vistaVehiculo` descartaba la distancia que ya calculaba para el texto | `VehiculoVista.metros`; con ubicación ordena por cercanía y desempata por dato reciente e interno; sin ubicación, el orden anterior. F4-colectivos-mapa-11 reescrita; tests en `lineaModel.test.ts` y `linea.test.tsx` |
+| Favoritos: el header tapaba el contenido | Único tab raíz sin `headerLargeTitleEnabled`: en iOS 26 el header opaco se extiende sobre el contenido; el estado vacío era un `View` sin inset y la lista iba anidada en `View` → `GestureHandlerRootView` | Large title como en los otros tabs; estado vacío en un `ScrollView` con `contentInsetAdjustmentBehavior`; la lista pasa a ser la raíz de la pantalla (la raíz de RNGH ya está en `app/_layout.tsx`). Verificación en dispositivo (no se reproduce en Jest) |
+
+**Impeccable:** el usuario pidió saber por qué "no estaba disponible". El marketplace `impeccable` (`pbakaus/impeccable` 4.8.0) está registrado y clonado en `~/.claude/plugins/marketplaces/impeccable` desde el 2026-11-01 (y el motor del launcher descargado), pero el **plugin nunca se instaló**: no figura en `installed_plugins.json` ni en `enabledPlugins` de ninguna configuración. Por eso ni el coordinador ni los workers ven `/impeccable`. En la Fase 1 se usó leyendo las referencias directo del clon. Pendiente de decisión del usuario: instalarlo con `/plugin install impeccable@impeccable` (alcance user, para que lo vean también los worktrees de los workers) antes de la Fase 5. Para estas correcciones se leyó `craft-floor.md` desde el clon.
+
 ### Pendiente de decisión del usuario
 
-- **Validar la fase en el iPhone** con el dev client siguiendo [`11-prueba-manual.md`](11-prueba-manual.md) y pasar las fallas con el formato del último bloque de esa guía.
+- **Validar la fase en el iPhone** con el dev client siguiendo [`11-prueba-manual.md`](11-prueba-manual.md) y pasar las fallas con el formato del último bloque de esa guía. Primera pasada hecha el 2026-11-03 (ver "Correcciones tras la validación"); falta volver a probar los tres puntos corregidos.
+- **Instalar Impeccable** (`/plugin install impeccable@impeccable`, alcance user) antes de la Fase 5, que lo usa en 5.1, 5.2 y 5.4.
 - **Aceptar o corregir las suposiciones `F4-*`** de cada feature, que están en el README de cada una:
   - Ajustes y Acerca de: `F4-ajustes-1…9` en [`features/ajustes/README.md`](../apps/mobile/src/features/ajustes/README.md).
   - Favoritos: `F4-favoritos-1…13` en [`features/favoritos/README.md`](../apps/mobile/src/features/favoritos/README.md).

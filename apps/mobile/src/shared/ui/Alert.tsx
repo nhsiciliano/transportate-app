@@ -13,7 +13,8 @@ export interface AlertProps {
   role: AlertRole;
   variant?: AlertVariant;
   title?: string;
-  message: string;
+  /** Opcional desde las correcciones de la Fase 4: una Alert puede ser solo el título. */
+  message?: string;
   /** Slot de ícono (24 pt). */
   icon?: ReactNode;
   action?: { label: string; onPress: () => void };
@@ -97,9 +98,11 @@ export function Alert({
           {title}
         </Text>
       ) : null}
-      <Text variant="text.sm" color={pal.fg}>
-        {message}
-      </Text>
+      {message ? (
+        <Text variant="text.sm" color={pal.fg}>
+          {message}
+        </Text>
+      ) : null}
       {action ? (
         <Button
           label={action.label}

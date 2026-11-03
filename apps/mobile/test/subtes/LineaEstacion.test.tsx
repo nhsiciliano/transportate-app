@@ -52,6 +52,19 @@ describe('Línea', () => {
     expect(screen.getByRole('button', { name: 'Leandro N. Alem' })).toBeOnTheScreen();
   });
 
+  it('con título y descripción iguales y sin período, el texto sale una sola vez', async () => {
+    const texto = 'Línea B: servicio limitado entre Leandro N. Alem y Federico Lacroze.';
+    await renderSubtes('/subtes/B', {
+      ...defaultRoutes(),
+      '/v1/subtes/alertas': () =>
+        jsonResponse(
+          alertas([{ id: 'al-b', lineas: ['B'], titulo: texto, descripcion: `${texto} ` }]),
+        ),
+    });
+    await screen.findByTestId('alerta-al-b');
+    expect(screen.getAllByText(texto)).toHaveLength(1);
+  });
+
   it('sin alertas: "Sin novedades informadas" y estaciones en orden de recorrido', async () => {
     await renderSubtes('/subtes/A');
     expect(await screen.findByText('Sin novedades informadas')).toBeOnTheScreen();

@@ -54,6 +54,8 @@ export interface VehiculoVista {
   /** Lo mismo para el lector de pantalla, con unidades enteras. */
   hablado: string;
   rumbo: number | null;
+  /** Distancia a la persona; `null` sin permiso o sin posición. */
+  metros: number | null;
 }
 
 export function vistaVehiculo(
@@ -63,10 +65,8 @@ export function vistaVehiculo(
   const edad = edadVehiculo(v, now);
   const age = formatAge(edad);
   const nombre = `Interno ${v.id}`;
-  const distancia =
-    posicion === null
-      ? null
-      : formatDistancia(distanceMeters(posicion, { lat: v.lat, lon: v.lon }));
+  const metros = posicion === null ? null : distanceMeters(posicion, { lat: v.lat, lon: v.lon });
+  const distancia = metros === null ? null : formatDistancia(metros);
   return {
     id: v.id,
     lat: v.lat,
@@ -81,6 +81,7 @@ export function vistaVehiculo(
       .filter((x) => x !== undefined)
       .join(', '),
     rumbo: v.rumbo ?? null,
+    metros,
   };
 }
 
@@ -133,7 +134,13 @@ export function recorridoDe(
   return { type: 'FeatureCollection', features };
 }
 
-/** Orden de la lista accesible: los más recientes primero, después por interno. */
+/** Orden de la lista: con ubicación, el más cercano primero; sin ubicación (o en empate), los
+ *  más recientes primero y después por interno (F4-colectivos-mapa-11). */
 export function ordenarVehiculos(vehiculos: readonly VehiculoVista[]): VehiculoVista[] {
-  return [...vehiculos].sort((a, b) => a.edad - b.edad || a.id.localeCompare(b.id, 'es'));
+  return [...vehiculos].sort(
+    (a, b) =>
+      (a.metros ?? Infinity) - (b.metros ?? Infinity) ||
+      a.edad - b.edad ||
+      a.id.localeCompare(b.id, 'es'),
+  );
 }

@@ -78,7 +78,7 @@ Ruta `/colectivos/[linea]` (`linea` = `lineaId`, el `route_id` del proxy; opcion
 8. **F4-colectivos-mapa-8.** El recorrido es el del número (`recorridos-colectivos.geojson` trae uno por número, aproximado), no el del ramal. Por eso va punteado.
 9. **F4-colectivos-mapa-9.** Las paradas son las del número en los dos sentidos (`paradasDeNumero`). Aparecen recién desde zoom 14 para no tapar los vehículos.
 10. **F4-colectivos-mapa-10.** La cámara se encuadra una sola vez: la parada de `?parada=` (zoom 16); si no hay, el recorrido; si no hay, los vehículos. Después solo la mueven la persona y "Seguir". Al cambiar de ramal se vuelve a encuadrar.
-11. **F4-colectivos-mapa-11.** La lista ordena por el dato más reciente y después por interno.
+11. **F4-colectivos-mapa-11.** Con permiso de ubicación, la lista ordena por cercanía a la persona (el más cercano primero; `metros` en `VehiculoVista`). Sin permiso o sin posición, por el dato más reciente y después por interno. (Corregido tras la validación en el iPhone del 2026-11-03: antes ordenaba siempre por dato reciente.)
 
 **Datos:**
 

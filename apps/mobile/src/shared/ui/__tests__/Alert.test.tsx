@@ -49,4 +49,10 @@ describe('Alert', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Reintentar' }));
     expect(onPress).toHaveBeenCalled();
   });
+
+  it('sin message: solo el título, sin texto vacío debajo', async () => {
+    await renderThemed(<Alert role="warning" title="Servicio limitado" testID="alert" />);
+    expect(screen.getByText('Servicio limitado')).toBeOnTheScreen();
+    expect(screen.getAllByText(/./)).toHaveLength(1);
+  });
 });

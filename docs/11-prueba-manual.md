@@ -56,7 +56,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 ### Línea
 
 - [ ] Insignia grande, estado, estrella de favorito (44×44).
-- [ ] **Alertas** completas (una por alerta) o "Sin novedades informadas".
+- [ ] **Alertas** completas (una por alerta) o "Sin novedades informadas". El texto va **una sola vez**, en negrita con el ícono; debajo solo la descripción si agrega algo y el período ("Desde las 14:05"). GCBA suele mandar título y descripción iguales: no tiene que repetirse.
 - [ ] Diagrama de estaciones; tocar una estación abre su detalle.
 - [ ] **Premetro:** una sola línea con sus dos ramales ("Ramal Centro Cívico").
 
@@ -100,6 +100,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 - [ ] **📱 Panel inferior con tres alturas:** colapsado (insignia, ramal, "18 colectivos en servicio", frescura, estrella y "Actualizar"), medio (ramales y la nota del sentido) y expandido (lista de vehículos). Se arrastra desde la manija o el encabezado; el botón de la manija ("Ver más" / "Ver la lista completa" / "Ver menos") hace lo mismo sin arrastrar.
 - [ ] **📱 El panel y el mapa no compiten por los gestos:** arrastrar el panel no mueve el mapa, y arrastrar o hacer zoom en el mapa visible por encima del panel funciona con el panel en cualquier altura. En el nivel expandido, la lista scrollea sin mover el panel.
 - [ ] **📱 Gesto de volver:** desde el borde izquierdo vuelve a la pantalla anterior sin arrastrar el mapa.
+- [ ] **Lista por cercanía:** con el permiso de ubicación dado, en el nivel expandido el primer colectivo es el que dice la menor distancia ("a 350 m de vos") y la lista va de más cerca a más lejos. Sin permiso, el orden es por dato más reciente.
 - [ ] **Seguir un vehículo:** tocá un colectivo en el mapa (o en la lista): se resalta y el panel muestra "Interno 1404 · actualizado hace 25 s" con **"Seguir"**. Con "Seguir" la cámara lo acompaña en cada actualización (📱 con un háptico de selección); con Reducir movimiento, la cámara salta. Volvé a tocar para dejar de seguir.
 - [ ] **Ramal:** si el número tiene más de un ramal, los `Chip`s del nivel medio cambian de ramal y la cámara se vuelve a encuadrar. Aparece la nota "El GPS de los colectivos no informa el sentido: ves los de las dos direcciones."
 - [ ] **Línea con muchos vehículos (más de 80):** los círculos se agrupan hasta cierto zoom; tocar un grupo acerca la cámara.
@@ -112,6 +113,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 
 ## 4. Favoritos
 
+- [ ] **📱 Large title** "Favoritos" grande, que se achica al scrollear; "Editar"/"Listo" a la derecha. Nada queda debajo del header: ni la primera fila ni el estado vacío.
 - [ ] **Vacío:** estrella, "Todavía no guardaste favoritos.", "Tocá la estrella en una línea, parada o estación para tenerla acá." y los botones "Ver subtes" y "Buscar colectivo", que cambian de tab.
 - [ ] **Agregar:** desde una línea y una estación de subte (y una línea/parada de colectivo) con la estrella. Volvé a Favoritos: aparecen en el orden en que los guardaste, de forma inmediata (sin skeleton de estructura).
 - [ ] **Filas:** la línea y la estación de subte con **el color de su línea**; alias o nombre oficial, y debajo el nombre oficial si hay alias; a la derecha el dato vivo (estado, próximo arribo, "N en servicio").

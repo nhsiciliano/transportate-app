@@ -247,6 +247,18 @@ describe('Detalle de línea: interacción', () => {
     ).toBeOnTheScreen();
   });
 
+  it('con permiso de ubicación, el colectivo más cercano va primero en la lista', async () => {
+    locationMock.setPermission('granted');
+    // Al lado del interno 1410 (el fixture lo ubica un paso al noroeste del 1404).
+    locationMock.setPosition({ latitude: -34.599, longitude: -58.391 });
+    await renderLinea();
+    await screen.findByRole('button', { name: /Interno 1410, actualizado hace .*, a .* de vos/ });
+    const ids = screen
+      .getAllByTestId(/^linea-vehiculo-/)
+      .map((el) => (el.props as { testID: string }).testID);
+    expect(ids).toEqual(['linea-vehiculo-1410', 'linea-vehiculo-1404']);
+  });
+
   it('"Actualizar" vuelve a pedir las posiciones', async () => {
     const { fetchMock } = await renderLinea();
     await screen.findByText('2 colectivos en servicio');

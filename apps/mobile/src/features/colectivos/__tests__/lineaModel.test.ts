@@ -78,13 +78,31 @@ describe('lineaModel', () => {
     expect(todos.features.every((f) => f.properties.atenuado)).toBe(true);
   });
 
-  it('ordena por más reciente y después por interno', () => {
+  it('sin ubicación ordena por más reciente y después por interno', () => {
     const vistas = [
       vistaVehiculo(vehiculo('b', 30), { now: NOW, posicion: null }),
       vistaVehiculo(vehiculo('a', 30), { now: NOW, posicion: null }),
       vistaVehiculo(vehiculo('c', 5), { now: NOW, posicion: null }),
     ];
+    expect(vistas.every((v) => v.metros === null)).toBe(true);
     expect(ordenarVehiculos(vistas).map((v) => v.id)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('con ubicación ordena por cercanía y desempata por más reciente', () => {
+    const posicion = { lat: -34.6, lon: -58.39 };
+    const vistas = [
+      vistaVehiculo(vehiculo('lejos', 5, { lat: -34.61 }), { now: NOW, posicion }),
+      vistaVehiculo(vehiculo('cerca-viejo', 50, { lat: -34.601 }), { now: NOW, posicion }),
+      vistaVehiculo(vehiculo('cerca-nuevo', 10, { lat: -34.601 }), { now: NOW, posicion }),
+      vistaVehiculo(vehiculo('encima', 40), { now: NOW, posicion }),
+    ];
+    expect(vistas[0]?.metros).toBeCloseTo(1112, -1);
+    expect(ordenarVehiculos(vistas).map((v) => v.id)).toEqual([
+      'encima',
+      'cerca-nuevo',
+      'cerca-viejo',
+      'lejos',
+    ]);
   });
 
   it('recorridoDe filtra por número de línea', () => {

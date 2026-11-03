@@ -297,7 +297,8 @@ Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `Favor
 | Quitar (S19) | `remove` al instante y `Snackbar` «Quitaste «Casa». Deshacer» (`restore` lo devuelve a su posición). Sin diálogo |
 | Alias (S16) | `Modal` `formSheet` con campo de 30 caracteres (puntos de código) y contador. `setAlias`; vacío lo quita |
 | Búsqueda (S15) | `SearchInput` con más de 15 favoritos; filtra alias, nombre y subtítulo sin tildes |
-| Vacío | Estrella, "Todavía no guardaste favoritos." y los botones "Ver subtes" y "Buscar colectivo" |
+| Vacío | Estrella, "Todavía no guardaste favoritos." y los botones "Ver subtes" y "Buscar colectivo", en un `ScrollView` con `contentInsetAdjustmentBehavior` para quedar debajo del header |
+| Header | Large title en iOS (`headerLargeTitleEnabled`, como los otros tabs) y "Editar"/"Listo" a la derecha. La lista es la raíz de la pantalla (sin `View` ni `GestureHandlerRootView` alrededor) para que el large title colapse con su scroll; la raíz de RNGH es la de `app/_layout.tsx` |
 
 Agregado en la tarea F4-LOW-C:
 
