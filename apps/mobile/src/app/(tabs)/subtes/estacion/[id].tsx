@@ -1,13 +1,9 @@
+// Ruta fina: la pantalla vive en `src/features/subtes`. `id` es el `stop_id` de 4 dígitos.
 import { useLocalSearchParams } from 'expo-router';
-import { Text, View } from 'react-native';
 
-// Placeholder: los componentes de UI llegan con la tarea 3.7.
-export default function EstacionScreen() {
+import { EstacionScreen } from '@/features/subtes';
+
+export default function EstacionSubteRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return (
-    <View>
-      <Text accessibilityRole="header">Estación {id}</Text>
-      <Text>Acá vas a ver los próximos trenes por andén.</Text>
-    </View>
-  );
+  return <EstacionScreen id={id} />;
 }

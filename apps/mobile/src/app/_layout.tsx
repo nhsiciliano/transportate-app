@@ -9,26 +9,52 @@
 // refresco (S17) → favoritos (MMKV). Tema e intervalo se guardan en MMKV con los stores de
 // `src/shared/storage/preferences.ts`; Ajustes escribe en las mismas claves y los providers se
 // enteran por `subscribe`.
+//
+// Sin conexión (tarea 4.2): `OfflineBanner` global, una sola vez, arriba del Stack y dentro de
+// los providers (`useIsOnline()` lee el onlineManager de TanStack). Con el banner visible, el
+// banner se queda con el margen superior del sistema y el Stack recibe `top: 0`, para no sumarlo
+// dos veces.
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  SafeAreaInsetsContext,
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { FavoritosProvider } from '@/features/favoritos';
 import { useAppFonts } from '@/shared/fonts';
-import { QueryProvider, RefreshIntervalProvider } from '@/shared/query';
+import { QueryProvider, RefreshIntervalProvider, useIsOnline } from '@/shared/query';
 import { getDefaultKeyValueStore } from '@/shared/storage/kv';
 import {
   createRefreshIntervalStore,
   createThemePreferenceStore,
 } from '@/shared/storage/preferences';
-import { ThemeProvider } from '@/shared/theme';
+import { ThemeProvider, useTheme } from '@/shared/theme';
+import { OfflineBanner } from '@/shared/ui';
 
 // En el scope del módulo, sin await: dentro de un componente podría llegar tarde
 // (https://docs.expo.dev/versions/latest/sdk/splash-screen/).
 void SplashScreen.preventAutoHideAsync();
+
+function WithOfflineBanner({ children }: { children: ReactNode }) {
+  const online = useIsOnline();
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  if (online) return children;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg.base }}>
+      <OfflineBanner visible style={{ paddingTop: insets.top + 8 }} testID="offline-banner" />
+      <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>
+        <View style={{ flex: 1 }}>{children}</View>
+      </SafeAreaInsetsContext.Provider>
+    </View>
+  );
+}
 
 function AppTree() {
   const { loaded, error } = useAppFonts();
@@ -51,13 +77,15 @@ function AppTree() {
         <QueryProvider>
           <RefreshIntervalProvider store={intervalStore}>
             <FavoritosProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="+not-found"
-                  options={{ headerShown: true, title: 'No encontrado' }}
-                />
-              </Stack>
+              <WithOfflineBanner>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen
+                    name="+not-found"
+                    options={{ headerShown: true, title: 'No encontrado' }}
+                  />
+                </Stack>
+              </WithOfflineBanner>
               <StatusBar style="auto" />
             </FavoritosProvider>
           </RefreshIntervalProvider>

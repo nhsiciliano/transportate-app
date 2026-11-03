@@ -1,5 +1,5 @@
 // GeoJSON y estaciones chicos para los tests del mapa, validados con los contratos al cargarse.
-import { SubteEstacionesArchivoV1, SubteRedGeoJsonV1 } from '@transportate/contracts';
+import { ManifestV1, SubteEstacionesArchivoV1, SubteRedGeoJsonV1 } from '@transportate/contracts';
 
 export const subteRed = SubteRedGeoJsonV1.parse({
   type: 'FeatureCollection',
@@ -55,4 +55,18 @@ export const subteEstaciones = SubteEstacionesArchivoV1.parse({
       accesible: null,
     },
   ],
+});
+
+/** Manifiesto que publica los dos archivos del mapa (versión `abc123`). */
+export const manifestMapa = ManifestV1.parse({
+  version: 'abc123',
+  generatedAt: '2026-11-01T00:00:00.000Z',
+  archivos: {
+    'subte-estaciones.json': {
+      url: 'abc123/subte-estaciones.json',
+      bytes: 100,
+      sha256: 'a'.repeat(64),
+    },
+    'subte-red.geojson': { url: 'abc123/subte-red.geojson', bytes: 100, sha256: 'b'.repeat(64) },
+  },
 });

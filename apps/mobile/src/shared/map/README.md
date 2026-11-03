@@ -7,7 +7,7 @@ Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/M
 | `MapView.tsx`           | `MapView`, `MapViewHandle`, `CAMERA_ANIMATION_MS`, `USER_ZOOM`, `EDGE_GESTURE_GUTTER`              |
 | `styles.ts`             | `MAP_STYLE_URLS`, `mapStyleFor`, `MAP_ATTRIBUTION`, `MAP_FONT`, `CABA_BOUNDS`                      |
 | `geojson.ts`            | `boundsOf`, `pointCollection`, `pressedProperty`                                                   |
-| `staticData.ts`         | `useStaticGeoJson`, `useStaticJson`, `staticFileKey`, `StaticResource` (**provisorio**, ver abajo) |
+| `staticData.ts` | `useStaticGeoJson`, `geoJsonVersion`, `StaticGeoJsonQuery`: los `.geojson` del paquete (los JSON con contrato van por `useStaticArchivo` de `shared/static`) |
 | `useLocationGranted.ts` | `useLocationGranted()`: consulta el permiso de ubicación, nunca lo pide                            |
 
 ## `MapView`
@@ -79,8 +79,8 @@ Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRe
 | Carga sin caché                  | Skeleton de pantalla completa, con "Cargando el mapa de la red…" para el lector de pantalla                                                     |
 | Error sin datos                  | `ErrorState` con `error.userMessage()`. "Volver a intentar" aparece solo si `retryable` (un GeoJSON fuera de contrato no se reintenta)          |
 | Sin conexión y sin nada guardado | `EmptyState` "Sin conexión": "El mapa de la red se carga cuando vuelvas a tener conexión. Mientras tanto, la lista de Subtes sigue disponible." |
+| Manifiesto sin `subte-red.geojson` | `ErrorState` "Esta información no está disponible por ahora.", sin reintento |
 | Sin conexión con caché           | El mapa con los datos persistidos en MMKV, sin requests. El `OfflineBanner` es global                                                           |
-| Actualización fallida con datos  | El mapa se queda y arriba aparece una `Alert` "No pudimos actualizar. Mostramos lo último que sabemos." con "Reintentar"                        |
 | Red vacía                        | `EmptyState`: "Todavía no tenemos el mapa de la red. Mientras tanto, la lista de Subtes tiene todas las líneas y estaciones."                   |
 
 - **Suposiciones nuevas:**
@@ -89,7 +89,8 @@ Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRe
   - **F4-mapa-3.** El nombre de la estación aparece desde zoom 14; con menos zoom se superponen.
   - **F4-mapa-4.** El control "Norte arriba" usa el ícono `sentidoHacia` girado −90° (una flecha que apunta al norte), porque el mapa curado no tiene brújula. Si se suma un ícono `norte` (Material `navigation`), se cambia en `MapView.tsx`.
   - **F4-mapa-5.** Los controles van abajo a la derecha y la atribución abajo a la izquierda. Ninguno lleva el área segura inferior dentro de las tabs (`insetBottom`).
-  - **F4-mapa-6.** Mientras `src/shared/static` no llegue a `main`, el estático se lee con `staticData.ts` (abajo).
+  - **F4-mapa-6.** Las estaciones van por `useStaticArchivo` (`shared/static`), que guarda una última versión conocida. La red (`.geojson`) va por `useStaticGeoJson`, que se apoya solo en la caché persistida de TanStack Query (24 h). Si se abre la app sin red después de más de un día, se ve "Sin conexión" hasta que vuelva la red.
+  - **F4-mapa-7.** No hay estado de "actualización fallida con datos": una versión del estático es inmutable y el archivo no se vuelve a pedir mientras no cambie la versión del manifiesto.
 
 **Decisión N2 (colores de los trazos):** se usan los **colores del GTFS** (`route_color` del estático, `docs/02b-colores-subte.md` §3), no los de señalética.
 
@@ -97,13 +98,14 @@ Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRe
 - **Letra de la línea** a lo largo del trazo: el color nunca es la única pista.
 - **Por qué no la señalética:** el celeste `#08B0E1` para la A queda descartado porque la app no hardcodea colores de línea (02b §3, "Reglas de uso") y el contorno ya resuelve el contraste.
 
-## Lectura del paquete estático (`staticData.ts`, provisorio)
+## Lectura de los GeoJSON (`staticData.ts`)
 
-- **Qué hace:** `useStaticGeoJson(archivo)` y `useStaticJson(archivo)` toman la versión de `useManifest()` y bajan `/v1/static/<version>/<archivo>` con `client.staticGeoJson`/`client.staticFile`.
-  - Los dos validan con Zod. Los `.geojson` usan `GEOJSON_ESTATICOS_V1` de `@transportate/contracts`: `SubteRedGeoJsonV1` para la red y `GeoJsonFeatureCollectionV1`, una FeatureCollection mínima, para los recorridos.
-  - Devuelven `StaticResource<T>`: `data`, `error`, `isPending`, `isPaused`, `isLoadingError`, `isRefreshError`, `refetch`.
-- **Caché:** la query key es `['static', 'archivo', version, archivo]`, con `staleTime: Infinity` porque una versión no cambia, y se persiste en MMKV como el resto. Cuando el manifiesto trae otra versión, cambia la key y se baja el archivo nuevo.
-- **Reemplazo:** cuando `useStaticArchivo` de `src/shared/static` (mid-dev, 4.2) llegue a `main`, `useStaticJson` se cambia por ese hook y `useStaticGeoJson` se muda ahí.
+- **JSON con contrato:** `subte-estaciones.json`, `subte-lineas.json` y el resto van por `useStaticArchivo` de [`src/shared/static`](../static/README.md), de mid-dev (4.2). Ese hook usa `client.staticFile`, que solo acepta `ARCHIVOS_ESTATICOS_V1`.
+- **GeoJSON:** `useStaticGeoJson(archivo)` hace lo mismo para los `.geojson`, con `client.staticGeoJson` validado con `GEOJSON_ESTATICOS_V1` de `@transportate/contracts`.
+  - Los esquemas son `SubteRedGeoJsonV1` para la red y `GeoJsonFeatureCollectionV1`, una FeatureCollection mínima, para los recorridos.
+  - Respeta la convención de `shared/static`: la versión sale de `archivos[archivo].url`, la key es `['static', 'archivo', <archivo>, <version>]`, con `staleTime: Infinity` y `gcTime` de 24 h, y en la caché va el dato solo.
+  - Si el manifiesto no publica el archivo, devuelve `isLoadingError` con un `HttpError` 404 ("Esta información no está disponible por ahora.") en vez de quedar cargando.
+- **Pendiente:** sumar los `.geojson` a `useStaticArchivo` (con su última versión conocida) cuando `shared/static` acepte `GEOJSON_ESTATICOS_V1`. Los recorridos de colectivos (742 KB) entran en la estrategia de archivos grandes de 4.5.
 
 ## Para 4.6 (colectivos)
 
@@ -180,5 +182,5 @@ Ejemplos en `test/mocks/native-deps.test.tsx`. Tests de este módulo:
 
 - `__tests__/MapView.test.tsx`: estilo por tema y su cambio en vivo, atribución, cámara inicial, franja de iOS, "Norte arriba" con y sin Reducir movimiento, "Centrar en mí" (oculto sin permiso, sin pedirlo; con permiso centra; sin GPS no rompe) y `ref`.
 - `__tests__/geojson.test.ts`: los helpers.
-- `test/map/MapaRedScreen.test.tsx`: carga, datos, navegación, prioridad estación > línea, error con reintento, contrato roto, offline con y sin caché, vacío y tema oscuro. Usa `test/map/harness.tsx` (tema, áreas seguras, Query y cliente con `fetch` mockeado) y `test/map/fixtures.ts`.
+- `test/map/MapaRedScreen.test.tsx`: carga, datos, navegación, prioridad estación > línea, error con reintento, contrato roto, archivo no publicado, offline con y sin caché, vacío y tema oscuro. Usa `test/map/harness.tsx` (tema, áreas seguras, Query y cliente con `fetch` mockeado) y `test/map/fixtures.ts`.
 - `test/api/static-geojson.test.ts`: `client.staticGeoJson`.

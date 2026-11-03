@@ -8,6 +8,11 @@ export {
   type MapViewHandle,
   type MapViewProps,
 } from './MapView';
-export { staticFileKey, useStaticGeoJson, useStaticJson, type StaticResource } from './staticData';
+export {
+  geoJsonVersion,
+  useStaticGeoJson,
+  type GeoJsonData,
+  type StaticGeoJsonQuery,
+} from './staticData';
 export { CABA_BOUNDS, MAP_ATTRIBUTION, MAP_FONT, MAP_STYLE_URLS, mapStyleFor } from './styles';
 export { useLocationGranted } from './useLocationGranted';

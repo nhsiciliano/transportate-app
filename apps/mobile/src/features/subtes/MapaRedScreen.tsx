@@ -4,7 +4,8 @@
 // - Trazos: `subte-red.geojson` con el `route_color` del GTFS de cada línea (N2) sobre un
 //   contorno del color de texto del tema (oscuro en claro, claro en oscuro) y la letra de la línea
 //   a lo largo del trazo: el color nunca es la única pista.
-// - Estaciones: `subte-estaciones.json` como círculos; el nombre aparece desde zoom 14.
+// - Estaciones: `subte-estaciones.json` (`useStaticArchivo`, el mismo que usa la lista) como
+//   círculos; el nombre aparece desde zoom 14.
 // - Tocar una estación → `/subtes/estacion/[id]`; tocar un trazo → `/subtes/[linea]`. Si un
 //   toque cae sobre las dos cosas, gana la estación.
 import { GeoJSONSource, Layer } from '@maplibre/maplibre-react-native';
@@ -20,13 +21,13 @@ import {
   pointCollection,
   pressedProperty,
   useStaticGeoJson,
-  useStaticJson,
 } from '@/shared/map';
+import { useIsOnline } from '@/shared/query';
+import { useStaticArchivo } from '@/shared/static';
 import { useTheme } from '@/shared/theme';
-import { Alert, EmptyState, ErrorState, Skeleton, SkeletonGroup } from '@/shared/ui';
+import { EmptyState, ErrorState, Skeleton, SkeletonGroup } from '@/shared/ui';
 
 export const MAPA_RED_LABEL = 'Mapa de la red de subte';
-export const REFRESH_FAILED_MESSAGE = 'No pudimos actualizar. Mostramos lo último que sabemos.';
 
 /** Ids de fuentes y capas (también son los `testID` de los mocks de Jest). */
 export const SOURCE_LINEAS = 'subte-lineas';
@@ -51,7 +52,8 @@ export function MapaRedScreen() {
   const { colors } = useTheme();
   const { height } = useWindowDimensions();
   const red = useStaticGeoJson('subte-red.geojson');
-  const estaciones = useStaticJson('subte-estaciones.json');
+  const estaciones = useStaticArchivo('subte-estaciones.json');
+  const online = useIsOnline();
 
   const estacionesFc = useMemo(
     () =>
@@ -116,7 +118,7 @@ export function MapaRedScreen() {
   }
 
   if (!red.data || !estaciones.data) {
-    if (red.isPaused || estaciones.isPaused) {
+    if (!online) {
       return (
         <View style={styles.center}>
           <EmptyState
@@ -237,15 +239,6 @@ export function MapaRedScreen() {
           />
         </GeoJSONSource>
       </MapView>
-      {red.isRefreshError || estaciones.isRefreshError ? (
-        <Alert
-          role="warning"
-          message={REFRESH_FAILED_MESSAGE}
-          action={{ label: 'Reintentar', onPress: retry }}
-          style={styles.refreshAlert}
-          testID="mapa-red-refresh-error"
-        />
-      ) : null}
     </View>
   );
 }
@@ -253,5 +246,4 @@ export function MapaRedScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   center: { flex: 1, justifyContent: 'center' },
-  refreshAlert: { position: 'absolute', top: 8, left: 8, right: 8 },
 });

@@ -16,6 +16,8 @@ import {
   useFavoritos,
 } from '@/features/favoritos';
 import { MemoryKeyValueStore } from '@/shared/storage/kv';
+
+import { createHarness, defaultRoutes } from './subtes/fixtures';
 import { THEME_PREFERENCE_KEY, createThemePreferenceStore } from '@/shared/storage/preferences';
 import { schemes, ThemeProvider, useTheme, type ThemePreferenceStore } from '@/shared/theme';
 import { FreshnessLabel, OFFLINE_MESSAGE, OfflineBanner } from '@/shared/ui';
@@ -37,8 +39,9 @@ function AppProviders({
 }
 
 describe('arranque', () => {
-  it('con ThemeProvider + FavoritosProvider renderiza la tab Inicio', async () => {
-    const kv = new MemoryKeyValueStore();
+  it('con los providers (tema, datos, favoritos) renderiza la tab Inicio', async () => {
+    // Cliente del proxy con `fetch` mockeado (test/subtes/fixtures): Inicio pide estado y estático.
+    const { Wrapper } = createHarness(defaultRoutes());
     await renderRouter(
       {
         '(tabs)/_layout': TabsLayout,
@@ -47,12 +50,11 @@ describe('arranque', () => {
       },
       {
         initialUrl: '/inicio',
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <AppProviders kv={kv}>{children}</AppProviders>
-        ),
+        wrapper: Wrapper,
       },
     );
-    expect(await routerScreen.findByRole('header', { name: 'Inicio' })).toBeOnTheScreen();
+    expect(await routerScreen.findByRole('header', { name: 'Estado del subte' })).toBeOnTheScreen();
+    expect(await routerScreen.findByTestId('inicio-linea-A')).toBeOnTheScreen();
     expect(routerScreen).toHavePathname('/inicio');
   });
 });

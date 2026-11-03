@@ -28,6 +28,7 @@ apps/mobile/
         ├── api/             # cliente del proxy y QueryClient (tarea 3.9)
         ├── fonts/           # carga de Nunito y Open Sans
         ├── icons/           # Icon + mapa curado de Material Symbols
+        ├── static/          # paquete estático versionado: useStaticArchivo + última versión conocida (§13)
         ├── storage/         # KeyValueStore (MMKV), persister de queries, preferencias
         ├── theme/           # tokens Obelisco + ThemeProvider
         └── ui/              # 15 componentes compartidos
@@ -46,12 +47,12 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | Ruta                                                            | Pantalla                                         | Archivo                                   |
 | --------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
 | `/`                                                             | Redirige a `/inicio`                             | `src/app/index.tsx`                       |
-| `/inicio`                                                       | Inicio. Botón "Ajustes" en el header             | `(tabs)/inicio/index.tsx`                 |
+| `/inicio`                                                       | Inicio (§15). Engranaje "Ajustes" en el header   | `(tabs)/inicio/index.tsx`                 |
 | `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
 | `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
 | `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada                      | `(tabs)/colectivos/…`                     |
-| `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea → estación                        | `(tabs)/subtes/…`                         |
-| `/subtes/mapa`                                                  | Mapa de la red de subte (vista secundaria, 4.3)  | `(tabs)/subtes/mapa.tsx`                  |
+| `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea (`A`…`H`, `PM`) → estación (§14)  | `(tabs)/subtes/…`                         |
+| `/subtes/mapa`                                                  | Mapa de la red (tarea 4.3), desde "Ver mapa"     | `(tabs)/subtes/mapa.tsx`                  |
 | `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
 | `/transito`                                                     | **Oculto** (no navegable)                        | `(tabs)/transito/…`                       |
 | cualquier otra                                                  | "No encontramos esta pantalla" + link a Inicio   | `+not-found.tsx`                          |
@@ -74,14 +75,17 @@ El layout raíz (`src/app/_layout.tsx`):
 Orden, de afuera hacia adentro (`src/app/_layout.tsx`):
 
 ```
-GestureHandlerRootView           (gestos de RNGH; tarea 4.3, ver §14)
+GestureHandlerRootView           (gestos de RNGH; tarea 4.3, ver §18)
 └── SafeAreaProvider
     └── ThemeProvider            (store: createThemePreferenceStore(kv))
         └── QueryProvider        (QueryClient + persister; tarea 3.9)
             └── RefreshIntervalProvider (store: createRefreshIntervalStore(kv); tarea 3.9)
                 └── FavoritosProvider   (repository: MmkvFavoritosRepository)
-                    └── Stack (tabs + not-found) + StatusBar automática
+                    └── OfflineBanner global (useIsOnline; tarea 4.2)
+                        └── Stack (tabs + not-found) + StatusBar automática
 ```
+
+**`OfflineBanner` global (tarea 4.2):** se monta una sola vez, arriba del `Stack`. Sin conexión, el banner ocupa el margen superior del sistema (`paddingTop` = inset superior) y el `Stack` recibe un `SafeAreaInsetsContext` con `top: 0`, para no sumar el margen dos veces. Las pantallas no muestran su propio aviso de conexión. **A validar en el dispositivo:** que el header nativo del Stack no deje un hueco extra con el banner visible.
 
 > Montado en la tarea **3.9**. Los stores de tema e intervalo se crean una vez sobre `getDefaultKeyValueStore()` (MMKV); el detalle de datos y red está en `apps/mobile/src/shared/query/README.md`.
 
@@ -174,7 +178,7 @@ Cliente tipado del proxy y TanStack Query, hechos en la tarea 3.9. El detalle es
 
 **Orden de providers** en `src/app/_layout.tsx`: `SafeAreaProvider` → `ThemeProvider` → `QueryProvider` → `RefreshIntervalProvider` → `FavoritosProvider` → `Stack` (ver §3).
 
-**Estado a la Fase 3:** el cliente y los hooks están probados con `fetch` mockeado (`test/api/`, `src/shared/query/__tests__/`), pero ninguna pantalla los consume todavía: las features de la Fase 4 los usan.
+**Estado a la Fase 3:** el cliente y los hooks están probados con `fetch` mockeado (`test/api/`, `src/shared/query/__tests__/`). Desde la Fase 4 los consume Subtes (§14).
 
 ## 10. Variables de entorno
 
@@ -239,14 +243,86 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
 - **`Snackbar`:** componente compartido (`shared/ui/Snackbar.tsx`, ver su fila en [`shared/ui/README.md`](../apps/mobile/src/shared/ui/README.md)). Hoy lo monta `AjustesScreen` (F4-ajustes-1).
 - **Pendiente:** la fila **Ubicación** llega con `expo-location` (4.7) y el progreso de descarga del índice con 4.5.
 
-## 14. Mapas
+## 14. Estático en la app
+
+`src/shared/static` ([README](../apps/mobile/src/shared/static/README.md)), tarea 4.2. `useStaticArchivo(archivo)`:
+
+- Resuelve la versión con `useManifest()`: `archivos[archivo].url` = `<version>/<archivo>`.
+- Pide el archivo con la versión en la query key (`['static', 'archivo', archivo, version]`), `staleTime: Infinity` y `gcTime` de 24 h. El persister MMKV lo guarda con el resto de la caché.
+- Guarda además la **última versión conocida** en MMKV (`transportate.static.<archivo>.v1`). Con ella:
+  - la pantalla arranca sin esperar al manifiesto;
+  - si la versión no cambió, no se vuelve a bajar;
+  - si cambió, se muestra la vieja mientras baja la nueva;
+  - sin red o con el manifiesto caído, sigue andando aunque la caché persistida haya vencido.
+- Hoy lo usan `subte-lineas.json` (5 KB) y `subte-estaciones.json` (17 KB). Los archivos grandes de colectivos (tarea 4.5) necesitan otra estrategia: `LastKnownStore` es una interfaz que se puede implementar sobre `expo-file-system`.
+
+## 15. Subtes
+
+`src/features/subtes` ([README](../apps/mobile/src/features/subtes/README.md): brief operativo, estados y suposiciones `F4-subtes-1…7`), tareas 4.1, 4.2, 4.11 y 4.12.
+
+- **Rutas finas:** `subtes/index.tsx`, `[linea].tsx` y `estacion/[id].tsx` montan `SubtesScreen`, `LineaScreen` y `EstacionScreen`. El título del header lo pone cada pantalla con `Stack.Screen options`; la raíz usa large title.
+- **Modelo (`model.ts`, funciones puras):** `buildRed` une los dos archivos del estático en 7 líneas (`LineaKey` = `A`…`H` o `PM`) y 108 estaciones. Premetro es una sola fila con los dos ramales (S8): estado más severo y alertas unidas de `PM-C` y `PM-S`. También: búsqueda sin tildes, agrupación de arribos por sentido y formato "Llegando" / "2 min".
+- **Hooks (`hooks.ts`):** `useRedSubte`, `useLineasSubte`, `useEstacionesSubte`, `useLineasConEstado` y `useLineaDetalle` combinan el estático con `useEstadoSubtes`, `useAlertasSubtes` y `useArribosEstacion`. `usePullToRefresh` muestra el indicador nativo solo en el refresco que pide la persona.
+- **Estados (tarea 4.11):**
+  - Skeleton en la primera carga.
+  - `ErrorState` sin datos, con `retryable`.
+  - Alert "No pudimos actualizar. Mostramos lo último que sabemos." con datos y actualización fallida.
+  - `FreshnessLabel` con el intervalo elegido.
+  - Pull to refresh nativo.
+  - Arribos con dato de más de 10 min: los tiempos se reemplazan por "Dato de hace X min" (S30).
+  - Feed de arribos no disponible (404): mensaje sin reintento. Hoy `forecastGTFS` está congelado, así que lo normal es "No hay próximos trenes informados para esta estación." con la frescura en warning.
+- **`FavoriteToggle`** (`features/favoritos`): estrella de 44×44, reutilizable para los cuatro tipos de favorito. Tiene `accessibilityState.selected`, háptico (éxito al guardar, selección al quitar) y anuncio para el lector.
+- **Tests:**
+  - `test/subtes/` (raíz, línea, estación y `useStaticArchivo`), con `fetch` mockeado por ruta y estático mínimo validado con los contratos.
+  - `src/features/subtes/__tests__/model.test.ts`.
+  - `src/features/favoritos/__tests__/FavoriteToggle.test.tsx`.
+  - `test/layout.test.tsx` (banner global).
+## 16. Favoritos (pantalla)
+
+Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `FavoritosScreen` de [`src/features/favoritos/`](../apps/mobile/src/features/favoritos/README.md), que tiene el brief operativo, los estados con su copy y las suposiciones `F4-favoritos-n`.
+
+| Pieza | Qué hace |
+| --- | --- |
+| Lista | Una sola, en el orden guardado, pintada síncrona desde MMKV (`useFavoritos()`). Cada fila lleva al detalle de su tipo con `router.push({ pathname, params })`: `/subtes/[linea]`, `/subtes/estacion/[id]`, `/colectivos/[linea]` y `/colectivos/parada/[id]` |
+| Edición | "Editar"/"Listo" en el header (`EditModeProvider` en el `_layout`). En edición: "Cambiar nombre", "Quitar" y las acciones de accesibilidad "Mover arriba"/"Mover abajo" (`repository.reorder`) |
+| Quitar (S19) | `remove` al instante y `Snackbar` «Quitaste «Casa». Deshacer» (`restore` lo devuelve a su posición). Sin diálogo |
+| Alias (S16) | `Modal` `formSheet` con campo de 30 caracteres (puntos de código) y contador. `setAlias`; vacío lo quita |
+| Búsqueda (S15) | `SearchInput` con más de 15 favoritos; filtra alias, nombre y subtítulo sin tildes |
+| Vacío | Estrella, "Todavía no guardaste favoritos." y los botones "Ver subtes" y "Buscar colectivo" |
+
+**Lo que queda:**
+
+- **mid-dev (datos vivos):** pasar `liveData`/`liveDataLabel` a cada `FavoritoRow`, y sumar `FreshnessLabel`, pull to refresh, estados de carga/error por tipo y el favorito huérfano.
+- **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle`. El reorden se persiste con `repository.reorder`.
+- **4.2:** el color del `LineBadge` de subte sale del estático (hoy es una insignia neutra).
+
+
+## 17. Inicio
+
+`src/features/inicio` ([README](../apps/mobile/src/features/inicio/README.md): brief operativo, estados y suposiciones `F4-inicio-1…6`), tareas 4.1, 4.4, 4.11 y 4.12. Ruta fina: `(tabs)/inicio/index.tsx` monta `InicioScreen`.
+
+- **Header:** large title en iOS (`headerLargeTitleEnabled`) y engranaje "Ajustes" de 44×44 (`inicio/_layout.tsx`).
+- **Alert destacada:** `Alert` `system` danger solo si hay líneas interrumpidas.
+  - Con una, título "Línea B interrumpida", el `resumen` del estado y "Ver la línea".
+  - Con varias, "N líneas con problemas" y "Ver el subte".
+  - Con las 7, "El subte no está funcionando".
+- **Estado del subte:** 7 filas fijas (A–H y Premetro, S28), sacadas de `useLineasConEstado()` de `features/subtes`. Cada una abre `/subtes/[linea]`, con `FreshnessLabel` debajo.
+  - Skeleton en la primera carga.
+  - `ErrorState` dentro del bloque sin datos: los favoritos siguen visibles.
+  - Alert en línea con datos y actualización fallida.
+- **Favoritos:** los primeros 5, cada uno con ícono de tipo, alias o nombre y dato vivo. Cada favorito abre su detalle en su tab (S3); "Ver todos (N)" abre `/favoritos`. Sin favoritos, `EmptyState` + "Explorar subtes".
+- **Datos vivos de favoritos** (`features/favoritos/useFavoritoLiveData.ts`, [README](../apps/mobile/src/features/favoritos/README.md#datos-vivos-tarea-44)): estado de línea, próximo arribo por sentido, vehículos en servicio o el subtítulo guardado. Reutilizan las queries de cada feature, sin endpoints ni polling nuevos. Los usa también la pantalla de Favoritos (slot `liveData` de `FavoritoRow`).
+- **Pull to refresh:** `invalidateRealtime`, que refresca el estado del subte y los datos vivos activos.
+- **Tests:** `test/inicio.test.tsx` y `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx`.
+
+## 18. Mapas
 
 Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFreeMap (ADR-0002). El código compartido está en [`src/shared/map/`](../apps/mobile/src/shared/map/README.md), que tiene la API completa, el brief operativo del mapa de la red y las suposiciones `F4-mapa-n`.
 
 | Pieza | Qué hace |
 | --- | --- |
 | `MapView` (`shared/map`) | Mapa base. Estilo `positron` en claro y `dark` en oscuro según `useTheme().scheme`, atribución propia siempre visible, controles "Norte arriba" y "Centrar en mi ubicación" (este último solo si el permiso ya está concedido; nunca lo pide), cámara que salta con Reducir movimiento y franja izquierda de 20 pt en iOS para el gesto de volver. `ref` con `flyTo`/`fitBounds`/`resetNorth` |
-| `useStaticGeoJson` / `useStaticJson` | Bajan archivos del paquete estático según la versión del manifiesto (`['static', 'archivo', version, archivo]`, `staleTime: Infinity`, persistidos en MMKV). Son provisorios hasta que llegue `src/shared/static` (4.2) |
+| `useStaticGeoJson` (`shared/map`) | Baja los `.geojson` del estático con la convención de `useStaticArchivo` (§14): la versión sale del manifiesto, la key es `['static', 'archivo', archivo, version]` y queda persistido en MMKV. Las estaciones del mapa van por `useStaticArchivo` |
 | `client.staticGeoJson` (`shared/api`) | `GET /v1/static/:version/:archivo` para `.geojson`, validado con `GEOJSON_ESTATICOS_V1` de `@transportate/contracts` (`SubteRedGeoJsonV1` y `GeoJsonFeatureCollectionV1`) |
 | `/subtes/mapa` → `features/subtes/MapaRedScreen.tsx` | Trazos de `subte-red.geojson` con el color GTFS, un contorno `text.primary` y la letra de la línea. Las estaciones salen de `subte-estaciones.json`. Tocar una estación lleva a `/subtes/estacion/[id]` y tocar un trazo, a `/subtes/[linea]` (si caen juntas, gana la estación) |
 
@@ -255,5 +331,5 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
 - **Jest:** MapLibre y `expo-location` están mockeados (`test/mocks/`). Los componentes del mapa se renderizan como `View` con `testID` (`maplibre-Layer-<id>`, `maplibre-GeoJSONSource-<id>`) y todas sus props. Lo que Jest no prueba (render real de los estilos, gesto de volver con el mapa, toques en el mapa) lo valida el coordinador en el dispositivo.
 - **Pendiente:**
   - Autoalojar los tiles (PMTiles en R2, plan en `shared/map/README.md`).
-  - Reemplazar `staticData.ts` por `src/shared/static`.
+  - Sumar los `.geojson` a `useStaticArchivo` (con última versión conocida) y sacar `useStaticGeoJson`.
   - Sumar un ícono de brújula al mapa curado si "Norte arriba" lo necesita (F4-mapa-4).

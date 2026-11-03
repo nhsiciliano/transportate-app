@@ -10,11 +10,12 @@ import {
   SOURCE_LINEAS,
 } from '@/features/subtes/MapaRedScreen';
 import { queryKeys } from '@/shared/api';
-import { MAP_STYLE_URLS, staticFileKey } from '@/shared/map';
+import { MAP_STYLE_URLS } from '@/shared/map';
+import { staticKeys } from '@/shared/static';
 import { dark, light } from '@/shared/theme';
 
 import { errorBody, jsonResponse, manifest } from '../api/fixtures';
-import { subteEstaciones, subteRed } from './fixtures';
+import { manifestMapa, subteEstaciones, subteRed } from './fixtures';
 import { okResponder, renderMap, type Responder } from './harness';
 
 const mockPush = jest.fn();
@@ -165,17 +166,24 @@ describe('MapaRedScreen', () => {
     const { fetchMock } = await renderMap(<MapaRedScreen />, {
       online: false,
       seed: (client) => {
-        client.setQueryData(queryKeys.static.manifest(), result(manifest));
-        client.setQueryData(staticFileKey('abc123', 'subte-red.geojson'), result(subteRed));
-        client.setQueryData(
-          staticFileKey('abc123', 'subte-estaciones.json'),
-          result(subteEstaciones),
-        );
+        client.setQueryData(queryKeys.static.manifest(), result(manifestMapa));
+        client.setQueryData(['static', 'archivo', 'subte-red.geojson', 'abc123'], subteRed);
+        client.setQueryData(staticKeys.archivo('subte-estaciones.json', 'abc123'), subteEstaciones);
       },
     });
     expect(await screen.findByTestId('mapa-red-map')).toBeOnTheScreen();
     expect(source(SOURCE_LINEAS)).toBeOnTheScreen();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('si el manifiesto no publica la red, avisa que no está disponible (sin reintento)', async () => {
+    const responder: Responder = (url) =>
+      url.endsWith('/v1/static/manifest') ? jsonResponse(manifest) : okResponder(url);
+    await renderMap(<MapaRedScreen />, { fetch: responder });
+    expect(
+      await screen.findByText('Esta información no está disponible por ahora.'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Volver a intentar' })).toBeNull();
   });
 
   it('una red vacía muestra EmptyState y no un mapa en blanco', async () => {

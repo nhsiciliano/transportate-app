@@ -1,4 +1,4 @@
-// API pública de la feature de favoritos (solo lógica; las pantallas llegan en la Fase 4).
+// API pública de la feature de favoritos: modelo, repositorio, provider, `FavoriteToggle` y pantalla.
 export {
   ALIAS_MAX_LENGTH,
   FAVORITO_TIPOS,
@@ -20,3 +20,23 @@ export {
   useFavoritosRepository,
   type UseFavoritosResult,
 } from './FavoritosProvider';
+export {
+  FavoriteToggle,
+  REMOVED_ANNOUNCEMENT,
+  SAVED_ANNOUNCEMENT,
+  type FavoriteToggleProps,
+} from './FavoriteToggle';
+export { FavoritosScreen } from './FavoritosScreen';
+export { EditModeButton, EditModeProvider, useEditMode } from './EditMode';
+export { FavoritoRow, type FavoritoRowProps } from './FavoritoRow';
+export { AliasSheet, clampAlias, type AliasSheetProps } from './AliasSheet';
+export { filterFavoritos, SEARCH_THRESHOLD } from './search';
+export { FavoritoLiveData, LiveDataView, type FavoritoLiveDataProps } from './FavoritoLiveData';
+export {
+  SIN_ARRIBOS,
+  SIN_INFORMACION,
+  useFavoritoLiveData,
+  useNow,
+  type FavoritoLiveDataResult,
+  type LiveDataStatus,
+} from './useFavoritoLiveData';

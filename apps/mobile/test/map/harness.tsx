@@ -6,10 +6,12 @@ import type { ReactElement, ReactNode } from 'react';
 import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 
 import { ApiClientProvider, createApiClient } from '@/shared/api';
+import { createLastKnownStore, StaticStoreProvider } from '@/shared/static';
+import { MemoryKeyValueStore } from '@/shared/storage/kv';
 import { createMemoryPreferenceStore, ThemeProvider, type ThemePreference } from '@/shared/theme';
 
-import { jsonResponse, manifest } from '../api/fixtures';
-import { subteEstaciones, subteRed } from './fixtures';
+import { jsonResponse } from '../api/fixtures';
+import { manifestMapa, subteEstaciones, subteRed } from './fixtures';
 
 export const METRICS: Metrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -20,7 +22,7 @@ export type Responder = (url: string) => Response | Promise<Response>;
 
 /** Respuestas felices: manifiesto, red y estaciones del fixture. */
 export const okResponder: Responder = (url) => {
-  if (url.endsWith('/v1/static/manifest')) return jsonResponse(manifest);
+  if (url.endsWith('/v1/static/manifest')) return jsonResponse(manifestMapa);
   if (url.endsWith('/subte-red.geojson')) return jsonResponse(subteRed);
   if (url.endsWith('/subte-estaciones.json')) return jsonResponse(subteEstaciones);
   return new Response('{}', { status: 404 });
@@ -47,13 +49,17 @@ export async function renderMap(ui: ReactElement, options: MapHarnessOptions = {
   options.seed?.(queryClient);
   onlineManager.setOnline(options.online ?? true);
   const themeStore = createMemoryPreferenceStore(options.theme ?? 'light');
+  // Última versión conocida del estático en memoria: nada queda entre tests.
+  const lastKnown = createLastKnownStore(new MemoryKeyValueStore());
 
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <SafeAreaProvider initialMetrics={METRICS}>
         <ThemeProvider store={themeStore}>
           <QueryClientProvider client={queryClient}>
-            <ApiClientProvider client={api}>{children}</ApiClientProvider>
+            <ApiClientProvider client={api}>
+              <StaticStoreProvider store={lastKnown}>{children}</StaticStoreProvider>
+            </ApiClientProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>
