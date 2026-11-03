@@ -21,13 +21,32 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 | #              | Suposición                                                                                                                                                                                                                               |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | F4-favoritos-1 | El modo edición se comparte entre el header y la pantalla con un contexto (`EditModeProvider`, montado en el `_layout.tsx` de la pestaña). Sin favoritos el botón Editar no se muestra, y si la lista queda vacía se sale de la edición. |
-| F4-favoritos-2 | La línea de subte usa por ahora `LineBadge kind: 'colectivo'` (neutro): `shared/static` todavía no está en `main`. Cuando llegue (4.2), se pasa `kind: 'subte'` con `route_color` y `route_text_color` (`TODO` en `FavoritoRow.tsx`).    |
+| F4-favoritos-2 | **Resuelta.** La línea de subte y la estación usan `LineBadge kind: 'subte'` con `color` y `colorTexto` del estático (`useRedSubte()`). Mientras el estático no cargó (o falló) la insignia es neutra y la fila funciona igual. |
 | F4-favoritos-3 | El alias se corta en 30 **caracteres** (puntos de código, igual que el repositorio) mientras se escribe, sin usar `maxLength` del `TextInput` (contaría unidades UTF-16 y rompería los emojis).                                          |
 | F4-favoritos-4 | El alias se edita en un `Modal` de React Native con `presentationStyle="formSheet"` (iOS); en Android ocupa la pantalla. No hay ruta nueva.                                                                                              |
 | F4-favoritos-5 | El `SnackbarProvider` se monta dentro de la pantalla (igual que Ajustes, F4-ajustes-1): el "Deshacer" vale mientras la persona siga en Favoritos.                                                                                        |
 | F4-favoritos-6 | En edición, tocar el texto de la fila también abre el alias (brief §3) además del botón "Cambiar nombre". Fuera de edición no hay long press ni menú contextual (queda para después).                                                    |
-| F4-favoritos-7 | Un favorito huérfano (que ya no figura en el índice) se verá en una etapa posterior, cuando exista el estático; hoy toda fila navega.                                                                                                    |
+| F4-favoritos-7 | **Resuelta para subte.** Un favorito huérfano se detecta contra el estático ya cargado (ver abajo). Los colectivos quedan sin detectar hasta 4.5, cuando exista el índice de colectivos en la app. |
 | F4-favoritos-8 | No hay `RefreshControl` ni `FreshnessLabel` global: sin datos vivos no tienen nada que refrescar. Mid-dev los agrega junto con los hooks.                                                                                                |
+
+## Colores de subte y favorito huérfano (tarea F4-LOW-C)
+
+**Qué cambia en la fila:** la línea de subte muestra su letra sobre el color oficial (`PM` en el Premetro) y la estación de subte muestra la insignia de **su línea** en lugar del ícono. Los colores llegan como datos del estático (`route_color` / `route_text_color`), nunca escritos en el código. Se resuelven una sola vez en `FavoritosScreen` (`resolveFavorito` en `subte.ts`) y la fila recibe `subteBadge`.
+
+| Caso | Qué se ve |
+|---|---|
+| Estático sin cargar o con error | Insignia neutra (la fila anda igual y se pinta síncrona; no hay skeleton) |
+| Línea o estación que existe | Insignia con el color de la línea |
+| **Huérfano**: el `refId` no existe en el estático cargado | "Esta estación ya no figura en los datos oficiales" (o "Esta línea ya no figura en los datos oficiales"), con ícono de alerta, y la fila **no navega**: tiene un botón "Quitar" siempre visible. Mantiene el alias y el nombre guardados |
+| Línea o parada de colectivo | Nunca se marca huérfana todavía: gancho `isOrphan` en `subte.ts`, se completa en 4.5 |
+
+**Suposiciones nuevas:**
+
+| # | Suposición |
+|---|---|
+| F4-favoritos-9 | El `refId` de una línea de subte es la clave de la app (`A`…`H`, `PM`) y el de una estación, su `id` del estático (`FavoriteToggle` los guarda así). Cualquier otro valor es huérfano. |
+| F4-favoritos-10 | Un huérfano de subte no abre el detalle (no existe) y se quita con un botón en la fila, con el mismo aviso "Quitaste «…». Deshacer" que en edición. Se espera a tener el estático cargado para marcarlo: con error de red no se marca nada. |
+| F4-favoritos-11 | `FavoritosScreen` importa `useRedSubte` de `@/features/subtes/hooks` (no del índice de la feature) para no crear un ciclo: Subtes ya importa `FavoriteToggle` de acá. |
 
 ## Lógica
 
@@ -43,6 +62,7 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 | `AliasSheet.tsx` | `Modal` con el campo de alias (30 caracteres, contador) |
 | `EditMode.tsx` | `EditModeProvider`, `useEditMode()` y `EditModeButton` (el "Editar"/"Listo" del header) |
 | `describe.ts`, `search.ts` | Textos, íconos y rutas por tipo; búsqueda sin tildes |
+| `subte.ts` | `resolveFavorito`: color de la insignia de subte y detección de huérfanos contra el estático |
 | `FavoritosProvider.tsx` | `FavoritosProvider` (recibe el repositorio por prop, default MMKV), `useFavoritos()` y `useFavoritosRepository()`                             |
 
 ## Reglas

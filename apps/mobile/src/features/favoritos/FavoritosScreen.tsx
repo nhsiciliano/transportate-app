@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
+import { useRedSubte } from '@/features/subtes/hooks';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
 import { Button, EmptyState, SearchInput, SnackbarProvider, Text, useSnackbar } from '@/shared/ui';
@@ -16,6 +17,7 @@ import { FavoritoRow } from './FavoritoRow';
 import { useFavoritos } from './FavoritosProvider';
 import type { FavoritoV1 } from './model';
 import { filterFavoritos, SEARCH_THRESHOLD } from './search';
+import { resolveFavorito } from './subte';
 
 export const EMPTY_TITLE = 'Todavía no guardaste favoritos.';
 export const EMPTY_MESSAGE = 'Tocá la estrella en una línea, parada o estación para tenerla acá.';
@@ -34,6 +36,8 @@ function FavoritosContent() {
   const snackbar = useSnackbar();
   const { favoritos, repository } = useFavoritos();
   const { editing, setEditing } = useEditMode();
+  // El color de las insignias de subte y los huérfanos salen del estático (F4-favoritos-9).
+  const { red } = useRedSubte();
   const [query, setQuery] = useState('');
   const [renaming, setRenaming] = useState<FavoritoV1 | null>(null);
 
@@ -131,29 +135,34 @@ function FavoritosContent() {
             {`No encontramos favoritos con «${query.trim()}».`}
           </Text>
         }
-        renderItem={({ item, index }) => (
-          <FavoritoRow
-            favorito={item}
-            editing={editing}
-            isFirst={!canMove || index === 0}
-            isLast={!canMove || index === visible.length - 1}
-            onOpen={() => {
-              router.push(hrefFor(item));
-            }}
-            onRename={() => {
-              setRenaming(item);
-            }}
-            onRemove={() => {
-              remove(item);
-            }}
-            onMoveUp={() => {
-              move(item, -1);
-            }}
-            onMoveDown={() => {
-              move(item, 1);
-            }}
-          />
-        )}
+        renderItem={({ item, index }) => {
+          const resolved = resolveFavorito(item, red);
+          return (
+            <FavoritoRow
+              favorito={item}
+              subteBadge={resolved.badge}
+              orphan={resolved.orphan}
+              editing={editing}
+              isFirst={!canMove || index === 0}
+              isLast={!canMove || index === visible.length - 1}
+              onOpen={() => {
+                router.push(hrefFor(item));
+              }}
+              onRename={() => {
+                setRenaming(item);
+              }}
+              onRemove={() => {
+                remove(item);
+              }}
+              onMoveUp={() => {
+                move(item, -1);
+              }}
+              onMoveDown={() => {
+                move(item, 1);
+              }}
+            />
+          );
+        }}
       />
       <AliasSheet
         favorito={renaming}
