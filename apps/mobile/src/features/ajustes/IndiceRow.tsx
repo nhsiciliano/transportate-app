@@ -7,13 +7,20 @@
 // - error: "No pudimos actualizar. Tocá para reintentar.";
 // - sin conexión: la acción dice "Necesitás conexión" y queda deshabilitada.
 //
-// La descarga real del índice grande llega con la tarea 4.5: esa tarea le pasa `downloadProgress`
-// (0 a 1) y la fila muestra "Descargando… 40 %" en vez de "Buscando…".
+// Descarga del índice grande (tarea 4.5): si no le pasan `downloadProgress`, la fila lo lee del
+// administrador de archivos grandes (`shared/static`) y muestra "Descargando… 40 %". Al buscar
+// actualización, si el manifiesto trae una versión nueva de un archivo ya descargado, la baja.
 import type { ManifestV1 } from '@transportate/contracts';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { ARCHIVOS_COLECTIVOS } from '@/features/colectivos/hooks';
 import type { ResourceQuery } from '@/shared/api';
 import { Icon } from '@/shared/icons';
+import {
+  useLargeFileManager,
+  useStaticDownloadProgress,
+  versionFromManifest,
+} from '@/shared/static';
 import { useTheme } from '@/shared/theme';
 import { Text } from '@/shared/ui';
 
@@ -35,11 +42,25 @@ export interface IndiceRowProps {
   downloadProgress?: number | null;
 }
 
-export function IndiceRow({ manifest, online, downloadProgress = null }: IndiceRowProps) {
+export function IndiceRow({ manifest, online, downloadProgress: progressProp }: IndiceRowProps) {
   const { colors, space } = useTheme();
   const { data, isPending, isFetching, isLoadingError, isRefreshError, refetch } = manifest;
+  const manager = useLargeFileManager();
+  const liveProgress = useStaticDownloadProgress(ARCHIVOS_COLECTIVOS);
+  const downloadProgress = progressProp ?? liveProgress;
 
-  const searching = isFetching && online;
+  /** Baja la versión nueva de los archivos que ya estaban descargados (no los de primer uso). */
+  const update = (m: ManifestV1 | undefined) => {
+    for (const archivo of ARCHIVOS_COLECTIVOS) {
+      const version = versionFromManifest(m, archivo);
+      const state = manager.getState(archivo);
+      if (version !== undefined && state.data !== undefined && state.version !== version) {
+        void manager.retry(archivo, version, m?.archivos[archivo]?.bytes);
+      }
+    }
+  };
+
+  const searching = (isFetching || downloadProgress !== null) && online;
   const hasError = isLoadingError || isRefreshError;
   const progressText =
     downloadProgress === null
@@ -70,7 +91,14 @@ export function IndiceRow({ manifest, online, downloadProgress = null }: IndiceR
       disabled={disabled}
       busy={searching}
       onPress={() => {
-        void refetch();
+        void refetch().then((r) => {
+          // `refetch` de TanStack devuelve el resultado con `data` (el manifiesto nuevo).
+          const next =
+            typeof r === 'object' && r !== null && 'data' in r
+              ? (r as { data?: { data?: ManifestV1 } }).data?.data
+              : undefined;
+          update(next ?? data);
+        });
       }}
       accessibilityLabel={`${INDICE_TITLE}. ${status}.${showErrorLine ? ` ${INDICE_ERROR}.` : ''} ${action}`}
     >

@@ -33,6 +33,7 @@ export { AliasSheet, clampAlias, type AliasSheetProps } from './AliasSheet';
 export { filterFavoritos, SEARCH_THRESHOLD } from './search';
 export { FavoritoLiveData, LiveDataView, type FavoritoLiveDataProps } from './FavoritoLiveData';
 export {
+  HUERFANO,
   SIN_ARRIBOS,
   SIN_INFORMACION,
   useFavoritoLiveData,

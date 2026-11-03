@@ -4,15 +4,18 @@
 // - `linea_subte`      → estado de la línea (`useEstadoSubtes`).
 // - `estacion_subte`   → próximo arribo por sentido (`useArribosEstacion`).
 // - `linea_colectivo`  → vehículos en servicio (`usePosicionesLinea`).
-// - `parada_colectivo` → solo estático: el `subtitulo` guardado (el índice de paradas llega con
-//                        la tarea 4.5; `paradas.json` pesa 1,7 MB y no pasa por esta caché).
+// - `parada_colectivo` → estático: las líneas que paran, desde `paradas.json` (archivo grande,
+//                        `useStaticArchivoGrande`). Mientras no está cargado, el `subtitulo`
+//                        guardado. Si la parada ya no figura en el listado: huérfano (`orphan`).
 import type { EstadoServicioV1 } from '@transportate/contracts';
 import { useEffect, useState } from 'react';
 
 import { useArribosEstacion, useEstadoSubtes, usePosicionesLinea } from '@/shared/api';
 import { useRefreshInterval } from '@/shared/query';
+import { useStaticArchivoGrande } from '@/shared/static';
 import { formatAge, freshnessLevel, STATUS } from '@/shared/ui';
 
+import { describirLineas, numerosDeParada } from '../colectivos/model';
 import { useRedSubte } from '../subtes/hooks';
 import {
   agruparArribos,
@@ -23,7 +26,17 @@ import {
 } from '../subtes/model';
 import type { FavoritoV1 } from './model';
 
-export type LiveDataStatus = 'loading' | 'ok' | 'stale' | 'error' | 'static' | 'none';
+export type LiveDataStatus =
+  | 'loading'
+  | 'ok'
+  | 'stale'
+  | 'error'
+  | 'static'
+  | 'none'
+  /** El destino ya no está en el listado (parada que desapareció del índice). */
+  | 'orphan';
+
+export const HUERFANO = 'Ya no figura en el listado';
 
 export interface FavoritoLiveDataResult {
   status: LiveDataStatus;
@@ -87,6 +100,10 @@ export function useFavoritoLiveData(
   const estado = useEstadoSubtes({ enabled: enabled && tipo === 'linea_subte' });
   const arribos = useArribosEstacion(tipo === 'estacion_subte' ? refId : null, { enabled });
   const posiciones = usePosicionesLinea(tipo === 'linea_colectivo' ? refId : null, { enabled });
+  // Solo carga el índice de paradas (1,7 MB) para favoritos de parada.
+  const paradas = useStaticArchivoGrande('paradas.json', {
+    enabled: enabled && tipo === 'parada_colectivo',
+  });
 
   /** Edad del dato y si está viejo para el intervalo elegido (S6). */
   // El reloj nunca va detrás de la última respuesta (si no, un dato recién llegado "rejuvenece").
@@ -180,6 +197,26 @@ export function useFavoritoLiveData(
       };
     }
     case 'parada_colectivo': {
+      if (paradas.data !== undefined) {
+        const parada = paradas.data.paradas.find((p) => p.id === refId);
+        if (parada === undefined) {
+          return {
+            status: 'orphan',
+            text: HUERFANO,
+            spoken: HUERFANO,
+            tone: 'muted',
+            sourceTimestamp: null,
+          };
+        }
+        const lineas = describirLineas(numerosDeParada(parada));
+        return {
+          status: 'static',
+          text: lineas,
+          spoken: lineas,
+          tone: 'default',
+          sourceTimestamp: null,
+        };
+      }
       const sub = favorito.subtitulo ?? '';
       return {
         status: sub === '' ? 'none' : 'static',

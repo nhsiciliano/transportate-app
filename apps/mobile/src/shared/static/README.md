@@ -26,14 +26,14 @@ lineas.data.lineas; // SubteLineasArchivoV1
    - Una copia rota o fuera de contrato se ignora y se vuelve a bajar.
 4. Sin manifiesto ni copia guardada: `isLoadingError` con el `ApiError` (`retryable`); `refetch()` reintenta el manifiesto, y con él llega el archivo.
 
-| Campo | Qué es |
-|---|---|
-| `data` | El archivo validado (o la última versión conocida) |
-| `version` | Versión del dato que se muestra |
-| `isPending` | Sin dato todavía: Skeleton |
-| `isLoadingError` / `error` | Sin dato y falló el manifiesto o el archivo |
-| `fromLastKnown` | El dato no es (todavía) el de la versión del manifiesto |
-| `refetch()` | Reintenta el manifiesto o el archivo |
+| Campo                      | Qué es                                                  |
+| -------------------------- | ------------------------------------------------------- |
+| `data`                     | El archivo validado (o la última versión conocida)      |
+| `version`                  | Versión del dato que se muestra                         |
+| `isPending`                | Sin dato todavía: Skeleton                              |
+| `isLoadingError` / `error` | Sin dato y falló el manifiesto o el archivo             |
+| `fromLastKnown`            | El dato no es (todavía) el de la versión del manifiesto |
+| `refetch()`                | Reintenta el manifiesto o el archivo                    |
 
 ## Archivos grandes (tarea 4.5)
 
