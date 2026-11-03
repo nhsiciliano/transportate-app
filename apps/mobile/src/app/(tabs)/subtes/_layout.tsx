@@ -8,6 +8,7 @@ export default function Layout() {
       <Stack.Screen name="index" options={{ title: 'Subtes' }} />
       <Stack.Screen name="[linea]" options={{ title: 'Línea' }} />
       <Stack.Screen name="estacion/[id]" options={{ title: 'Estación' }} />
+      <Stack.Screen name="mapa" options={{ title: 'Mapa de la red' }} />
     </Stack>
   );
 }

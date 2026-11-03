@@ -210,9 +210,13 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 - ADR-0006 (paradas de colectivo) y ADR-0007 (aprendizaje de paradas), que siguen como **Propuestas**.
 - Siguen abiertas las suposiciones S1–S33 y decisiones N1–N4 de `briefs/README.md`.
 
+### Validación del usuario
+
+- **Validado por:** usuario, 2026-11-03, en iPhone con el dev build `ece33dd7` de EAS y Metro + `wrangler dev` en la red local: la app arranca, las tabs nativas y las pantallas placeholder funcionan. Decisiones: id nativo `app.transportate.mobile` confirmado; marca **Subte conectado** (alternativa B) aceptada; sin fallback de MMKV para Expo Go (se prueba siempre con dev build). Pasa a Fase 4.
+
 ## Fase 4 — Features
 
-_Sin iniciar._
+_Iniciada el 2026-11-03._
 
 ## Fase 5 — Pulido y escalado
 
