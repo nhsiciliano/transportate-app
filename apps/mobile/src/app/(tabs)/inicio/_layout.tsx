@@ -29,6 +29,7 @@ export default function InicioLayout() {
       <Stack.Screen name="index" options={{ title: 'Inicio', headerRight: AjustesButton }} />
       <Stack.Screen name="ajustes" options={{ title: 'Ajustes' }} />
       <Stack.Screen name="acerca" options={{ title: 'Acerca de' }} />
+      <Stack.Screen name="licencias" options={{ title: 'Licencias' }} />
     </Stack>
   );
 }

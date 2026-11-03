@@ -1,13 +1,6 @@
-import { Text, View } from 'react-native';
+// Ruta fina: la pantalla vive en `src/features/ajustes`.
+import { AcercaScreen } from '@/features/ajustes';
 
-// Placeholder: los componentes de UI llegan con la tarea 3.7.
-export default function AcercaScreen() {
-  return (
-    <View>
-      <Text accessibilityRole="header">Acerca de</Text>
-      <Text>
-        Acá vas a ver de dónde salen los datos, la licencia y cómo cuidamos tu privacidad.
-      </Text>
-    </View>
-  );
+export default function AcercaRoute() {
+  return <AcercaScreen />;
 }
