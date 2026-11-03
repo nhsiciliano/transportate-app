@@ -224,12 +224,14 @@ _Iniciada el 2026-11-03._ Coordinación con Orca (Run `run_6bc551486d73`), misma
 | --- | --- | --- | --- |
 | Dependencias nativas de la fase en un solo commit: `@maplibre/maplibre-react-native` 11.5.1, `expo-location` 58.0.20 (permiso solo "mientras se usa", texto en voseo), `react-native-reanimated` 4.7.1 + `react-native-worklets` 0.13.0, `react-native-gesture-handler` 3.3.0; mocks de Jest; sheet nativa `formSheet` en lugar de `@gorhom/bottom-sheet`; `react-native-reorderable-list` elegida para 4.9 (puro JS, se instala en 4.9) | 4.0 (previa a 4.3/4.6/4.7/4.9) | high-dev | merge de `nhsiciliano/High-Dev` · [`../apps/mobile/src/shared/map/README.md`](../apps/mobile/src/shared/map/README.md), [`versiones.md`](versiones.md) |
 | Ajustes (tema, intervalo, índice estático, limpiar datos, borrar favoritos con diálogo nativo y Deshacer), Acerca de (atribución CC-BY-2.5-AR, "no es app oficial", privacidad, mapa, diseño), Licencias de terceros (`scripts/licencias.mjs` → `licencias.json`), `Snackbar`/`SnackbarProvider` compartido, 42 tests | 4.10 | low-dev | merge de `nhsiciliano/Low-Dev` · [`../apps/mobile/src/features/ajustes/README.md`](../apps/mobile/src/features/ajustes/README.md), [`07-app.md`](07-app.md) |
+| Subtes completa: raíz (7 líneas, búsqueda de estaciones, "Ver mapa"), línea (alertas completas, diagrama de estaciones), estación (arribos por sentido, S30); `shared/static` con `useStaticArchivo` (versión por manifiesto y última versión conocida en MMKV); `FavoriteToggle` reutilizable; `OfflineBanner` global; suposiciones `F4-subtes-1…7` | 4.2, 4.11, 4.12 | mid-dev | merge de `nhsiciliano/Mid-Dev` · [`../apps/mobile/src/features/subtes/README.md`](../apps/mobile/src/features/subtes/README.md), [`07-app.md`](07-app.md) §14–15 |
+| Favoritos base: lista síncrona desde MMKV, modo edición (alias con contador, quitar con Deshacer, Mover arriba/abajo accesible), búsqueda con más de 15, vacío; slots `liveData` y `dragHandle` para mid-dev y high-dev; suposiciones `F4-favoritos-1…8` | 4.9 (base) | low-dev | merge de `nhsiciliano/Low-Dev` · [`07-app.md`](07-app.md) §16 |
 
 ### En curso
 
-- mid-dev: 4.2 Subtes completa + `shared/static` + `FavoriteToggle` + `OfflineBanner` global.
-- high-dev: 4.3 mapa de la red de subte sobre `shared/map`.
-- low-dev: 4.9 Favoritos base (sin arrastre ni datos vivos; el arrastre lo agrega high-dev y los datos vivos mid-dev).
+- mid-dev: 4.4 Inicio + datos vivos de favoritos (`FavoritoLiveData`).
+- high-dev: 4.3 mapa de la red de subte sobre `shared/map` + `GestureHandlerRootView`.
+- low-dev: `features/ubicacion` (hook sobre `expo-location`, bloque de permiso), fila Ubicación en Ajustes, colores de subte y huérfanos en Favoritos, `09-testing.md`.
 - Coordinador: segundo dev build de iOS en EAS (`cabc9c80`) con las dependencias nativas nuevas.
 
 ### Hallazgos
