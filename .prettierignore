@@ -9,4 +9,6 @@ apps/proxy/worker-configuration.d.ts
 docs/
 tools/
 apps/proxy/test/fixtures/
+# Bocetos y contratos generados por Impeccable: se guardan tal cual salen (no son código de la app)
+**/.impeccable/
 *.md
