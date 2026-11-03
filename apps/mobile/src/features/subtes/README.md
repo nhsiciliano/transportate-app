@@ -30,3 +30,17 @@ Pull to refresh nativo en las tres pantallas (refresca estado, alertas y arribos
 5. **F4-subtes-5** — La búsqueda ignora tildes, mayúsculas y signos de puntuación; busca en el nombre normalizado y en el del GTFS. Los resultados reemplazan a la lista de líneas mientras hay texto.
 6. **F4-subtes-6** — "Llegando" para < 30 s (S30); el resto se redondea hacia arriba en minutos ("1 min" desde 30 s). El umbral de 10 min de S30 se mide con `sourceTimestamp` del feed.
 7. **F4-subtes-7** — La alerta resumida en la estación es la más severa de la línea (la del `resumen` del estado); `Alert` `system` danger si la línea está interrumpida, warning si no.
+
+## Lo que quedó
+
+| Archivo                                                       | Qué hace                                                                                                                                                                              |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model.ts`                                                    | Funciones puras: `buildRed` (7 líneas + 108 estaciones, Premetro unificado), `estadoDeLinea`, `alertasDeLinea`, `periodoAlerta`, `buscarEstaciones`, `agruparArribos`, `formatArribo` |
+| `hooks.ts`                                                    | `useRedSubte`, `useLineasSubte`, `useEstacionesSubte`, `useLineasConEstado`, `useLineaDetalle`, `usePullToRefresh`                                                                    |
+| `components.tsx`                                              | `EstadoChip` (StatusChip con `Icon`), `LineaBadge`, `AvisoAlert`, `RefreshErrorAlert`, `ScreenScroll` (scroll + `RefreshControl`), `FilaTocable`, `Seccion`                           |
+| `SubtesScreen.tsx` / `LineaScreen.tsx` / `EstacionScreen.tsx` | Las tres pantallas; cada una pone su título con `Stack.Screen options`                                                                                                                |
+
+- **Datos:** el estático sale de `useStaticArchivo` (`src/shared/static`); el tiempo real, solo de los hooks de `shared/api`. Los colores de línea son los únicos que no vienen del tema: llegan como datos del estático.
+- **Arribos:** se recalculan con `horaEstimada` contra un reloj que avanza cada 15 s, así un dato de la caché no muestra "2 min" de hace un rato. Se descartan los que pasaron hace más de 30 s, igual que el proxy.
+- **Pendiente para otras tareas:** mapa de la red (4.3, `subtes/mapa.tsx`); combinaciones ("Combinás con D"), porque el estático no trae `transfers.txt`; "El servicio no está funcionando a esta hora", porque el estático no trae horarios.
+- **Tests:** `test/subtes/` (pantallas y `useStaticArchivo`) y `__tests__/model.test.ts`.
