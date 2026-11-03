@@ -34,7 +34,9 @@ export { filterFavoritos, SEARCH_THRESHOLD } from './search';
 export { FavoritoLiveData, LiveDataView, type FavoritoLiveDataProps } from './FavoritoLiveData';
 export {
   HUERFANO,
+  HUERFANO_CORTO,
   SIN_ARRIBOS,
+  SIN_ARRIBOS_CORTO,
   SIN_INFORMACION,
   useFavoritoLiveData,
   useNow,

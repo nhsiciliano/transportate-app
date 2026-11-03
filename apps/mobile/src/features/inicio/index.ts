@@ -1,2 +1,13 @@
 // API pública de la feature de Inicio (README.md).
-export { FAVORITOS_EN_INICIO, hrefDeFavorito, InicioScreen, SIN_FAVORITOS } from './InicioScreen';
+export {
+  elegirLider,
+  FAVORITOS_EN_INICIO,
+  hrefDeFavorito,
+  InicioScreen,
+  mensajeDeFavorito,
+  modeloBanda,
+  resumenSubte,
+  SIN_FAVORITOS,
+  SUBTE_NORMAL,
+  type ResumenSubte,
+} from './InicioScreen';

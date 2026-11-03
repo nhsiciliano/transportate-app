@@ -58,6 +58,16 @@ export interface FavoritoLiveDataResult {
   estado?: EstadoServicioV1;
   /** "hace 6 min" si el dato está viejo; vacío si no. */
   ageText?: string;
+  /**
+   * Valor principal corto para la banda de señal de Inicio («4 min», «Llegando», «2 en servicio»,
+   * «Con demoras», «Sin información»). Vacío mientras carga. `text`/`spoken` siguen siendo los de
+   * Favoritos.
+   */
+  primary: string;
+  /** `primary` es un arribo (un tiempo): Inicio lo muestra a escala monumental con «Próximo». */
+  primaryIsArribo: boolean;
+  /** Solo `estacion_subte` con arribos: cabecera del tren más próximo («Leandro N. Alem»). */
+  sentido?: string;
 }
 
 export const SIN_INFORMACION = 'Sin información';
@@ -89,12 +99,19 @@ function asFavorito(f: Pick<FavoritoV1, 'tipo' | 'refId' | 'subtitulo'>): Favori
   };
 }
 
+/** Versión corta de `SIN_ARRIBOS` para la banda de señal. */
+export const SIN_ARRIBOS_CORTO = 'Sin arribos';
+/** Valor de la banda de un favorito huérfano. */
+export const HUERFANO_CORTO = 'Ya no figura';
+
 const loading: FavoritoLiveDataResult = {
   status: 'loading',
   text: '',
   spoken: 'Cargando',
   tone: 'default',
   sourceTimestamp: null,
+  primary: '',
+  primaryIsArribo: false,
 };
 const error: FavoritoLiveDataResult = {
   status: 'error',
@@ -102,6 +119,8 @@ const error: FavoritoLiveDataResult = {
   spoken: SIN_INFORMACION,
   tone: 'muted',
   sourceTimestamp: null,
+  primary: SIN_INFORMACION,
+  primaryIsArribo: false,
 };
 
 /**
@@ -162,6 +181,8 @@ export function useFavoritoLiveData(
       spoken: message,
       tone: 'muted',
       sourceTimestamp: null,
+      primary: HUERFANO_CORTO,
+      primaryIsArribo: false,
     };
   };
   if (subteOrphan || lineaOrphan) return orphan();
@@ -184,6 +205,8 @@ export function useFavoritoLiveData(
         sourceTimestamp: estado.sourceTimestamp,
         estado: e,
         ageText: a.suffix,
+        primary: label,
+        primaryIsArribo: false,
       };
     }
     case 'estacion_subte': {
@@ -210,6 +233,9 @@ export function useFavoritoLiveData(
           spoken: join(SIN_ARRIBOS, a.suffix),
           tone: 'muted',
           sourceTimestamp: arribos.sourceTimestamp,
+          ageText: a.suffix,
+          primary: SIN_ARRIBOS_CORTO,
+          primaryIsArribo: false,
         };
       }
       // El sentido con el tren más próximo primero.
@@ -227,6 +253,10 @@ export function useFavoritoLiveData(
         spoken: join(primeros.map((p) => `Hacia ${p.cabecera} ${p.t.spoken}`).join('. '), a.suffix),
         tone: a.stale ? 'muted' : 'default',
         sourceTimestamp: arribos.sourceTimestamp,
+        ageText: a.suffix,
+        primary: primeros[0]?.t.short ?? SIN_ARRIBOS_CORTO,
+        primaryIsArribo: primeros.length > 0,
+        ...(primeros[0] === undefined ? {} : { sentido: primeros[0].cabecera }),
       };
     }
     case 'linea_colectivo': {
@@ -239,6 +269,9 @@ export function useFavoritoLiveData(
         spoken: join(n === 1 ? '1 colectivo en servicio' : `${n} colectivos en servicio`, a.suffix),
         tone: a.stale ? 'muted' : 'default',
         sourceTimestamp: posiciones.sourceTimestamp,
+        ageText: a.suffix,
+        primary: `${n} en servicio`,
+        primaryIsArribo: false,
       };
     }
     case 'parada_colectivo': {
@@ -252,6 +285,8 @@ export function useFavoritoLiveData(
           spoken: lineas,
           tone: 'default',
           sourceTimestamp: null,
+          primary: lineas,
+          primaryIsArribo: false,
         };
       }
       const sub = favorito.subtitulo ?? '';
@@ -261,6 +296,8 @@ export function useFavoritoLiveData(
         spoken: sub,
         tone: 'default',
         sourceTimestamp: null,
+        primary: sub === '' ? SIN_INFORMACION : sub,
+        primaryIsArribo: false,
       };
     }
   }

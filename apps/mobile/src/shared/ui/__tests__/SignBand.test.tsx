@@ -248,6 +248,19 @@ describe('SignBand', () => {
       expect(screen.getByText('hace 6 min')).toBeOnTheScreen();
     });
 
+    it('del skeleton al primer valor: sin fundido', async () => {
+      jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+      const { rerender } = await renderThemed(
+        <SignBand {...base} variant="lead" value={null} transitionKey="a|" />,
+      );
+      await flushReduceMotion();
+      await rerender(
+        themed(<SignBand {...base} variant="lead" value="4 min" transitionKey="a|4 min" />),
+      );
+      expect(screen.queryByTestId('banda-saliente', { includeHiddenElements: true })).toBeNull();
+      expect(screen.getByText('4 min')).toBeOnTheScreen();
+    });
+
     it('con Reducir movimiento: corte seco', async () => {
       jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
       const { rerender } = await renderThemed(

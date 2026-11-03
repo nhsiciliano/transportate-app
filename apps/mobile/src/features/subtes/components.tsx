@@ -114,26 +114,33 @@ export function RefreshErrorAlert({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-/** Pantalla con scroll, márgenes del sistema y pull to refresh nativo. */
+/**
+ * Pantalla con scroll, márgenes del sistema y pull to refresh nativo. `backgroundColor` y `gap`
+ * son opcionales (Inicio usa `bg.elevated` y 12 entre bloques, dirección «Señalética de terminal»).
+ */
 export function ScreenScroll({
   refreshing,
   onRefresh,
   children,
   testID,
+  backgroundColor,
+  gap,
 }: {
   refreshing: boolean;
   onRefresh: () => void;
   children: ReactNode;
   testID?: string;
+  backgroundColor?: string;
+  gap?: number;
 }) {
   const { colors, space } = useTheme();
   return (
     <ScrollView
       testID={testID}
-      style={{ backgroundColor: colors.bg.base }}
+      style={{ backgroundColor: backgroundColor ?? colors.bg.base }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ padding: space[3], gap: space[3], paddingBottom: space[5] }}
+      contentContainerStyle={{ padding: space[3], gap: gap ?? space[3], paddingBottom: space[5] }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

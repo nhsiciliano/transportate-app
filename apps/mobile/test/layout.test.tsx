@@ -30,7 +30,9 @@ describe('layout raíz', () => {
       { _layout: RootLayout, 'inicio/index': InicioScreen },
       { initialUrl: '/inicio' },
     );
-    expect(await screen.findByRole('header', { name: 'Estado del subte' })).toBeOnTheScreen();
+    expect(
+      await screen.findByText('Subte ahora', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
     expect(hideAsync).toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[fonts]'), expect.any(Error));
     warn.mockRestore();
@@ -48,14 +50,14 @@ describe('OfflineBanner global', () => {
       { _layout: RootLayout, 'inicio/index': InicioScreen },
       { initialUrl: '/inicio' },
     );
-    await screen.findByRole('header', { name: 'Estado del subte' });
+    await screen.findByText('Subte ahora', { includeHiddenElements: true });
     expect(screen.queryByText(OFFLINE_MESSAGE)).toBeNull();
 
     await act(() => {
       onlineManager.setOnline(false);
     });
     expect(screen.getAllByText(OFFLINE_MESSAGE)).toHaveLength(1);
-    expect(screen.getByRole('header', { name: 'Estado del subte' })).toBeOnTheScreen();
+    expect(screen.getByText('Subte ahora', { includeHiddenElements: true })).toBeOnTheScreen();
 
     await act(() => {
       onlineManager.setOnline(true);

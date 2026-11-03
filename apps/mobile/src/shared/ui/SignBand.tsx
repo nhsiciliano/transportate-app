@@ -163,7 +163,8 @@ export function SignBand({
       key: transitionKey,
       sig,
       content,
-      ghost: reduceMotion ? null : shown.content,
+      // Del skeleton al primer valor no hay fundido: es la primera señal, no un cambio.
+      ghost: reduceMotion || shown.content.value === null ? null : shown.content,
       generation: shown.generation + 1,
     });
   } else if (shown.sig !== sig) {

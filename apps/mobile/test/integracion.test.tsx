@@ -53,8 +53,12 @@ describe('arranque', () => {
         wrapper: Wrapper,
       },
     );
-    expect(await routerScreen.findByRole('header', { name: 'Estado del subte' })).toBeOnTheScreen();
-    expect(await routerScreen.findByTestId('inicio-linea-A')).toBeOnTheScreen();
+    expect(
+      await routerScreen.findByText('Subte ahora', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(
+      await routerScreen.findByTestId('subte-ahora-A', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
     expect(routerScreen).toHavePathname('/inicio');
   });
 });
