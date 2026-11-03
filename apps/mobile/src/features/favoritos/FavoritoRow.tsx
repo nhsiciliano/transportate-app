@@ -37,7 +37,7 @@ export interface FavoritoRowProps {
   /** Dato vivo (StatusChip, próximo arribo, "18 en servicio"). Lo conecta la tarea de datos. */
   liveData?: ReactNode;
   /** Lo que el lector agrega al final de la fila ("Hacia Alem en 2 minutos"). */
-  liveDataLabel?: string;
+  liveDataLabel?: string | undefined;
   /** Handle de arrastre en edición. Lo agrega high-dev (4.9-drag). */
   dragHandle?: ReactNode;
   testID?: string;

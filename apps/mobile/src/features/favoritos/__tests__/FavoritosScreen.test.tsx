@@ -39,7 +39,7 @@ function setup(items: readonly NuevoFavorito[] = []) {
   // Providers reales (tema, datos, estático, favoritos) y un proxy mockeado por ruta: el estático
   // de subte (7 líneas) sale de los fixtures de `test/subtes`.
   const harness = createHarness(defaultRoutes());
-  const repo = harness.repository as MmkvFavoritosRepository;
+  const repo = harness.repository;
   for (const item of items) repo.add(item);
   const renderUi = (ui: ReactElement = <FavoritosScreen />) =>
     render(
@@ -82,15 +82,15 @@ describe('Favoritos · lista', () => {
     const { renderUi } = setup([casa, parada, colectivo, lineaA]);
     await renderUi();
     expect(
-      screen.getByRole('button', { name: 'Casa. Estación Medrano, Línea B.' }),
+      screen.getByRole('button', { name: /^Casa\. Estación Medrano, Línea B\./ }),
     ).toBeOnTheScreen();
     expect(
       screen.getByRole('button', {
         name: 'Parada Av. Rivadavia y Acoyte, Líneas 1, 25, 132.',
       }),
     ).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Línea 60 de colectivo.' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Línea A de subte.' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea 60 de colectivo\./ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea A de subte\./ })).toBeOnTheScreen();
   });
 
   it('tocar una fila va al detalle de su tipo', async () => {
@@ -147,7 +147,7 @@ describe('Favoritos · vacío', () => {
     await act(() => {
       repo.add(lineaA);
     });
-    expect(screen.getByRole('button', { name: 'Línea A de subte.' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea A de subte\./ })).toBeOnTheScreen();
     expect(screen.queryByText('Todavía no guardaste favoritos.')).toBeNull();
   });
 });

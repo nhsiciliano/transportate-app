@@ -1,12 +1,7 @@
 // Colores de subte y favoritos huérfanos, con el estático de `test/subtes/fixtures`.
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import {
-  EditModeProvider,
-  FavoritosScreen,
-  type MmkvFavoritosRepository,
-  type NuevoFavorito,
-} from '@/features/favoritos';
+import { EditModeProvider, FavoritosScreen, type NuevoFavorito } from '@/features/favoritos';
 
 import {
   createHarness,
@@ -43,7 +38,7 @@ const parada: NuevoFavorito = { tipo: 'parada_colectivo', refId: '9002', nombre:
 
 function setup(items: readonly NuevoFavorito[], routes: Routes = defaultRoutes()) {
   const harness = createHarness(routes);
-  const repo = harness.repository as MmkvFavoritosRepository;
+  const repo = harness.repository;
   for (const item of items) repo.add(item);
   const renderUi = () =>
     render(
@@ -200,6 +195,6 @@ describe('Favoritos · huérfanos', () => {
       expect(harness.queryClient.isFetching()).toBe(0);
     });
     expect(screen.queryByText(/ya no figura/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Línea 60 de colectivo.' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea 60 de colectivo\./ })).toBeOnTheScreen();
   });
 });
