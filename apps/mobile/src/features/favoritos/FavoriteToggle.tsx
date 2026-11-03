@@ -1,7 +1,7 @@
 // Estrella para guardar o quitar un favorito (docs/briefs/README.md, "Otros componentes
 // compartidos"). Botón de ícono de 44×44: estrella con contorno (no es favorito) o llena (sí):
 // la forma cambia, no solo el color. Háptico de éxito al guardar y de selección al quitar (S25).
-// El "Deshacer" (snackbar, S19) llega con la pantalla de Favoritos (tarea 4.9).
+// El "Deshacer" (snackbar, S19) vive en `FavoritosScreen`: acá quitar es directo.
 import { AccessibilityInfo, Pressable, StyleSheet } from 'react-native';
 
 import { Icon } from '@/shared/icons';

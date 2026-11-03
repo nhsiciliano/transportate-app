@@ -2,7 +2,8 @@
 // Cada cambio se aplica al instante y se guarda solo (sin botón "Guardar"):
 // - Tema → `useTheme().setPreference` (el ThemeProvider de la app persiste en MMKV).
 // - Intervalo → `useRefreshInterval().setSeconds` (RefreshIntervalProvider ← MMKV).
-// - Índice → `useManifest()` (la descarga real llega con 4.5).
+// - Índice → `useManifest()` + avance de la descarga de los archivos grandes (`IndiceRow`).
+// - Ubicación → estado real del permiso (`usePermisoUbicacion`); tocar pide o abre la configuración.
 // - Limpiar datos → vacía el QueryClient y la caché persistida; no toca favoritos ni ajustes.
 // - Borrar favoritos → confirmación nativa + Snackbar con "Deshacer".
 import { useQueryClient } from '@tanstack/react-query';

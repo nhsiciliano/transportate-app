@@ -7,7 +7,8 @@
 //
 // Íconos: SF Symbols en iOS (`sf`) y Material Symbols en Android (`md`), que vienen con el
 // sistema y no necesitan dependencias.
-// TODO(3.5): reemplazar por el componente `Icon` propio (Material Symbols rounded fill).
+// Pendiente: pasar a los íconos propios (`Icon`, Material Symbols rounded fill) cuando NativeTabs
+// acepte imágenes en vez de SF Symbols/`md`; `Icon` ya existe pero es un componente SVG.
 import { NativeTabs } from 'expo-router/native-tabs';
 
 export default function TabsLayout() {

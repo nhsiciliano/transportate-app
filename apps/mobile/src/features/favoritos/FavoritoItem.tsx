@@ -14,12 +14,6 @@ export interface FavoritoItemProps extends Omit<
   FavoritoRowProps,
   'liveData' | 'liveDataLabel' | 'orphan'
 > {
-  /**
-   * Ignorado: el huérfano lo decide `useFavoritoLiveData` (`status === 'orphan'`), el único
-   * criterio para los cuatro tipos. Queda en la firma para no romper a quien todavía lo pasa
-   * (la `FavoritosScreen` puede dejar de pasarlo).
-   */
-  orphan?: boolean | undefined;
   /** La fila está en pantalla: recién ahí se piden sus datos. */
   visible: boolean;
   /** Avisa el `sourceTimestamp` del dato (o `null`) para el `FreshnessLabel` global de la lista. */
