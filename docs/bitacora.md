@@ -192,8 +192,8 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 
 ### Riesgos abiertos que pasan a Fase 4
 
-- **Sin dev build real todavía:** nada se corrió en un simulador o dispositivo. Siguen sin confirmar `react-native-mmkv` 4.3.2 con Nitro 0.37.1 en RN 0.88 (fallback 0.35.9), NetInfo, el comportamiento del 304 con `NSURLCache` de iOS y `NativeTabs` en dispositivo. Lo cubren Jest y `expo export`, no el hardware.
-- ~~**`eas login` y proyecto en expo.dev**~~: resuelto el 2026-11-02 (sesión `nhsiciliano`, proyecto `@nhsiciliano/transportate`, repo remoto `github.com/nhsiciliano/transportate-app`). Falta el primer build en dispositivo.
+- **Primer dev build de iOS compilado el 2026-11-03** (EAS, perfil `development`, distribución interna, build `ece33dd7`, 5 min, sin errores): confirma que `react-native-mmkv` 4.3.2 con Nitro 0.37.1, NetInfo y `NativeTabs` compilan en RN 0.88. Falta la prueba funcional en el iPhone (MMKV en ejecución, 304 con `NSURLCache`, tabs, fuentes, tema e ícono).
+- ~~**`eas login` y proyecto en expo.dev**~~: resuelto el 2026-11-02 (sesión `nhsiciliano`, proyecto `@nhsiciliano/transportate`, repo remoto `github.com/nhsiciliano/transportate-app`). Primer build de iOS en dispositivo hecho el 2026-11-03 (ver riesgos).
 - **Las pantallas todavía no consumen los hooks** de `shared/api`: el cliente, los hooks y el polling están probados con `fetch` mockeado, pero ninguna pantalla los usa. La integración real contra el proxy llega con las features.
 - **Tests sensibles a la carga de la máquina:** con la máquina muy cargada (load average > 20, otros workers corriendo) se vieron timeouts de 5 s en `apps/proxy` (`health`, `edge-cached`) y en varios tests de UI de `apps/mobile` al correr `pnpm test` desde la raíz con todo en paralelo. Los mismos tests pasan al correr cada paquete solo.
 - **`forecastGTFS` sigue congelado:** los arribos de subte llegan vacíos con `stale` hasta que el upstream se descongele.
