@@ -1,11 +1,6 @@
-import { Text, View } from 'react-native';
+// Ruta fina: la pantalla vive en `src/features/subtes`.
+import { SubtesScreen } from '@/features/subtes';
 
-// Placeholder: los componentes de UI llegan con la tarea 3.7.
-export default function SubtesScreen() {
-  return (
-    <View>
-      <Text accessibilityRole="header">Subtes</Text>
-      <Text>Acá vas a ver el estado de todas las líneas de subte y premetro.</Text>
-    </View>
-  );
+export default function SubtesRoute() {
+  return <SubtesScreen />;
 }

@@ -1,13 +1,9 @@
+// Ruta fina: la pantalla vive en `src/features/subtes`. `linea` es A…H o PM (Premetro).
 import { useLocalSearchParams } from 'expo-router';
-import { Text, View } from 'react-native';
 
-// Placeholder: los componentes de UI llegan con la tarea 3.7.
-export default function LineaSubteScreen() {
+import { LineaScreen } from '@/features/subtes';
+
+export default function LineaSubteRoute() {
   const { linea } = useLocalSearchParams<{ linea: string }>();
-  return (
-    <View>
-      <Text accessibilityRole="header">Línea {linea}</Text>
-      <Text>Acá vas a ver el estado de la línea, sus alertas y sus estaciones.</Text>
-    </View>
-  );
+  return <LineaScreen lineaParam={linea} />;
 }

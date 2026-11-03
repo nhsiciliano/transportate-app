@@ -1,4 +1,4 @@
-// API pública de la feature de favoritos (solo lógica; las pantallas llegan en la Fase 4).
+// API pública de la feature de favoritos: modelo, repositorio, provider y `FavoriteToggle`.
 export {
   ALIAS_MAX_LENGTH,
   FAVORITO_TIPOS,
@@ -20,3 +20,9 @@ export {
   useFavoritosRepository,
   type UseFavoritosResult,
 } from './FavoritosProvider';
+export {
+  FavoriteToggle,
+  REMOVED_ANNOUNCEMENT,
+  SAVED_ANNOUNCEMENT,
+  type FavoriteToggleProps,
+} from './FavoriteToggle';
