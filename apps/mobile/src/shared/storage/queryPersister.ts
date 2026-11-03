@@ -32,3 +32,12 @@ export function createQueryPersister(store: KeyValueStore = getDefaultKeyValueSt
     throttleTime: QUERY_CACHE_THROTTLE_MS,
   });
 }
+
+/**
+ * Borra la caché de consultas guardada en el teléfono (Ajustes → "Limpiar datos guardados").
+ * No toca favoritos ni preferencias: viven en otras claves. Hay que vaciar también el
+ * `QueryClient` en memoria (`queryClient.clear()`), si no el persister la vuelve a escribir.
+ */
+export function clearPersistedQueryCache(store: KeyValueStore = getDefaultKeyValueStore()): void {
+  store.remove(QUERY_CACHE_KEY);
+}
