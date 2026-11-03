@@ -118,7 +118,7 @@ ratelimit/               envoltorio del binding nativo
 
 ## 6. Datos estáticos
 
-`tools/gtfs` convierte los GTFS estáticos (colectivos ≈ 209 MB; subtes ≈ 48 KB) en JSON compacto filtrado a CABA, versionado por hash, y lo sube a **R2**. El Worker lo sirve en `/v1/static/*` con `Cache-Control` largo y ETag. La app lo descarga una vez, lo persiste y resuelve búsqueda y paradas cercanas **sin red** (ver ADR-0003). Los colores de línea de subte salen de este preprocesado (`02b-colores-subte.md`).
+`tools/gtfs` convierte los GTFS estáticos (colectivos ≈ 209 MB; subtes ≈ 48 KB) en JSON compacto filtrado a CABA, versionado por hash, y lo sube a **R2**. El Worker lo sirve en `/v1/static/*` con `Cache-Control` largo y ETag. La app lo descarga una vez, lo persiste y resuelve búsqueda y paradas cercanas **sin red** (ver ADR-0003). En la app, Colectivos usa `paradas.json` y `lineas-colectivos.json`, guardados en MMKV por archivo con una sola versión y fuera de la caché de TanStack Query (`07-app.md` §14 y §19). `indice-colectivos.json` lo usa solo el proxy. Los colores de línea de subte salen de este preprocesado (`02b-colores-subte.md`).
 
 ## 7. App (resumen)
 

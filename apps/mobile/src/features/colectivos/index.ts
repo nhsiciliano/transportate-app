@@ -4,7 +4,7 @@ export {
   ColectivosScreen,
   ERROR_INDICE,
   FUERA_DE_CABA,
-  PERMISO_TEXTO,
+  SIN_POSICION,
   PREPARANDO,
 } from './ColectivosScreen';
 export { ARCHIVOS_COLECTIVOS, useIndiceColectivos, type IndiceColectivosQuery } from './hooks';
@@ -20,4 +20,3 @@ export {
   type Reciente,
   type RecientesStore,
 } from './recientes';
-export { useUbicacionCercana, type UbicacionStatus } from './useUbicacionCercana';
