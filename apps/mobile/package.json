@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest --ci"
+    "test": "jest --ci",
+    "licencias": "node scripts/licencias.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "0.4.2",

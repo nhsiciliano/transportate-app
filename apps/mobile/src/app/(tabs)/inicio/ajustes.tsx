@@ -1,13 +1,6 @@
-import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+// Ruta fina: la pantalla vive en `src/features/ajustes`.
+import { AjustesScreen } from '@/features/ajustes';
 
-// Placeholder: los componentes de UI llegan con la tarea 3.7.
-export default function AjustesScreen() {
-  return (
-    <View>
-      <Text accessibilityRole="header">Ajustes</Text>
-      <Text>Acá vas a poder elegir el tema y el intervalo de actualización.</Text>
-      <Link href="/inicio/acerca">Acerca de Transportate</Link>
-    </View>
-  );
+export default function AjustesRoute() {
+  return <AjustesScreen />;
 }
