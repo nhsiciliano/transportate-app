@@ -26,6 +26,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: NATIVE_ID,
     supportsTablet: true,
+    infoPlist: {
+      // La app solo usa HTTPS estándar (exento de la declaración de cifrado de exportación);
+      // sin esto, cada build pide la respuesta a mano en App Store Connect.
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   // Edge-to-edge: en SDK 58 (React Native 0.88) es obligatorio en Android y la opción
   // `android.edgeToEdgeEnabled` ya no existe en `ExpoConfig`; no hace falta declararla.
