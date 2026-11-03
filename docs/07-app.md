@@ -236,3 +236,23 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
 - **Licencias:** `pnpm licencias` (en `apps/mobile`) genera `licencias.json` a partir de las `dependencies` directas, con el texto de `LICENSE*`. Hay que regenerarlo cuando cambian las dependencias.
 - **`Snackbar`:** componente compartido (`shared/ui/Snackbar.tsx`, ver su fila en [`shared/ui/README.md`](../apps/mobile/src/shared/ui/README.md)). Hoy lo monta `AjustesScreen` (F4-ajustes-1).
 - **Pendiente:** la fila **Ubicación** llega con `expo-location` (4.7) y el progreso de descarga del índice con 4.5.
+
+## 14. Favoritos (pantalla)
+
+Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `FavoritosScreen` de [`src/features/favoritos/`](../apps/mobile/src/features/favoritos/README.md), que tiene el brief operativo, los estados con su copy y las suposiciones `F4-favoritos-n`.
+
+| Pieza | Qué hace |
+| --- | --- |
+| Lista | Una sola, en el orden guardado, pintada síncrona desde MMKV (`useFavoritos()`). Cada fila lleva al detalle de su tipo con `router.push({ pathname, params })`: `/subtes/[linea]`, `/subtes/estacion/[id]`, `/colectivos/[linea]` y `/colectivos/parada/[id]` |
+| Edición | "Editar"/"Listo" en el header (`EditModeProvider` en el `_layout`). En edición: "Cambiar nombre", "Quitar" y las acciones de accesibilidad "Mover arriba"/"Mover abajo" (`repository.reorder`) |
+| Quitar (S19) | `remove` al instante y `Snackbar` «Quitaste «Casa». Deshacer» (`restore` lo devuelve a su posición). Sin diálogo |
+| Alias (S16) | `Modal` `formSheet` con campo de 30 caracteres (puntos de código) y contador. `setAlias`; vacío lo quita |
+| Búsqueda (S15) | `SearchInput` con más de 15 favoritos; filtra alias, nombre y subtítulo sin tildes |
+| Vacío | Estrella, "Todavía no guardaste favoritos." y los botones "Ver subtes" y "Buscar colectivo" |
+
+**Lo que queda:**
+
+- **mid-dev (datos vivos):** pasar `liveData`/`liveDataLabel` a cada `FavoritoRow`, y sumar `FreshnessLabel`, pull to refresh, estados de carga/error por tipo y el favorito huérfano.
+- **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle`. El reorden se persiste con `repository.reorder`.
+- **4.2:** el color del `LineBadge` de subte sale del estático (hoy es una insignia neutra).
+
