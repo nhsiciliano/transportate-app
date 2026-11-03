@@ -7,8 +7,10 @@ export {
   type LastKnownStore,
 } from './lastKnown';
 export {
+  getDefaultLargeFileManager,
   getDefaultLastKnownStore,
   StaticStoreProvider,
+  useLargeFileManager,
   useLastKnownStore,
 } from './StaticStoreProvider';
 export {
@@ -17,3 +19,23 @@ export {
   versionFromManifest,
   type StaticQuery,
 } from './useStaticArchivo';
+export {
+  createXhrDownloader,
+  DOWNLOAD_TIMEOUT_MS,
+  STATIC_FILE_ROUTE,
+  type DownloadOptions,
+  type StaticDownloader,
+} from './downloader';
+export {
+  LargeFileManager,
+  largeFileKeys,
+  type ArchivoGeoJson,
+  type ArchivoGrande,
+  type ArchivoGrandeData,
+  type LargeFileState,
+} from './largeFiles';
+export {
+  useStaticArchivoGrande,
+  useStaticDownloadProgress,
+  type StaticArchivoGrandeQuery,
+} from './useStaticArchivoGrande';

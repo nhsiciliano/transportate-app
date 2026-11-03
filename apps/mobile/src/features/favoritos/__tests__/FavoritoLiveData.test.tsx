@@ -167,14 +167,17 @@ describe('useFavoritoLiveData', () => {
     });
   });
 
-  it('parada_colectivo: solo el subtítulo guardado (estático)', async () => {
+  it('parada_colectivo: el subtítulo guardado mientras carga el índice; después, sus líneas', async () => {
     const con = await live({
       tipo: 'parada_colectivo',
-      refId: '5678',
-      subtitulo: 'Líneas 10, 152',
+      refId: 'p-corrientes',
+      subtitulo: 'Líneas viejas',
     });
-    expect(con.result.current).toMatchObject({ status: 'static', text: 'Líneas 10, 152' });
-    const sin = await live({ tipo: 'parada_colectivo', refId: '5678' });
+    expect(con.result.current).toMatchObject({ status: 'static', text: 'Líneas viejas' });
+    await waitFor(() => {
+      expect(con.result.current.text).toBe('Líneas 10, 60, 152');
+    });
+    const sin = await live({ tipo: 'parada_colectivo', refId: 'p-corrientes' });
     expect(sin.result.current.status).toBe('none');
   });
 });
