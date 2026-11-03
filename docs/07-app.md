@@ -51,6 +51,7 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
 | `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada                      | `(tabs)/colectivos/…`                     |
 | `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea → estación                        | `(tabs)/subtes/…`                         |
+| `/subtes/mapa`                                                  | Mapa de la red de subte (vista secundaria, 4.3)  | `(tabs)/subtes/mapa.tsx`                  |
 | `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
 | `/transito`                                                     | **Oculto** (no navegable)                        | `(tabs)/transito/…`                       |
 | cualquier otra                                                  | "No encontramos esta pantalla" + link a Inicio   | `+not-found.tsx`                          |
@@ -73,12 +74,13 @@ El layout raíz (`src/app/_layout.tsx`):
 Orden, de afuera hacia adentro (`src/app/_layout.tsx`):
 
 ```
-SafeAreaProvider
-└── ThemeProvider            (store: createThemePreferenceStore(kv))
-    └── QueryProvider        (QueryClient + persister; tarea 3.9)
-        └── RefreshIntervalProvider (store: createRefreshIntervalStore(kv); tarea 3.9)
-            └── FavoritosProvider   (repository: MmkvFavoritosRepository)
-                └── Stack (tabs + not-found) + StatusBar automática
+GestureHandlerRootView           (gestos de RNGH; tarea 4.3, ver §14)
+└── SafeAreaProvider
+    └── ThemeProvider            (store: createThemePreferenceStore(kv))
+        └── QueryProvider        (QueryClient + persister; tarea 3.9)
+            └── RefreshIntervalProvider (store: createRefreshIntervalStore(kv); tarea 3.9)
+                └── FavoritosProvider   (repository: MmkvFavoritosRepository)
+                    └── Stack (tabs + not-found) + StatusBar automática
 ```
 
 > Montado en la tarea **3.9**. Los stores de tema e intervalo se crean una vez sobre `getDefaultKeyValueStore()` (MMKV); el detalle de datos y red está en `apps/mobile/src/shared/query/README.md`.
@@ -236,3 +238,22 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
 - **Licencias:** `pnpm licencias` (en `apps/mobile`) genera `licencias.json` a partir de las `dependencies` directas, con el texto de `LICENSE*`. Hay que regenerarlo cuando cambian las dependencias.
 - **`Snackbar`:** componente compartido (`shared/ui/Snackbar.tsx`, ver su fila en [`shared/ui/README.md`](../apps/mobile/src/shared/ui/README.md)). Hoy lo monta `AjustesScreen` (F4-ajustes-1).
 - **Pendiente:** la fila **Ubicación** llega con `expo-location` (4.7) y el progreso de descarga del índice con 4.5.
+
+## 14. Mapas
+
+Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFreeMap (ADR-0002). El código compartido está en [`src/shared/map/`](../apps/mobile/src/shared/map/README.md), que tiene la API completa, el brief operativo del mapa de la red y las suposiciones `F4-mapa-n`.
+
+| Pieza | Qué hace |
+| --- | --- |
+| `MapView` (`shared/map`) | Mapa base. Estilo `positron` en claro y `dark` en oscuro según `useTheme().scheme`, atribución propia siempre visible, controles "Norte arriba" y "Centrar en mi ubicación" (este último solo si el permiso ya está concedido; nunca lo pide), cámara que salta con Reducir movimiento y franja izquierda de 20 pt en iOS para el gesto de volver. `ref` con `flyTo`/`fitBounds`/`resetNorth` |
+| `useStaticGeoJson` / `useStaticJson` | Bajan archivos del paquete estático según la versión del manifiesto (`['static', 'archivo', version, archivo]`, `staleTime: Infinity`, persistidos en MMKV). Son provisorios hasta que llegue `src/shared/static` (4.2) |
+| `client.staticGeoJson` (`shared/api`) | `GET /v1/static/:version/:archivo` para `.geojson`, validado con `GEOJSON_ESTATICOS_V1` de `@transportate/contracts` (`SubteRedGeoJsonV1` y `GeoJsonFeatureCollectionV1`) |
+| `/subtes/mapa` → `features/subtes/MapaRedScreen.tsx` | Trazos de `subte-red.geojson` con el color GTFS, un contorno `text.primary` y la letra de la línea. Las estaciones salen de `subte-estaciones.json`. Tocar una estación lleva a `/subtes/estacion/[id]` y tocar un trazo, a `/subtes/[linea]` (si caen juntas, gana la estación) |
+
+- **Colores de los trazos (N2, resuelta):** se usan los colores del GTFS con contorno del color de texto del tema y la letra de cada línea sobre el trazo. El detalle está en `briefs/README.md` y en `shared/map/README.md`.
+- **Gestos:** `GestureHandlerRootView` envuelve toda la app (`src/app/_layout.tsx`). El layout de siempre se llama `AppTree` y el `RootLayout` exportado solo lo envuelve.
+- **Jest:** MapLibre y `expo-location` están mockeados (`test/mocks/`). Los componentes del mapa se renderizan como `View` con `testID` (`maplibre-Layer-<id>`, `maplibre-GeoJSONSource-<id>`) y todas sus props. Lo que Jest no prueba (render real de los estilos, gesto de volver con el mapa, toques en el mapa) lo valida el coordinador en el dispositivo.
+- **Pendiente:**
+  - Autoalojar los tiles (PMTiles en R2, plan en `shared/map/README.md`).
+  - Reemplazar `staticData.ts` por `src/shared/static`.
+  - Sumar un ícono de brújula al mapa curado si "Norte arriba" lo necesita (F4-mapa-4).
