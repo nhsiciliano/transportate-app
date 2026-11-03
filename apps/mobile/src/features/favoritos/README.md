@@ -81,3 +81,35 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 - **Datos vivos (mid-dev):** pasar `liveData` (y `liveDataLabel` para el lector) a `FavoritoRow` desde `FavoritosScreen`. Cada tipo tiene su dato: `StatusChip` en la línea de subte, próximo arribo en la estación, "N en servicio" en la línea de colectivo y las líneas que paran en la parada. También el `FreshnessLabel`, el pull to refresh, la Alert única del servicio y el favorito huérfano.
 - **Arrastre (high-dev, `4.9-drag`):** reemplazar el `FlatList` de `FavoritosScreen` y pasar `dragHandle` a `FavoritoRow`. El reorden se persiste con `repository.reorder(idsEnOrden)`. Las acciones "Mover arriba/abajo" ya existen y tienen que seguir funcionando.
 - **Color del subte (4.2):** `LineBadge kind: 'subte'` con los colores del estático (`TODO(4.2)` en `FavoritoRow.tsx`).
+
+## Datos vivos (tarea 4.4)
+
+`useFavoritoLiveData(favorito, { enabled })` y `<FavoritoLiveData favorito={…} />` muestran el dato vivo de un favorito en Inicio y en la pantalla de Favoritos. Reutilizan las queries de cada feature (misma query key y mismo polling en primer plano): no hay endpoints nuevos ni otro polling.
+
+| Tipo | Dato | Query |
+|---|---|---|
+| `linea_subte` | `StatusChip` del estado (Premetro: el más severo de sus dos ramales) | `useEstadoSubtes` |
+| `estacion_subte` | Próximo arribo por sentido, el más cercano primero: "→ Leandro N. Alem 2 min · → Juan Manuel de Rosas 5 min". Sin arribos o con dato de más de 10 min: "Sin arribos informados" + antigüedad | `useArribosEstacion(refId)` |
+| `linea_colectivo` | "N en servicio" (vehículos del feed). El contrato no trae alertas de colectivos: no se muestra "con alertas" | `usePosicionesLinea(refId)` |
+| `parada_colectivo` | Solo el `subtitulo` guardado. El índice de paradas (`paradas.json`, 1,7 MB) llega con la tarea 4.5 | — |
+
+- **Resultado:** `{ status, text, spoken, tone, sourceTimestamp, estado?, ageText? }`.
+  - `status`: `loading`, `ok`, `stale`, `error`, `static` o `none`.
+  - `spoken` es para la etiqueta de la fila ("Trabajo. Estación Medrano, Línea B. Hacia Leandro N. Alem en 2 minutos.").
+- **Estados:**
+  - Carga: skeleton chico.
+  - Error: "Sin información" atenuado.
+  - Dato viejo (más de 3 × intervalo, S6): atenuado + "hace 6 min".
+- **Solo lo visible:** con `enabled: false` no se pide nada. La lista de Favoritos pasa `enabled` según la visibilidad de la fila (o monta solo lo visible con `FlatList`).
+- **Accesibilidad:** `FavoritoLiveData` se oculta al lector, porque la fila arma su etiqueta con `spoken`. Para no calcular dos veces, la fila puede llamar al hook y pasarle el resultado con `live={…}`.
+
+**Cómo se conecta en `FavoritoRow`** (slot `liveData?: ReactNode`):
+
+```tsx
+const live = useFavoritoLiveData(favorito, { enabled: visible });
+<FavoritoRow
+  favorito={favorito}
+  accessibilityLabel={`${titulo}. ${live.spoken}.`}
+  liveData={<FavoritoLiveData favorito={favorito} live={live} />}
+/>
+```

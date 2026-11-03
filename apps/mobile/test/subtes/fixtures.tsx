@@ -6,6 +6,7 @@ import {
   ArribosEstacionResponseV1,
   EstadoLineasResponseV1,
   ManifestV1,
+  PosicionesLineaResponseV1,
   SubteEstacionesArchivoV1,
   SubteLineasArchivoV1,
   type AlertaV1,
@@ -204,6 +205,26 @@ export function arribos(
         ...a,
         estacionId,
         horaEstimada: new Date(now + a.enSegundos * 1000).toISOString(),
+      })),
+    },
+  });
+}
+
+// Posiciones de colectivo para los datos vivos de líneas de colectivo.
+export function posiciones(lineaId: string, n: number) {
+  return PosicionesLineaResponseV1.parse({
+    meta: meta(),
+    data: {
+      lineaId,
+      vehiculos: Array.from({ length: n }, (_, i) => ({
+        id: `v${i}`,
+        lineaId,
+        linea: '152',
+        empresa: 'Empresa de prueba',
+        lat: -34.6,
+        lon: -58.4,
+        ts: meta().sourceTimestamp,
+        edadSegundos: 12,
       })),
     },
   });

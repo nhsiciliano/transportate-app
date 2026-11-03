@@ -24,6 +24,9 @@ const routes = {
 // Ajustes pide favoritos, tema, intervalo y el manifiesto: los providers reales, sin red.
 const providers = () => renderWithApp(<></>, { fetch: () => jsonResponse({}, { status: 500 }) });
 
+// Monta el Inicio real (estado del subte, favoritos): con la máquina cargada pasa los 5 s.
+jest.setTimeout(30_000);
+
 afterEach(resetOnline);
 
 describe('stack de Inicio', () => {

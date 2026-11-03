@@ -47,7 +47,7 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | Ruta                                                            | Pantalla                                         | Archivo                                   |
 | --------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
 | `/`                                                             | Redirige a `/inicio`                             | `src/app/index.tsx`                       |
-| `/inicio`                                                       | Inicio. Botón "Ajustes" en el header             | `(tabs)/inicio/index.tsx`                 |
+| `/inicio`                                                       | Inicio (§15). Engranaje "Ajustes" en el header   | `(tabs)/inicio/index.tsx`                 |
 | `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
 | `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
 | `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada                      | `(tabs)/colectivos/…`                     |
@@ -295,3 +295,21 @@ Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `Favor
 - **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle`. El reorden se persiste con `repository.reorder`.
 - **4.2:** el color del `LineBadge` de subte sale del estático (hoy es una insignia neutra).
 
+
+## 17. Inicio
+
+`src/features/inicio` ([README](../apps/mobile/src/features/inicio/README.md): brief operativo, estados y suposiciones `F4-inicio-1…6`), tareas 4.1, 4.4, 4.11 y 4.12. Ruta fina: `(tabs)/inicio/index.tsx` monta `InicioScreen`.
+
+- **Header:** large title en iOS (`headerLargeTitleEnabled`) y engranaje "Ajustes" de 44×44 (`inicio/_layout.tsx`).
+- **Alert destacada:** `Alert` `system` danger solo si hay líneas interrumpidas.
+  - Con una, título "Línea B interrumpida", el `resumen` del estado y "Ver la línea".
+  - Con varias, "N líneas con problemas" y "Ver el subte".
+  - Con las 7, "El subte no está funcionando".
+- **Estado del subte:** 7 filas fijas (A–H y Premetro, S28), sacadas de `useLineasConEstado()` de `features/subtes`. Cada una abre `/subtes/[linea]`, con `FreshnessLabel` debajo.
+  - Skeleton en la primera carga.
+  - `ErrorState` dentro del bloque sin datos: los favoritos siguen visibles.
+  - Alert en línea con datos y actualización fallida.
+- **Favoritos:** los primeros 5, cada uno con ícono de tipo, alias o nombre y dato vivo. Cada favorito abre su detalle en su tab (S3); "Ver todos (N)" abre `/favoritos`. Sin favoritos, `EmptyState` + "Explorar subtes".
+- **Datos vivos de favoritos** (`features/favoritos/useFavoritoLiveData.ts`, [README](../apps/mobile/src/features/favoritos/README.md#datos-vivos-tarea-44)): estado de línea, próximo arribo por sentido, vehículos en servicio o el subtítulo guardado. Reutilizan las queries de cada feature, sin endpoints ni polling nuevos. Los usa también la pantalla de Favoritos (slot `liveData` de `FavoritoRow`).
+- **Pull to refresh:** `invalidateRealtime`, que refresca el estado del subte y los datos vivos activos.
+- **Tests:** `test/inicio.test.tsx` y `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx`.
