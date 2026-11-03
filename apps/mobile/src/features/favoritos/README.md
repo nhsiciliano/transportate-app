@@ -48,6 +48,7 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 | F4-favoritos-10 | Un huérfano de subte no abre el detalle (no existe) y se quita con un botón en la fila, con el mismo aviso "Quitaste «…». Deshacer" que en edición. Se espera a tener el estático cargado para marcarlo: con error de red no se marca nada. |
 | F4-favoritos-11 | `FavoritosScreen` importa `useRedSubte` de `@/features/subtes/hooks` (no del índice de la feature) para no crear un ciclo: Subtes ya importa `FavoriteToggle` de acá. |
 | F4-favoritos-12 | Solo piden datos las filas visibles. Hasta que la lista informe cuáles se ven, se consideran visibles las primeras 10 (`INITIAL_VISIBLE`). La etiqueta de frescura toma la más vieja de las visibles; sin datos vivos no se muestra. El dato estático de la parada (sus líneas) no se repite como dato vivo. |
+| F4-favoritos-13 | **Alert única de servicio caído:** "El servicio de la Ciudad no responde" + "Reintentar" (`invalidateRealtime`) cuando TODAS las filas visibles con dato vivo están en `status: 'error'` por un error reintentable (`ApiError.retryable`: red, timeout, 5xx, 429). Un error de contenido (404) no cuenta, y una sola fila que ande la apaga. `useFavoritoLiveData` no expone el error, así que `FavoritoItem` lo lee del estado de la query de la fila (`servicio.ts › serviceHealth`), sin tocar el hook. Las filas siguen con "Sin información". |
 
 ## Lógica
 
@@ -64,6 +65,7 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 | `AliasSheet.tsx` | `Modal` con el campo de alias (30 caracteres, contador) |
 | `EditMode.tsx` | `EditModeProvider`, `useEditMode()` y `EditModeButton` (el "Editar"/"Listo" del header) |
 | `describe.ts`, `search.ts` | Textos, íconos y rutas por tipo; búsqueda sin tildes |
+| `servicio.ts` | `serviceHealth` / `isServiceDown`: decide si el servicio está caído para la Alert única |
 | `subte.ts` | `resolveFavorito`: color de la insignia de subte y detección de huérfanos contra el estático |
 | `FavoritosProvider.tsx` | `FavoritosProvider` (recibe el repositorio por prop, default MMKV), `useFavoritos()` y `useFavoritosRepository()`                             |
 
@@ -102,7 +104,6 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 
 - **Arrastre (high-dev, `4.9-drag`):** reemplazar el `FlatList` de `FavoritosScreen` y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder(idsEnOrden)`. Las acciones "Mover arriba/abajo" ya existen y tienen que seguir funcionando.
 - **Colectivos (4.5):** completar `isOrphanColectivo` en `subte.ts` con el índice de colectivos y mostrar las líneas de la parada.
-- **Alert única del servicio** ("El servicio de la Ciudad no responde"): hoy cada fila muestra "Sin información".
 
 ## Datos vivos (tarea 4.4)
 

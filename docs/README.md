@@ -11,7 +11,7 @@ Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y trán
 - ¿Cómo se ve y qué tokens usamos? → `02-obelisco-tokens.md`, `02b-colores-subte.md`
 - ¿Cómo está armado y cuánto aguanta? → `03-arquitectura.md`, `04-escalabilidad.md`
 - ¿Qué pasa con los datos de las personas? → `05-privacidad.md`
-- ¿Cómo se prueba y cómo se despliega? → `09-testing.md`, `10-deploy.md`
+- ¿Cómo se prueba y cómo se despliega? → `09-testing.md`, `10-deploy.md`; ¿cómo valido en el iPhone? → `11-prueba-manual.md`
 - ¿Qué herramientas hay y cómo se corren? → [Herramientas](#herramientas) y [`../tools/README.md`](../tools/README.md)
 - ¿Por qué se decidió así? → `adr/`
 
@@ -58,6 +58,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 |---|---|---|
 | [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd con fixtures reales; Jest + RNTL en la app), cómo se corre y qué queda afuera | ✅ |
 | [`10-deploy.md`](10-deploy.md) | Despliegue del proxy en Cloudflare (entornos, R2, secrets, workflow manual de GitHub Actions) y operación sin datos personales | ✅ |
+| [`11-prueba-manual.md`](11-prueba-manual.md) | Checklist de prueba manual en el iPhone con el dev client (Fase 4): preparación, cómo forzar cada estado, qué tocar y qué debería verse por pantalla, y qué anotar si algo falla | ✅ |
 | [`../apps/proxy/README.md`](../apps/proxy/README.md) | Rutas v1, headers, composición, rate limit y estáticos del Worker | ✅ |
 | [`06-proxy.md`](06-proxy.md) | Referencia del Worker: rutas, adaptadores, fuente con caché, estáticos, rate limit, límites de CPU, cómo agregar un servicio | ✅ |
 

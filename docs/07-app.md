@@ -313,7 +313,7 @@ Agregado en la tarea F4-LOW-C:
 
 - **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder`; las acciones "Mover arriba/abajo" tienen que seguir andando.
 - **4.5:** huérfanos de colectivos y el dato de las paradas con el índice de colectivos.
-- **Pendiente de decisión:** la Alert única "El servicio de la Ciudad no responde" del brief (hoy cada fila muestra "Sin información").
+- **Servicio caído:** si **todas** las filas visibles con dato vivo fallan por un error reintentable (red, timeout, 5xx, 429), aparece una sola `Alert` "El servicio de la Ciudad no responde" con "Reintentar" (`invalidateRealtime`). Si anda al menos una fila, o el error es de contenido (404), no hay Alert y cada fila afectada dice "Sin información". El error se lee del estado de la query de cada fila (`servicio.ts`), porque `useFavoritoLiveData` no lo expone.
 
 ## 16b. Ubicación
 
