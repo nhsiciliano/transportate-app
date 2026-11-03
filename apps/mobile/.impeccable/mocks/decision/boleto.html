@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>Transportate · Inicio · Boleto y SUBE</title>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&family=Chivo+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#8a97a6}
+*{box-sizing:border-box}
+.phone{width:390px;height:844px;overflow:hidden;position:relative;background:#fff;margin:0 auto;font-family:"Chivo",system-ui,sans-serif;color:#08202f;-webkit-font-smoothing:antialiased}
+.mono{font-family:"Chivo Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.status{height:54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 10px 32px}
+.status .time{font-weight:700;font-size:16px}
+.status .right{display:flex;align-items:center;gap:6px}
+.sig{display:flex;align-items:flex-end;gap:1.5px}.sig i{display:block;width:3px;background:#08202f;border-radius:1px}
+.bat{width:25px;height:12px;border:1.5px solid #08202f;border-radius:4px;padding:1.5px;position:relative}
+.bat b{display:block;height:100%;width:80%;background:#08202f;border-radius:2px}
+.bat:after{content:"";position:absolute;right:-4px;top:3px;width:2px;height:4px;background:#08202f;border-radius:0 2px 2px 0}
+.titlebar{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 10px}
+h1{margin:0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:-.3px}
+.gear{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#035c80}
+.sube{margin:4px 16px 20px;background:#009688;border-radius:12px;padding:16px;color:#fff}
+.sube h2{margin:0 0 12px;font-size:17px;line-height:20px;font-weight:700}
+.discs{display:flex;justify-content:space-between;margin-bottom:12px}
+.disc{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;line-height:1}
+.state{display:flex;align-items:center;gap:8px;font-size:14px;line-height:18px}
+.state svg{flex:none}
+.sec{display:flex;align-items:baseline;justify-content:space-between;padding:0 16px;margin-bottom:8px}
+.sec h2{margin:0;font-size:20px;line-height:24px;font-weight:700}
+.sec a{color:#035c80;font-size:15px;text-decoration:none;font-weight:400}
+.ticket{margin:0 16px;position:relative;padding-bottom:10px}
+.fav{border-bottom:1px solid #d6e4f6}
+.fav:last-of-type{border-bottom:0}
+.row{height:56px;display:flex;align-items:center;gap:12px}
+.badge{flex:none;width:40px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.badge .disc{width:28px;height:28px}
+.pill{width:40px;height:28px;border:2px solid #1d3343;border-radius:14px;background:#fff;color:#1d3343;font-size:14px}
+.txt{flex:1;min-width:0}
+.name{font-size:17px;line-height:22px;font-weight:400}
+.sub{font-size:13px;line-height:16px;color:#4a5766;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live{flex:none;text-align:right;font-size:20px;font-weight:700;line-height:24px;color:#08202f;min-width:96px}
+.chip{display:inline-block;margin-top:2px;font-family:"Chivo",sans-serif;font-size:11px;line-height:16px;font-weight:700;color:#a25c00;background:#fff1e6;padding:0 6px;border-radius:4px}
+.stamp{text-align:right;font-size:11px;line-height:14px;color:#4a5766;letter-spacing:.04em;padding-bottom:6px;margin-top:-4px}
+.fresh{font-size:12px;line-height:16px;color:#4a5766;padding:8px 0 10px}
+.perf{height:8px;margin:0 16px;background:radial-gradient(circle at 4px 4px,#d6e4f6 3px,transparent 3.5px) 0 0/14px 8px repeat-x}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:83px;background:#fff;border-top:1px solid #d6e4f6;display:flex;justify-content:space-around;padding:7px 8px 0}
+.tab{width:80px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#626e7e;font-size:10px;line-height:12px;font-weight:400}
+.tab.on{color:#035c80;font-weight:700}
+.tab svg{width:20px;height:20px;display:block}
+.home{position:absolute;left:128px;bottom:8px;width:134px;height:5px;border-radius:3px;background:#08202f}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status"><span class="time mono">14:05</span><span class="right"><span class="sig"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"><b></b></span></span></div>
+  <div class="titlebar"><h1>Inicio</h1><span class="gear"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="3"/><path d="M11 2v3M11 17v3M2 11h3M17 11h3M4.6 4.6l2.1 2.1M15.3 15.3l2.1 2.1M4.6 17.4l2.1-2.1M15.3 6.7l2.1-2.1"/></svg></span></div>
+
+  <div class="sube">
+    <h2>Subte ahora</h2>
+    <div class="discs">
+      <span class="disc" style="background:#A5C8FF;color:#000">A</span>
+      <span class="disc" style="background:#FF0000;color:#000">B</span>
+      <span class="disc" style="background:#0000FF;color:#fff">C</span>
+      <span class="disc" style="background:#00AC67;color:#000">D</span>
+      <span class="disc" style="background:#8300BB;color:#fff">E</span>
+      <span class="disc" style="background:#FFF300;color:#000">H</span>
+      <span class="disc" style="background:#FFBD33;color:#000">P</span>
+    </div>
+    <div class="state"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1.5 15 14H1z" fill="#fff"/><path d="M8 6v4M8 11.5v1" stroke="#009688" stroke-width="1.6" stroke-linecap="round"/></svg><span><b>B</b> · Con demoras · Obras entre Medrano y Alem</span></div>
+  </div>
+
+  <div class="sec"><h2>Favoritos</h2><a href="#">Ver todos (6)</a></div>
+  <div class="ticket">
+    <div class="fav">
+      <div class="row"><span class="badge"><span class="pill mono">60</span></span><div class="txt"><div class="name">Casa</div><div class="sub">Parada 60 · Cabildo y Juramento</div></div><div class="live mono">4 min</div></div>
+      <div class="stamp mono">ACTUALIZADO 14:05:32</div>
+    </div>
+    <div class="fav">
+      <div class="row"><span class="badge"><span class="disc" style="background:#FF0000;color:#000">B</span></span><div class="txt"><div class="name">Línea B</div><div class="sub">Estación Medrano · hacia Alem</div></div><div class="live mono">3 min<br><span class="chip">Con demoras</span></div></div>
+      <div class="stamp mono">ACTUALIZADO 14:05:31</div>
+    </div>
+    <div class="fav">
+      <div class="row"><span class="badge"><span class="pill mono">152</span></span><div class="txt"><div class="name">Trabajo</div><div class="sub">Línea 152 · Ramal A</div></div><div class="live mono">2 en servicio</div></div>
+      <div class="stamp mono">ACTUALIZADO 14:05:30</div>
+    </div>
+    <div class="fav">
+      <div class="row"><span class="badge"><span class="disc" style="background:#00AC67;color:#000">D</span></span><div class="txt"><div class="name">Línea D</div><div class="sub">Estación Palermo</div></div><div class="live mono">Normal</div></div>
+      <div class="stamp mono">ACTUALIZADO 14:05:32</div>
+    </div>
+    <div class="fresh mono">Actualizado hace 12 s</div>
+  </div>
+  <div class="perf"></div>
+
+  <nav class="tabs">
+    <a class="tab on"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 10 10 3l7 7v7h-5v-5H8v5H3z"/></svg>Inicio</a>
+    <a class="tab"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a1 1 0 0 1 1-1zm1 3v5h10V6z"/><circle cx="6.5" cy="17.5" r="1.5"/><circle cx="13.5" cy="17.5" r="1.5"/></svg>Colectivos</a>
+    <a class="tab"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M6 2h8a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm-1 3v5h10V5zm2.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM5 17l-1.5 2h2l1-1.3M15 17l1.5 2h-2l-1-1.3"/></svg>Subtes</a>
+    <a class="tab"><svg viewBox="0 0 20 20" fill="currentColor"><path d="m10 1.5 2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L10 14.9l-5.3 2.8 1.1-5.9L1.5 7.7l5.9-.8z"/></svg>Favoritos</a>
+    <span class="home"></span>
+  </nav>
+</div>
+</body>
+</html>

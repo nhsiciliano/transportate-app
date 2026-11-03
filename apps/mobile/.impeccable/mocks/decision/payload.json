@@ -1,0 +1,251 @@
+{
+ "title": "Elegí el mundo visual de Transportate",
+ "question": "La tirada asignó «Boleto y SUBE». Quedate con esa, tomá una alternativa o volvé a tirar.",
+ "options": [
+  {
+   "id": "boleto",
+   "kind": "assigned",
+   "label": "Boleto y SUBE",
+   "kicker": "THE ROLL",
+   "lineage": "El boleto de la máquina boletera y la tarjeta SUBE: el ritual porteño de pagar el viaje",
+   "thesis": "Cada dato vivo se imprime como un boleto: numerales tabulares, sello de hora y un solo borde perforado.",
+   "palette": [
+    "#009688",
+    "#1d3343",
+    "#ffffff",
+    "#035c80",
+    "#edf4ff"
+   ],
+   "materials": [
+    "papel térmico blanco",
+    "numerales tabulares Chivo Mono",
+    "sello de frescura",
+    "verde SUBE = tertiary de Obelisco"
+   ],
+   "viewport": "Inicio: arriba, la tarjeta en verde tertiary con las 7 líneas de subte como discos con letra y su estado; debajo, los favoritos como talonario: cada fila es un boleto con el nombre a la izquierda, el arribo en numerales monoespaciados a la derecha y el sello «ACTUALIZADO 14:05:32» en chico. Tabs nativas abajo, large title arriba; tirar para actualizar «imprime» una línea nueva.",
+   "risk": "El boleto puede volverse decoración: se limita a numerales, sello y un borde; las listas siguen siendo listas nativas y los controles, los del sistema.",
+   "raised": [
+    {
+     "from": "J-card de cassette",
+     "raise": "Los tiempos van en una sola columna alineada a la derecha, pegada al margen, como los running times de la j-card."
+    },
+    {
+     "from": "Catálogo de convención",
+     "raise": "La fila y su punto en el mapa son el mismo espacio: tocar un arribo centra el mapa en esa parada o estación."
+    },
+    {
+     "from": "Folio botánico",
+     "raise": "Todas las filas de línea comparten escala y línea base, para comparar estados de un vistazo."
+    },
+    {
+     "from": "Horario de bolsillo en vidrios",
+     "raise": "El rango lo da el peso y la inversión de color, no el tamaño: un solo cuerpo de numeral en todo el talonario."
+    }
+   ],
+   "html": ".impeccable/mocks/decision/boleto.html",
+   "htmlFrame": "390x844"
+  },
+  {
+   "id": "cartel",
+   "kind": "pick",
+   "label": "Cartel de colectivo",
+   "kicker": "IMPECCABLE’S PICK",
+   "lineage": "El letrero frontal del colectivo porteño: número grande, destino en condensada, franjas del ramal",
+   "thesis": "El número de línea es el héroe: cada fila es un letrero que se lee desde la vereda de enfrente.",
+   "palette": [
+    "#1d3343",
+    "#ffffff",
+    "#009688",
+    "#035c80"
+   ],
+   "materials": [
+    "banda navy con condensada Archivo Narrow (fundición argentina)",
+    "franjas de ramal",
+    "insignia blanca con número"
+   ],
+   "viewport": "Inicio: barra superior navy; el estado del subte como siete discos con letra en una fila; los favoritos como letreros: número a 40 pt en condensada, destino en mayúsculas, franjas del ramal a la izquierda y el arribo a la derecha. Tabs nativas abajo.",
+   "risk": "Es la dirección más familiar: las apps de transporte suelen terminar en insignias grandes. Vale solo si el letrero se ejecuta con rigor tipográfico.",
+   "html": ".impeccable/mocks/decision/cartel.html",
+   "htmlFrame": "390x844"
+  },
+  {
+   "id": "senal-terminal",
+   "kind": "challenger",
+   "catalogId": "wayfinding-cartography-signage-terminal-yellow-wayfinding",
+   "verdict": "competitive",
+   "label": "Señalética de terminal",
+   "lineage": "Sistema de señales de aeropuerto: bandas colgadas, flecha al borde, minutos monumentales",
+   "thesis": "Cada pantalla muestra solo la próxima decisión, con los minutos en tamaño monumental.",
+   "palette": [
+    "#035c80",
+    "#ffffff",
+    "#1d3343",
+    "#009688"
+   ],
+   "materials": [
+    "bandas de señal con flecha pegada al borde",
+    "pictogramas blancos en cuadrado negro",
+    "humanista Fira Sans"
+   ],
+   "viewport": "Inicio: una banda por decisión: «Subte B · Normal → 3 min», con la flecha en el borde que señala; el próximo arribo del favorito más cercano a 56 pt; las demás decisiones como bandas más bajas. Tabs nativas abajo.",
+   "case": "Fusiona bien: cada favorito es una decisión con minutos. Pierde identificación: el amarillo Schiphol no es CABA y se traduce a las bandas navy y azul de Obelisco.",
+   "risk": "Con muchos favoritos, una banda por decisión se vuelve larga y la monumentalidad se pierde.",
+   "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding-hero.webp",
+   "board": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding.webp",
+   "html": ".impeccable/mocks/decision/senal-terminal.html",
+   "htmlFrame": "390x844"
+  },
+  {
+   "id": "tablero",
+   "kind": "challenger",
+   "catalogId": "signals-instruments-split-flap-concourse",
+   "verdict": "competitive",
+   "label": "Tablero de Retiro",
+   "lineage": "Tablero de paletas (split-flap) de una estación en hora pico",
+   "thesis": "Las filas son entidades vivas ordenadas por tiempo; las columnas no se mueven, solo cambian las paletas.",
+   "palette": [
+    "#1d3343",
+    "#ffffff",
+    "#e88700",
+    "#009688"
+   ],
+   "materials": [
+    "celdas fijas de caracteres",
+    "condensada blanca sobre navy",
+    "lámpara ámbar para demoras"
+   ],
+   "viewport": "Inicio: el bloque superior es un tablero: una fila por línea de subte con columna de estado fija; los favoritos debajo como filas del mismo tablero, con el arribo cambiando paleta por paleta. Tabs nativas abajo.",
+   "case": "Fuerte en identificación (el tablero de Retiro es porteño) y claro para arribos. Pierde al sol: el fondo oscuro obligado choca con el uso en la calle.",
+   "risk": "Un tablero oscuro en pantalla es un disfraz del instrumento si no se queda solo en tipografía, densidad y la animación de paletas.",
+   "hero": "https://impeccable.style/worlds/cards/signals-instruments-split-flap-concourse-hero.webp",
+   "board": "https://impeccable.style/worlds/cards/signals-instruments-split-flap-concourse.webp",
+   "html": ".impeccable/mocks/decision/tablero.html",
+   "htmlFrame": "390x844"
+  },
+  {
+   "id": "jcard",
+   "kind": "challenger",
+   "catalogId": "vernacular-ephemera-cassette-j-card",
+   "verdict": "declined",
+   "label": "J-card de cassette",
+   "lineage": "La tapita de un cassette con el tracklist a birome",
+   "thesis": "Un solo pliego doblado, lado A y lado B, con los tiempos pegados al margen.",
+   "palette": [
+    "#1d3343",
+    "#ffffff",
+    "#cb3232"
+   ],
+   "materials": [
+    "birome sobre papel rayado",
+    "franja de marca"
+   ],
+   "viewport": "Favoritos como tracklist a mano, con tiempos a la derecha.",
+   "case": "No fusiona: la letra a mano en una app de transporte pierde identificación y claridad.",
+   "kept": "Tiempos alineados a la derecha, pegados al margen.",
+   "risk": "Lee como artesanía, no como herramienta.",
+   "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-cassette-j-card-hero.webp"
+  },
+  {
+   "id": "doujin",
+   "kind": "challenger",
+   "catalogId": "pop-culture-shelf-doujin-event-catalog",
+   "verdict": "declined",
+   "label": "Catálogo de convención",
+   "lineage": "Catálogo en papel de diario con miles de celdas numeradas",
+   "thesis": "La grilla y el plano del salón son el mismo espacio.",
+   "palette": [
+    "#08202f",
+    "#ffffff",
+    "#035c80"
+   ],
+   "materials": [
+    "tinta negra sobre papel de diario",
+    "celdas estampilla"
+   ],
+   "viewport": "Líneas como celdas de estampilla en una grilla densa, el mapa clavado a los códigos.",
+   "case": "Celdas de estampilla no se leen con una mano y al sol; nadie en CABA se identifica con un salón de doujin.",
+   "kept": "La celda y su posición en el mapa son el mismo espacio.",
+   "risk": "Densidad ilegible en la calle.",
+   "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-doujin-event-catalog-hero.webp"
+  },
+  {
+   "id": "folio",
+   "kind": "challenger",
+   "catalogId": "editorial-sequence-montage-botanical-folio-season",
+   "verdict": "declined",
+   "label": "Folio botánico",
+   "lineage": "Láminas de una planta por estación, a escala fija",
+   "thesis": "Cinco láminas sobre una misma línea base para comparar cambios.",
+   "palette": [
+    "#f3ead8",
+    "#4a5766",
+    "#00642f"
+   ],
+   "materials": [
+    "crema",
+    "reglas sepia",
+    "itálica grabada"
+   ],
+   "viewport": "Estados de las líneas como láminas comparables.",
+   "case": "Crema y sepia chocan con la paleta fijada; el ciclo de vida no habla de transporte.",
+   "kept": "Escala fija y línea base compartida en todas las filas.",
+   "risk": "Nostálgico y lento.",
+   "hero": "https://impeccable.style/worlds/cards/editorial-sequence-montage-botanical-folio-season-hero.webp"
+  },
+  {
+   "id": "horario",
+   "kind": "challenger",
+   "catalogId": "rw-timetable-slide-rack",
+   "verdict": "declined",
+   "label": "Horario de bolsillo en vidrios",
+   "lineage": "Horario de aerolínea de 1971 sobre una mesa de luz",
+   "thesis": "Un solo cuerpo tipográfico; el rango lo dan el peso, la caja y la inversión.",
+   "palette": [
+    "#e9b949",
+    "#1b2a36",
+    "#cb3232"
+   ],
+   "materials": [
+    "goldenrod iluminado",
+    "vidrio inclinado 11°"
+   ],
+   "viewport": "Horarios como vidrios inclinados sobre fondo dorado.",
+   "case": "El rake de 11° y el goldenrod rompen la paleta fijada y la claridad; solo sobrevive su disciplina tipográfica.",
+   "kept": "Rango por peso e inversión, no por tamaño.",
+   "risk": "Un artefacto, no una herramienta.",
+   "hero": "https://impeccable.style/worlds/cards/rw-timetable-slide-rack-hero.webp"
+  }
+ ],
+ "reroll": {
+  "registers": [
+   "safer",
+   "bolder"
+  ]
+ },
+ "steer": true,
+ "canon": true,
+ "canonCard": {
+  "kind": "canon",
+  "label": "El estándar de la categoría",
+  "thesis": "Lista blanca con insignias de color y una tarjeta de estado arriba, ejecutada impecablemente.",
+  "palette": [
+   "#ffffff",
+   "#1d3343",
+   "#035c80",
+   "#009688"
+  ],
+  "materials": [
+   "tarjetas con outline de 2 px",
+   "insignias de línea",
+   "Nunito + Open Sans"
+  ],
+  "viewport": "Inicio tal como está hoy, con más rigor: título grande, tarjeta de estado del subte, favoritos en tarjetas con dato vivo.",
+  "risk": "Indistinguible de cualquier app de transporte, por diseño.",
+  "html": ".impeccable/mocks/decision/canon.html",
+  "htmlFrame": "390x844"
+ },
+ "buildPath": {
+  "value": "code",
+  "toggle": false
+ }
+}

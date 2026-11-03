@@ -27,3 +27,9 @@ apps/mobile/ios/
 apps/mobile/android/
 apps/mobile/.env
 expo-env.d.ts
+
+# Impeccable: solo se versionan los briefs de superficie y los bocetos de decisión
+.impeccable/questions/
+.impeccable/review/
+.impeccable/live/
+.impeccable/build/
