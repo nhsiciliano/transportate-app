@@ -18,3 +18,29 @@ jest.mock('react-native-nitro-modules', () => ({
 jest.mock('@react-native-community/netinfo', () =>
   jest.requireActual<object>('@react-native-community/netinfo/jest/netinfo-mock.js'),
 );
+
+// Reanimated 4 + Worklets: la guía oficial ("Testing with Jest") usa el resolver de
+// `react-native-reanimated/jest/resolver` (fuerza la implementación web, ver jest.config.js) y
+// `setUpTests()`, que agrega los matchers `toHaveAnimatedStyle` y compañía.
+jest.mock('react-native-worklets', () =>
+  jest.requireActual<object>('react-native-worklets/lib/module/mock'),
+);
+jest
+  .requireActual<typeof import('react-native-reanimated')>('react-native-reanimated')
+  .setUpTests();
+
+// Gesture Handler: su `jestSetup.js` oficial reemplaza el módulo nativo y los componentes por mocks.
+jest.requireActual('react-native-gesture-handler/jestSetup');
+
+// MapLibre v11 no publica mock: `test/mocks/maplibre.tsx` (componentes como `View` con `testID`).
+jest.mock('@maplibre/maplibre-react-native', () =>
+  jest.requireActual<object>('./test/mocks/maplibre'),
+);
+
+// expo-location con permiso y posición controlables (`locationMock` en test/mocks/expo-location.ts).
+jest.mock(
+  'expo-location',
+  () =>
+    jest.requireActual<{ mockedExpoLocation: object }>('./test/mocks/expo-location')
+      .mockedExpoLocation,
+);

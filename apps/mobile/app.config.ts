@@ -1,14 +1,18 @@
 // Configuración de Expo (SDK 58). Tipada con `ExpoConfig` de `expo/config`
 // (https://docs.expo.dev/workflow/configuration/).
 //
-// Sin `expo-updates`, sin analytics y sin permisos declarados: la ubicación llega en la Fase 4
-// (`docs/05-privacidad.md`). La URL del proxy NO va en `extra`: se lee de
-// `process.env.EXPO_PUBLIC_API_URL` (ver `.env.example`).
+// Sin `expo-updates` ni analytics. El único permiso es la ubicación "mientras se usa"
+// (`expo-location`, `docs/05-privacidad.md` §3): nada de ubicación en segundo plano. La URL del
+// proxy NO va en `extra`: se lee de `process.env.EXPO_PUBLIC_API_URL` (ver `.env.example`).
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 // Identificador nativo confirmado por el usuario el 2026-11-02 (`docs/bitacora.md`, Fase 3).
 // Una vez publicado en las tiendas no se puede cambiar.
 const NATIVE_ID = 'app.transportate.mobile';
+
+/** Texto del permiso de ubicación de iOS (`NSLocationWhenInUseUsageDescription`), en voseo. */
+export const LOCATION_WHEN_IN_USE_PERMISSION =
+  'Transportate usa tu ubicación solo mientras la app está abierta, para mostrarte paradas cercanas. No sale de tu teléfono.';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -63,6 +67,27 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-dev-client',
+    // MapLibre (ADR-0002): en iOS agrega `$MLRN.post_install(installer)` al Podfile; en Android
+    // solo serviría para personalizar versiones nativas, que dejamos en las de la librería.
+    '@maplibre/maplibre-react-native',
+    [
+      'expo-location',
+      {
+        // Solo "mientras se usa". El plugin escribe un texto genérico en inglés en cada clave que
+        // no recibe `false`, así que las de "siempre" se borran explícitamente.
+        locationWhenInUsePermission: LOCATION_WHEN_IN_USE_PERMISSION,
+        locationAlwaysAndWhenInUsePermission: false,
+        locationAlwaysPermission: false,
+        // Sin actividad de movimiento (CoreMotion queda fuera del build) ni pedido de precisión
+        // completa temporal (solo lo usa la API `expo-location/next`).
+        motionUsagePermission: false,
+        locationFullAccuracyPermission: false,
+        // Explícitos aunque sean el default: nada de segundo plano ni servicio en primer plano.
+        isIosBackgroundLocationEnabled: false,
+        isAndroidBackgroundLocationEnabled: false,
+        isAndroidForegroundServiceEnabled: false,
+      },
+    ],
   ],
   experiments: {
     // Rutas tipadas de Expo Router: genera `.expo/types/router.d.ts` al correr `expo start`
