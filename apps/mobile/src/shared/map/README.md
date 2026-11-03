@@ -1,46 +1,121 @@
-# `src/shared/map` — plan del mapa (tarea 4.0)
+# `src/shared/map` — mapa compartido (tareas 4.0 y 4.3)
 
-Todavía sin código. Acá van a vivir las piezas que comparten el mapa de subte (4.3) y el de colectivos (4.6): el `Map` con el estilo según el tema, la atribución, la cámara inicial sobre CABA y los helpers de GeoJSON. Las dependencias nativas ya están instaladas y configuradas (ver `apps/mobile/README.md`, "Dependencias nativas de la Fase 4").
+Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/MapaRedScreen.tsx`) y, después, el de colectivos (4.6). Las dependencias nativas están en `apps/mobile/README.md`, "Dependencias nativas de la Fase 4".
 
-## Librería: MapLibre React Native v11 (ADR-0002)
+| Archivo                 | Qué exporta                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `MapView.tsx`           | `MapView`, `MapViewHandle`, `CAMERA_ANIMATION_MS`, `USER_ZOOM`, `EDGE_GESTURE_GUTTER`              |
+| `styles.ts`             | `MAP_STYLE_URLS`, `mapStyleFor`, `MAP_ATTRIBUTION`, `MAP_FONT`, `CABA_BOUNDS`                      |
+| `geojson.ts`            | `boundsOf`, `pointCollection`, `pressedProperty`                                                   |
+| `staticData.ts` | `useStaticGeoJson`, `geoJsonVersion`, `StaticGeoJsonQuery`: los `.geojson` del paquete (los JSON con contrato van por `useStaticArchivo` de `shared/static`) |
+| `useLocationGranted.ts` | `useLocationGranted()`: consulta el permiso de ubicación, nunca lo pide                            |
 
-`@maplibre/maplibre-react-native` **11.5.1**: solo New Architecture. El config plugin está en `app.config.ts` y en iOS agrega `$MLRN.post_install(installer)` al Podfile. Sin API key y sin telemetría.
+## `MapView`
 
-**La API de v11 no es la de v10.** Los nombres que aparecen en ejemplos viejos ya no existen:
+```tsx
+<MapView accessibilityLabel="Mapa de la red de subte" initialBounds={bounds} ref={mapRef}>
+  <GeoJSONSource id="lineas" data={fc} hitbox={{ top: 22, right: 22, bottom: 22, left: 22 }} onPress={…}>
+    <Layer id="lineas-trazo" type="line" paint={{ 'line-color': ['get', 'color'] }} />
+  </GeoJSONSource>
+</MapView>
+```
 
-| v10 (no usar) | v11 (instalada) |
-|---|---|
-| `MapView` | `Map` (prop `mapStyle`, obligatoria) |
-| `ShapeSource` | `GeoJSONSource` (prop `data`) |
-| `LineLayer`, `SymbolLayer`, `CircleLayer`, `FillLayer` | `Layer` con `type="line" \| "symbol" \| "circle" \| "fill"` y `paint`/`layout` de la especificación de estilo |
-| `Camera` con `centerCoordinate`/`zoomLevel` | `Camera` con `initialViewState={{ center, zoom }}` y ref con `flyTo`/`easeTo`/`jumpTo`/`fitBounds` |
-| `UserLocation` | `UserLocation` (sigue igual) |
+| Prop                            | Default       | Qué hace                                                                                                                                     |
+| ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `accessibilityLabel`            | (obligatoria) | El mapa se anuncia como una imagen con esa etiqueta. La vía accesible a los datos es la lista de cada tab, no el mapa                        |
+| `children`                      | —             | Fuentes y capas de MapLibre v11 (`GeoJSONSource`, `Layer`, `Images`…)                                                                        |
+| `initialBounds`                 | `CABA_BOUNDS` | Extensión inicial `[oeste, sur, este, norte]`, con margen para los controles. Gana sobre `initialCenter`                                     |
+| `initialCenter` + `initialZoom` | — + 13        | Alternativa a `initialBounds`                                                                                                                |
+| `onPress`                       | —             | Toque en el mapa fuera de las fuentes con `onPress` propio                                                                                   |
+| `showsUserLocation`             | `true`        | Dibuja el punto de la persona, **solo si el permiso ya está concedido**                                                                      |
+| `insetBottom`                   | `false`       | Suma el área segura inferior a los controles. En las tabs no hace falta, porque la barra ya deja el contenido arriba del indicador de inicio |
+| `testID`                        | `map-view`    | Subvistas: `-map`, `-attribution`, `-north-up`, `-center-user`, `-edge-gutter`                                                               |
+| `ref`                           | —             | `MapViewHandle`: `flyTo(center, zoom?)`, `fitBounds(bounds)`, `resetNorth()`                                                                 |
 
-Antes de escribir, leer los tipos en `node_modules/@maplibre/maplibre-react-native/lib/typescript/module/index.d.ts` o consultar Context7 (`/maplibre/maplibre-react-native`).
+- **Estilo:** `positron` en claro y `dark` en oscuro, según `useTheme().scheme`. Cambia en vivo con el tema y las capas propias se vuelven a montar solas. Los colores de las capas salen siempre de `useTheme()`.
+- **Atribución:** `© OpenStreetMap contributors · © OpenMapTiles · OpenFreeMap`.
+  - Es un `Text` propio (`text.xs`, tono secundario, sobre `bg.base`), abajo a la izquierda y siempre visible.
+  - Los controles van a la derecha, así que no la tapan.
+  - La atribución nativa y el logo de MapLibre se apagan (`attribution={false}`, `logo={false}`). Los enlaces completos están en Acerca de.
+- **Controles:** botones redondos de 48 × 48, abajo a la derecha, corridos por el área segura lateral. Cada uno tiene `accessibilityRole="button"` y su etiqueta.
+  - **"Orientar el mapa con el norte arriba":** siempre visible. Usa `setStop({ bearing: 0, pitch: 0 })`.
+  - **"Centrar en mi ubicación":** aparece solo si `expo-location` ya informa `granted` (se consulta al montar y al volver a primer plano). Toma una posición con precisión `Balanced`, la usa para la cámara y no la guarda. **El mapa nunca pide el permiso:** el pedido en contexto es de 4.7 (S32).
+  - La brújula nativa se apaga para no duplicar el control.
+- **Reducir movimiento** (`useReduceMotion` de `shared/ui`): `flyTo` pasa a `jumpTo` y `fitBounds`/`setStop` usan duración 0. Si no, animan 500 ms.
+- **Gesto de volver en iOS:** una franja transparente de `EDGE_GESTURE_GUTTER` (20 pt) sobre el borde izquierdo recibe los toques que empiezan ahí. Así el arrastre del mapa no compite con el gesto de borde del stack nativo. Esa franja no es accesible y en Android no existe, porque el volver es del sistema.
+- **Privacidad:** el punto de ubicación lo dibuja MapLibre con su propio `LocationManager`, que solo arranca al montarse `UserLocation`, o sea, con el permiso ya concedido. La posición no sale del teléfono ni va en las requests de tiles (`docs/05-privacidad.md` §3 y §4).
 
-**Ubicación en el mapa:** la posición de la persona sale de `expo-location` (4.7), que es el permiso que declaramos. `UserLocation`/`useCurrentPosition` de MapLibre usan su propio `LocationManager`: si 4.6 los usa, tiene que ser *después* de que `expo-location` haya obtenido el permiso en contexto (S32), nunca al montar el mapa.
+## Estilos, atribución y autoalojado (ADR-0002)
 
-## Estilos de OpenFreeMap
+| Tema   | URL                                             | Por qué                                                                              |
+| ------ | ----------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Claro  | `https://tiles.openfreemap.org/styles/positron` | Gris claro y de poco contraste: las líneas de subte y los colectivos resaltan encima |
+| Oscuro | `https://tiles.openfreemap.org/styles/dark`     | Existe (no hace falta derivarlo). Usa la misma fuente `openmaptiles` que `positron`  |
 
-Verificados el 2026-11-03 (`https://openfreemap.org/quick_start/` y HTTP 200 de cada URL). Son gratis, no piden API key y la doc dice que se usan igual con MapLibre Native:
+- **Verificados el 2026-11-03.** Las dos URLs responden HTTP 200 y declaran fuente vectorial, glifos y sprites en `tiles.openfreemap.org`. Los glifos comunes a los dos estilos son `Noto Sans Regular` (`MAP_FONT`), así que las etiquetas propias usan solo esa familia.
+- **No se pueden probar en Jest.** El render real de cada estilo se valida en el dispositivo.
+- **Atribución:** el TileJSON (`https://tiles.openfreemap.org/planet`) declara "OpenFreeMap © OpenMapTiles Data from OpenStreetMap". La app la muestra con el texto de `MAP_ATTRIBUTION`.
+- **Recolorear:** los tiles de OpenFreeMap no se recolorean. Para un estilo propio (por ejemplo, calles más tenues debajo de los trazos), OpenFreeMap pide alojar nosotros el JSON del estilo.
+- **Plan de autoalojado (ADR-0002, sin implementar):**
+  1. Generar un `.pmtiles` del AMBA con Planetiler (esquema OpenMapTiles, para que los estilos sigan sirviendo).
+  2. Subirlo a R2 junto con glifos, sprites y dos JSON de estilo propios (claro y oscuro, con colores de Obelisco).
+  3. Servirlo desde el proxy (`/v1/tiles/{z}/{x}/{y}` con lectura por rangos de PMTiles en el Worker, más `/v1/tiles/style-{scheme}.json`).
+  4. En la app solo cambian `MAP_STYLE_URLS`.
+  5. Ganancias: OpenFreeMap deja de ver IP y zona (`05-privacidad.md` §4), desaparece la dependencia de un servicio sin SLA y los estilos se pueden recolorear.
 
-| Tema | URL | Por qué |
-|---|---|---|
-| Claro | `https://tiles.openfreemap.org/styles/positron` | Gris claro y de poco contraste: las líneas de subte y los colectivos resaltan encima |
-| Oscuro | `https://tiles.openfreemap.org/styles/dark` | Existe (no hace falta derivarlo). Misma fuente `openmaptiles` que `positron`, así que las capas propias valen para los dos |
+## Mapa de la red de subte (4.3): brief operativo
 
-También existen `liberty`, `bright` y `fiord`; quedan como alternativas si 4.3 necesita más detalle de calles. El estilo se elige con `useTheme()` y cambia con el tema (claro/oscuro de primera clase). Si 4.3 personaliza el estilo (por ejemplo, para bajar el contraste de las calles debajo de las líneas), la doc de OpenFreeMap pide alojar el JSON del estilo nosotros. El candidato es el paquete estático del proxy.
+Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRedScreen.tsx`. Es una vista secundaria: la lista de Subtes sigue siendo la vía principal y la accesible.
 
-## Atribución (obligatoria)
+- **Qué muestra:**
+  - **Trazos:** salen de `subte-red.geojson`, con un `LineString` por línea y cada ramal del Premetro aparte. Cada trazo lleva un contorno y la letra de la línea a lo largo.
+  - **Estaciones:** salen de `subte-estaciones.json`, porque el GeoJSON no trae puntos. Son círculos `bg.base` con borde `text.primary`, y el nombre aparece desde zoom 14.
+  - **Cámara inicial:** la extensión de la red (`boundsOf`).
+- **Interacción:** tocar una estación lleva a `/subtes/estacion/[id]` y tocar un trazo, a `/subtes/[linea]`. Las fuentes tienen `hitbox` de 22 pt por lado (44 pt en total). Si un mismo toque cae sobre una estación y su línea, gana la estación y se navega una sola vez: los avisos de las dos fuentes se juntan durante `PRESS_SETTLE_MS` = 60 ms.
+- **Estados y copy:**
 
-El TileJSON de `https://tiles.openfreemap.org/planet` declara:
+| Estado                           | Qué se ve                                                                                                                                       |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Carga sin caché                  | Skeleton de pantalla completa, con "Cargando el mapa de la red…" para el lector de pantalla                                                     |
+| Error sin datos                  | `ErrorState` con `error.userMessage()`. "Volver a intentar" aparece solo si `retryable` (un GeoJSON fuera de contrato no se reintenta)          |
+| Sin conexión y sin nada guardado | `EmptyState` "Sin conexión": "El mapa de la red se carga cuando vuelvas a tener conexión. Mientras tanto, la lista de Subtes sigue disponible." |
+| Manifiesto sin `subte-red.geojson` | `ErrorState` "Esta información no está disponible por ahora.", sin reintento |
+| Sin conexión con caché           | El mapa con los datos persistidos en MMKV, sin requests. El `OfflineBanner` es global                                                           |
+| Red vacía                        | `EmptyState`: "Todavía no tenemos el mapa de la red. Mientras tanto, la lista de Subtes tiene todas las líneas y estaciones."                   |
 
-> OpenFreeMap © OpenMapTiles Data from OpenStreetMap
+- **Suposiciones nuevas:**
+  - **F4-mapa-1.** El mapa no lleva `FreshnessLabel` ni pull to refresh. Es estático versionado: no tiene `sourceTimestamp` y se renueva con el manifiesto (TTL 300 s).
+  - **F4-mapa-2.** Las estaciones salen de `subte-estaciones.json`. Las de combinación se dibujan una por línea, igual que en el GTFS.
+  - **F4-mapa-3.** El nombre de la estación aparece desde zoom 14; con menos zoom se superponen.
+  - **F4-mapa-4.** El control "Norte arriba" usa el ícono `sentidoHacia` girado −90° (una flecha que apunta al norte), porque el mapa curado no tiene brújula. Si se suma un ícono `norte` (Material `navigation`), se cambia en `MapView.tsx`.
+  - **F4-mapa-5.** Los controles van abajo a la derecha y la atribución abajo a la izquierda. Ninguno lleva el área segura inferior dentro de las tabs (`insetBottom`).
+  - **F4-mapa-6.** Las estaciones van por `useStaticArchivo` (`shared/static`), que guarda una última versión conocida. La red (`.geojson`) va por `useStaticGeoJson`, que se apoya solo en la caché persistida de TanStack Query (24 h). Si se abre la app sin red después de más de un día, se ve "Sin conexión" hasta que vuelva la red.
+  - **F4-mapa-7.** No hay estado de "actualización fallida con datos": una versión del estático es inmutable y el archivo no se vuelve a pedir mientras no cambie la versión del manifiesto.
 
-Con enlaces a `https://openfreemap.org`, `https://www.openmaptiles.org/` y `https://www.openstreetmap.org/copyright`. En la app:
+**Decisión N2 (colores de los trazos):** se usan los **colores del GTFS** (`route_color` del estático, `docs/02b-colores-subte.md` §3), no los de señalética.
 
-- **En el mapa**, siempre visible: el botón de atribución nativo de MapLibre (`attribution` del `Map`, que abre la lista con los enlaces), o un `Text` propio con "© OpenStreetMap · OpenMapTiles · OpenFreeMap" que lleve a Acerca de. No taparlo con la sheet ni con controles.
-- **En Acerca de** (4.10): el texto completo con los tres enlaces (`docs/05-privacidad.md` §7).
+- **Contorno:** `text.primary` del tema, oscuro sobre `positron` y claro sobre `dark`. Le da a cada trazo un borde que contrasta con el fondo, también en A, H y Premetro sobre claro y en C y E sobre oscuro (WCAG 1.4.11).
+- **Letra de la línea** a lo largo del trazo: el color nunca es la única pista.
+- **Por qué no la señalética:** el celeste `#08B0E1` para la A queda descartado porque la app no hardcodea colores de línea (02b §3, "Reglas de uso") y el contorno ya resuelve el contraste.
+
+## Lectura de los GeoJSON (`staticData.ts`)
+
+- **JSON con contrato:** `subte-estaciones.json`, `subte-lineas.json` y el resto van por `useStaticArchivo` de [`src/shared/static`](../static/README.md), de mid-dev (4.2). Ese hook usa `client.staticFile`, que solo acepta `ARCHIVOS_ESTATICOS_V1`.
+- **GeoJSON:** `useStaticGeoJson(archivo)` hace lo mismo para los `.geojson`, con `client.staticGeoJson` validado con `GEOJSON_ESTATICOS_V1` de `@transportate/contracts`.
+  - Los esquemas son `SubteRedGeoJsonV1` para la red y `GeoJsonFeatureCollectionV1`, una FeatureCollection mínima, para los recorridos.
+  - Respeta la convención de `shared/static`: la versión sale de `archivos[archivo].url`, la key es `['static', 'archivo', <archivo>, <version>]`, con `staleTime: Infinity` y `gcTime` de 24 h, y en la caché va el dato solo.
+  - Si el manifiesto no publica el archivo, devuelve `isLoadingError` con un `HttpError` 404 ("Esta información no está disponible por ahora.") en vez de quedar cargando.
+- **Pendiente:** sumar los `.geojson` a `useStaticArchivo` (con su última versión conocida) cuando `shared/static` acepte `GEOJSON_ESTATICOS_V1`. Los recorridos de colectivos (742 KB) entran en la estrategia de archivos grandes de 4.5.
+
+## Para 4.6 (colectivos)
+
+- **Mapa:** `MapView` sin cambios, con `initialCenter`/`initialZoom` o `initialBounds` del recorrido (`boundsOf`) y `ref` para seguir un vehículo (`flyTo`, que respeta Reducir movimiento).
+- **Vehículos:**
+  - `GeoJSONSource id="colectivos-vehiculos"` con `pointCollection(posiciones.data.vehiculos, (v) => ({ id: v.id, coordinates: [v.lon, v.lat], properties: { id: v.id, rumbo: v.rumbo ?? 0 } }))`. Los campos salen de `VehiculoV1`; el rumbo es `rumbo`, no `bearing`.
+  - Encima, `Layer type="symbol"` con `layout={{ 'icon-image': 'colectivo', 'icon-rotate': ['get', 'rumbo'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true }}` y la imagen registrada con `<Images images={{ colectivo: … }} />`.
+  - Hoy el feed no trae rumbo (`rumbo: null`, `docs/00-plan.md`): o se deriva de posiciones sucesivas o se dibuja un círculo sin rotación.
+- **Recorrido:** `useStaticGeoJson('recorridos-colectivos.geojson')` + `Layer type="line"` filtrada por número de línea (`filter={['==', ['get', 'numero'], 60]}`).
+- **Detalle:** la `formSheet` nativa, con la configuración de abajo.
 
 ## Bottom sheet sobre el mapa (S24): sheet nativa, sin `@gorhom/bottom-sheet`
 
@@ -77,11 +152,11 @@ Cosas que quedan para validar en el dispositivo (no se pueden probar en Jest):
 
 **Decisión:** `react-native-reorderable-list` **0.18.3**. Es **puro JS**: el paquete publicado trae solo `lib/` y `src/`, sin `android/` ni `ios/`. **No se instala ahora: la instala 4.9** con `pnpm add react-native-reorderable-list@0.18.3 --save-exact` en `apps/mobile`, y no hace falta reconstruir el dev client.
 
-| Opción | Estado (npm, Context7 `/omahili/react-native-reorderable-list`) | Veredicto |
-|---|---|---|
-| `react-native-reorderable-list` 0.18.3 | Publicada el 2026-11-01. Peers: `react-native-reanimated >=3.12.0` y `react-native-gesture-handler >=2.12.0`, que cumplen con Reanimated 4.7.1 y Gesture Handler 3.3.0. API chica: `ReorderableList`, `useReorderableDrag`, `reorderItems` | **Elegida** |
-| `react-native-draggable-flatlist` 4.0.3 | Último release el 2025-05-06, sin cambios desde entonces. Peers viejos (Reanimated `>=2.8`) y sin pruebas declaradas con Reanimated 4 | Descartada |
-| Implementación propia (Gesture Handler + Reanimated) | Posible, pero hay que medir celdas y hacer autoscroll a mano | Solo si la librería falla |
+| Opción                                               | Estado (npm, Context7 `/omahili/react-native-reorderable-list`)                                                                                                                                                                            | Veredicto                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| `react-native-reorderable-list` 0.18.3               | Publicada el 2026-11-01. Peers: `react-native-reanimated >=3.12.0` y `react-native-gesture-handler >=2.12.0`, que cumplen con Reanimated 4.7.1 y Gesture Handler 3.3.0. API chica: `ReorderableList`, `useReorderableDrag`, `reorderItems` | **Elegida**               |
+| `react-native-draggable-flatlist` 4.0.3              | Último release el 2025-05-06, sin cambios desde entonces. Peers viejos (Reanimated `>=2.8`) y sin pruebas declaradas con Reanimated 4                                                                                                      | Descartada                |
+| Implementación propia (Gesture Handler + Reanimated) | Posible, pero hay que medir celdas y hacer autoscroll a mano                                                                                                                                                                               | Solo si la librería falla |
 
 Notas para 4.9:
 
@@ -93,7 +168,7 @@ Notas para 4.9:
 
 `react-native-gesture-handler` 3.3.0 y `react-native-reanimated` 4.7.1 (+ `react-native-worklets` 0.13.0), las versiones que fija el SDK 58. **Sin `babel.config.js`:** `babel-preset-expo` 58.0.23 agrega `react-native-worklets/plugin` automáticamente cuando el paquete se resuelve desde la app (`configs/expo.js`; doc de Expo "Reanimated": "No additional configuration is required").
 
-**Pendiente para el primer uso (4.6 o 4.9):** los gestos solo se reconocen dentro de `<GestureHandlerRootView>`, que tiene que envolver el `Stack` en `src/app/_layout.tsx` (doc de Expo, tutorial "Gestures"). No se montó en esta tarea porque `_layout.tsx` no es de 4.0. El primero que use gestos lo agrega, por fuera de `SafeAreaProvider` y con `style={{ flex: 1 }}`.
+**`GestureHandlerRootView`** envuelve toda la app (`src/app/_layout.tsx`, tarea 4.3), con `style={{ flex: 1 }}` y por fuera de `SafeAreaProvider`, como pide la doc de RNGH 3 ("Keep `GestureHandlerRootView` as close to the actual root of the app as possible"). Para no re-indentar el árbol, el layout de siempre pasó a llamarse `AppTree` y el `RootLayout` exportado solo lo envuelve.
 
 ## Tests
 
@@ -103,4 +178,9 @@ En Jest, `jest.setup.ts` mockea MapLibre (`test/mocks/maplibre.tsx`) y `expo-loc
 - **Refs de la cámara y del mapa:** son `jest.fn` en `mapLibreMock`.
 - **Ubicación:** arranca en `undetermined`. Se controla con `locationMock.setPermission`, `setRequestAnswer`, `setPosition` y `emitPosition`.
 
-Ejemplos en `test/mocks/native-deps.test.tsx`.
+Ejemplos en `test/mocks/native-deps.test.tsx`. Tests de este módulo:
+
+- `__tests__/MapView.test.tsx`: estilo por tema y su cambio en vivo, atribución, cámara inicial, franja de iOS, "Norte arriba" con y sin Reducir movimiento, "Centrar en mí" (oculto sin permiso, sin pedirlo; con permiso centra; sin GPS no rompe) y `ref`.
+- `__tests__/geojson.test.ts`: los helpers.
+- `test/map/MapaRedScreen.test.tsx`: carga, datos, navegación, prioridad estación > línea, error con reintento, contrato roto, archivo no publicado, offline con y sin caché, vacío y tema oscuro. Usa `test/map/harness.tsx` (tema, áreas seguras, Query y cliente con `fetch` mockeado) y `test/map/fixtures.ts`.
+- `test/api/static-geojson.test.ts`: `client.staticGeoJson`.

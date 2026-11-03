@@ -50,7 +50,7 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | `/inicio`                                                       | Inicio (§15). Engranaje "Ajustes" en el header   | `(tabs)/inicio/index.tsx`                 |
 | `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
 | `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
-| `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos (§18) → línea (`lineaId`, `?parada=`) → parada | `(tabs)/colectivos/…`                     |
+| `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos (§19) → línea (`lineaId`, `?parada=`) → parada | `(tabs)/colectivos/…`                     |
 | `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea (`A`…`H`, `PM`) → estación (§14)  | `(tabs)/subtes/…`                         |
 | `/subtes/mapa`                                                  | Mapa de la red (tarea 4.3), desde "Ver mapa"     | `(tabs)/subtes/mapa.tsx`                  |
 | `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
@@ -75,13 +75,14 @@ El layout raíz (`src/app/_layout.tsx`):
 Orden, de afuera hacia adentro (`src/app/_layout.tsx`):
 
 ```
-SafeAreaProvider
-└── ThemeProvider            (store: createThemePreferenceStore(kv))
-    └── QueryProvider        (QueryClient + persister; tarea 3.9)
-        └── RefreshIntervalProvider (store: createRefreshIntervalStore(kv); tarea 3.9)
-            └── FavoritosProvider   (repository: MmkvFavoritosRepository)
-                └── OfflineBanner global (useIsOnline; tarea 4.2)
-                    └── Stack (tabs + not-found) + StatusBar automática
+GestureHandlerRootView           (gestos de RNGH; tarea 4.3, ver §18)
+└── SafeAreaProvider
+    └── ThemeProvider            (store: createThemePreferenceStore(kv))
+        └── QueryProvider        (QueryClient + persister; tarea 3.9)
+            └── RefreshIntervalProvider (store: createRefreshIntervalStore(kv); tarea 3.9)
+                └── FavoritosProvider   (repository: MmkvFavoritosRepository)
+                    └── OfflineBanner global (useIsOnline; tarea 4.2)
+                        └── Stack (tabs + not-found) + StatusBar automática
 ```
 
 **`OfflineBanner` global (tarea 4.2):** se monta una sola vez, arriba del `Stack`. Sin conexión, el banner ocupa el margen superior del sistema (`paddingTop` = inset superior) y el `Stack` recibe un `SafeAreaInsetsContext` con `top: 0`, para no sumar el margen dos veces. Las pantallas no muestran su propio aviso de conexión. **A validar en el dispositivo:** que el header nativo del Stack no deje un hueco extra con el banner visible.
@@ -323,7 +324,26 @@ Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `Favor
 - **Pull to refresh:** `invalidateRealtime`, que refresca el estado del subte y los datos vivos activos.
 - **Tests:** `test/inicio.test.tsx` y `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx`.
 
-## 18. Colectivos
+## 18. Mapas
+
+Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFreeMap (ADR-0002). El código compartido está en [`src/shared/map/`](../apps/mobile/src/shared/map/README.md), que tiene la API completa, el brief operativo del mapa de la red y las suposiciones `F4-mapa-n`.
+
+| Pieza | Qué hace |
+| --- | --- |
+| `MapView` (`shared/map`) | Mapa base. Estilo `positron` en claro y `dark` en oscuro según `useTheme().scheme`, atribución propia siempre visible, controles "Norte arriba" y "Centrar en mi ubicación" (este último solo si el permiso ya está concedido; nunca lo pide), cámara que salta con Reducir movimiento y franja izquierda de 20 pt en iOS para el gesto de volver. `ref` con `flyTo`/`fitBounds`/`resetNorth` |
+| `useStaticGeoJson` (`shared/map`) | Baja los `.geojson` del estático con la convención de `useStaticArchivo` (§14): la versión sale del manifiesto, la key es `['static', 'archivo', archivo, version]` y queda persistido en MMKV. Las estaciones del mapa van por `useStaticArchivo` |
+| `client.staticGeoJson` (`shared/api`) | `GET /v1/static/:version/:archivo` para `.geojson`, validado con `GEOJSON_ESTATICOS_V1` de `@transportate/contracts` (`SubteRedGeoJsonV1` y `GeoJsonFeatureCollectionV1`) |
+| `/subtes/mapa` → `features/subtes/MapaRedScreen.tsx` | Trazos de `subte-red.geojson` con el color GTFS, un contorno `text.primary` y la letra de la línea. Las estaciones salen de `subte-estaciones.json`. Tocar una estación lleva a `/subtes/estacion/[id]` y tocar un trazo, a `/subtes/[linea]` (si caen juntas, gana la estación) |
+
+- **Colores de los trazos (N2, resuelta):** se usan los colores del GTFS con contorno del color de texto del tema y la letra de cada línea sobre el trazo. El detalle está en `briefs/README.md` y en `shared/map/README.md`.
+- **Gestos:** `GestureHandlerRootView` envuelve toda la app (`src/app/_layout.tsx`). El layout de siempre se llama `AppTree` y el `RootLayout` exportado solo lo envuelve.
+- **Jest:** MapLibre y `expo-location` están mockeados (`test/mocks/`). Los componentes del mapa se renderizan como `View` con `testID` (`maplibre-Layer-<id>`, `maplibre-GeoJSONSource-<id>`) y todas sus props. Lo que Jest no prueba (render real de los estilos, gesto de volver con el mapa, toques en el mapa) lo valida el coordinador en el dispositivo.
+- **Pendiente:**
+  - Autoalojar los tiles (PMTiles en R2, plan en `shared/map/README.md`).
+  - Sumar los `.geojson` a `useStaticArchivo` (con última versión conocida) y sacar `useStaticGeoJson`.
+  - Sumar un ícono de brújula al mapa curado si "Norte arriba" lo necesita (F4-mapa-4).
+
+## 19. Colectivos
 
 `src/features/colectivos` ([README](../apps/mobile/src/features/colectivos/README.md): brief operativo, estados y suposiciones `F4-colectivos-1…7`), tareas 4.5, 4.7, 4.11 y 4.12. Rutas finas: `colectivos/index.tsx` monta `ColectivosScreen` y `colectivos/parada/[id].tsx` monta `ParadaScreen`. El detalle de línea con el mapa (`colectivos/[linea].tsx`, tarea 4.6) es de otra tarea.
 
