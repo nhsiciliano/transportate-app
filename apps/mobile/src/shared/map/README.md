@@ -4,7 +4,8 @@ Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/M
 
 | Archivo                 | Qué exporta                                                                                                                                                  |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `MapView.tsx`           | `MapView`, `MapViewHandle`, `CAMERA_ANIMATION_MS`, `USER_ZOOM`, `EDGE_GESTURE_GUTTER`                                                                        |
+| `MapView.tsx`           | `MapView`, `MapViewHandle`, `MapLocationControl`, `CAMERA_ANIMATION_MS`, `USER_ZOOM`, `EDGE_GESTURE_GUTTER`                                                  |
+| `BottomPanel.tsx`       | `BottomPanel`, `panelHeights`, `nearestIndex`, `PANEL_LABELS`, `PanelIndex`: panel inferior con tres alturas (4.6)                                           |
 | `styles.ts`             | `MAP_STYLE_URLS`, `mapStyleFor`, `MAP_ATTRIBUTION`, `MAP_FONT`, `CABA_BOUNDS`                                                                                |
 | `geojson.ts`            | `boundsOf`, `pointCollection`, `pressedProperty`                                                                                                             |
 | `staticData.ts`         | `useStaticGeoJson`, `geoJsonVersion`, `StaticGeoJsonQuery`: los `.geojson` del paquete (los JSON con contrato van por `useStaticArchivo` de `shared/static`) |
@@ -20,17 +21,19 @@ Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/M
 </MapView>
 ```
 
-| Prop                            | Default       | Qué hace                                                                                                                                     |
-| ------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `accessibilityLabel`            | (obligatoria) | El mapa se anuncia como una imagen con esa etiqueta. La vía accesible a los datos es la lista de cada tab, no el mapa                        |
-| `children`                      | —             | Fuentes y capas de MapLibre v11 (`GeoJSONSource`, `Layer`, `Images`…)                                                                        |
-| `initialBounds`                 | `CABA_BOUNDS` | Extensión inicial `[oeste, sur, este, norte]`, con margen para los controles. Gana sobre `initialCenter`                                     |
-| `initialCenter` + `initialZoom` | — + 13        | Alternativa a `initialBounds`                                                                                                                |
-| `onPress`                       | —             | Toque en el mapa fuera de las fuentes con `onPress` propio                                                                                   |
-| `showsUserLocation`             | `true`        | Dibuja el punto de la persona, **solo si el permiso ya está concedido**                                                                      |
-| `insetBottom`                   | `false`       | Suma el área segura inferior a los controles. En las tabs no hace falta, porque la barra ya deja el contenido arriba del indicador de inicio |
-| `testID`                        | `map-view`    | Subvistas: `-map`, `-attribution`, `-north-up`, `-center-user`, `-edge-gutter`                                                               |
-| `ref`                           | —             | `MapViewHandle`: `flyTo(center, zoom?)`, `fitBounds(bounds)`, `resetNorth()`                                                                 |
+| Prop                            | Default       | Qué hace                                                                                                                                                                                                          |
+| ------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `accessibilityLabel`            | (obligatoria) | El mapa se anuncia como una imagen con esa etiqueta. La vía accesible a los datos es la lista de cada tab, no el mapa                                                                                             |
+| `children`                      | —             | Fuentes y capas de MapLibre v11 (`GeoJSONSource`, `Layer`, `Images`…)                                                                                                                                             |
+| `initialBounds`                 | `CABA_BOUNDS` | Extensión inicial `[oeste, sur, este, norte]`, con margen para los controles. Gana sobre `initialCenter`                                                                                                          |
+| `initialCenter` + `initialZoom` | — + 13        | Alternativa a `initialBounds`                                                                                                                                                                                     |
+| `onPress`                       | —             | Toque en el mapa fuera de las fuentes con `onPress` propio                                                                                                                                                        |
+| `showsUserLocation`             | `true`        | Dibuja el punto de la persona, **solo si el permiso ya está concedido**                                                                                                                                           |
+| `insetBottom`                   | `false`       | Suma el área segura inferior a los controles. En las tabs no hace falta, porque la barra ya deja el contenido arriba del indicador de inicio                                                                      |
+| `bottomOffset`                  | `0`           | Alto (pt) de algo propio de la pantalla abajo (un panel): sube los controles y la atribución                                                                                                                      |
+| `location`                      | —             | `{ granted, request }` (de `useUbicacion()`). Con esto, "Centrar en mi ubicación" aparece también sin permiso y, al tocarlo, lo pide en contexto (S32). Sin esto el mapa solo consulta el permiso y nunca lo pide |
+| `testID`                        | `map-view`    | Subvistas: `-map`, `-attribution`, `-controls`, `-north-up`, `-center-user`, `-edge-gutter`                                                                                                                       |
+| `ref`                           | —             | `MapViewHandle`: `flyTo(center, zoom?)`, `fitBounds(bounds)`, `centerOn(center)` (sin cambiar el zoom, para seguir un vehículo) y `resetNorth()`                                                                  |
 
 - **Estilo:** `positron` en claro y `dark` en oscuro, según `useTheme().scheme`. Cambia en vivo con el tema y las capas propias se vuelven a montar solas. Los colores de las capas salen siempre de `useTheme()`.
 - **Atribución:** `© OpenStreetMap contributors · © OpenMapTiles · OpenFreeMap`.
@@ -107,15 +110,33 @@ Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRe
   - Si el manifiesto no publica el archivo, devuelve `isLoadingError` con un `HttpError` 404 ("Esta información no está disponible por ahora.") en vez de quedar cargando.
 - **Pendiente:** sumar los `.geojson` a `useStaticArchivo` (con su última versión conocida) cuando `shared/static` acepte `GEOJSON_ESTATICOS_V1`. Los recorridos de colectivos (742 KB) entran en la estrategia de archivos grandes de 4.5.
 
-## Para 4.6 (colectivos)
+## Colectivos (4.6): cómo se usa
 
-- **Mapa:** `MapView` sin cambios, con `initialCenter`/`initialZoom` o `initialBounds` del recorrido (`boundsOf`) y `ref` para seguir un vehículo (`flyTo`, que respeta Reducir movimiento).
+Implementado en `features/colectivos` (`LineaScreen.tsx`, `MapaLinea.tsx`, `VehiculosSheet.tsx`; README de esa feature, "Línea y mapa").
+
 - **Vehículos:**
-  - `GeoJSONSource id="colectivos-vehiculos"` con `pointCollection(posiciones.data.vehiculos, (v) => ({ id: v.id, coordinates: [v.lon, v.lat], properties: { id: v.id, rumbo: v.rumbo ?? 0 } }))`. Los campos salen de `VehiculoV1`; el rumbo es `rumbo`, no `bearing`.
-  - Encima, `Layer type="symbol"` con `layout={{ 'icon-image': 'colectivo', 'icon-rotate': ['get', 'rumbo'], 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true }}` y la imagen registrada con `<Images images={{ colectivo: … }} />`.
-  - Hoy el feed no trae rumbo (`rumbo: null`, `docs/00-plan.md`): o se deriva de posiciones sucesivas o se dibuja un círculo sin rotación.
-- **Recorrido:** `useStaticGeoJson('recorridos-colectivos.geojson')` + `Layer type="line"` filtrada por número de línea (`filter={['==', ['get', 'numero'], 60]}`).
-- **Detalle:** la `formSheet` nativa, con la configuración de abajo.
+  - `GeoJSONSource` de puntos, armado con `vehiculosCollection` (props `id`, `etiqueta`, `atenuado`, `seleccionado`, `rumbo`).
+  - Capas: `circle` para el cuerpo, `symbol` con el número y `symbol` con la flecha ▲, que se rota por `rumbo` solo si viene (`filter` `rumbo != null`). No hacen falta imágenes: el glifo está en `Noto Sans Regular`.
+  - `hitbox` de 22 pt por lado.
+- **Agrupamiento:** con más de 80 vehículos, `cluster` hasta zoom 13. La fuente lleva `key` para remontarse al cambiar `cluster`, porque una fuente montada no se reconfigura.
+- **Recorrido:** sale de `useStaticArchivoGrande('recorridos-colectivos.geojson')` (archivos grandes de `shared/static`, fuera del persister de TanStack). Se dibuja punteado porque es aproximado.
+- **Panel:** `BottomPanel` (abajo) y `bottomOffset` = alto del panel, para que los controles queden a la vista.
+- **Seguimiento:** `ref.centerOn` en cada actualización, que salta con Reducir movimiento.
+
+## Panel inferior (`BottomPanel`)
+
+| Nivel        | Alto                                                    | Botón de la manija (lector y quien no arrastra) |
+| ------------ | ------------------------------------------------------- | ----------------------------------------------- |
+| 0, colapsado | manija (28 pt, área táctil de 44) + `header` medido     | "Ver más"                                       |
+| 1, medio     | 50 % del alto disponible (siempre más que el colapsado) | "Ver la lista completa"                         |
+| 2, expandido | 90 %                                                    | "Ver menos" (`accessibilityState.expanded`)     |
+
+- **Arrastre:**
+  - Se arrastra desde la manija o el encabezado (`usePanGesture` de RNGH 3 con `disableReanimated`: corre en JS y mueve un valor compartido).
+  - Al soltar se elige el nivel más cercano con un poco de inercia (`nearestIndex`).
+  - El cuerpo es un `ScrollView` que scrollea solo desde el nivel medio, así no compite con el arrastre.
+- **Reducir movimiento:** cambia de nivel sin animar; si no, `withTiming` de 220 ms.
+- **Por qué no la `formSheet` nativa acá:** F4-colectivos-mapa-1 en `features/colectivos/README.md`. La sección de abajo sigue valiendo para detalles pasajeros sobre un mapa.
 
 ## Bottom sheet sobre el mapa (S24): sheet nativa, sin `@gorhom/bottom-sheet`
 
@@ -150,7 +171,7 @@ Cosas que quedan para validar en el dispositivo (no se pueden probar en Jest):
 
 ## Reorden por arrastre (4.9): `react-native-reorderable-list`
 
-**Decisión:** `react-native-reorderable-list` **0.18.3**. Es **puro JS**: el paquete publicado trae solo `lib/` y `src/`, sin `android/` ni `ios/`. **No se instala ahora: la instala 4.9** con `pnpm add react-native-reorderable-list@0.18.3 --save-exact` en `apps/mobile`, y no hace falta reconstruir el dev client.
+**Decisión:** `react-native-reorderable-list` **0.18.3**. Es **puro JS**: el paquete publicado trae solo `lib/` y `src/`, sin `android/` ni `ios/`. **La instaló 4.9 (F4-HIGH-C, `FavoritosScreen`)** con `pnpm add react-native-reorderable-list@0.18.3 --save-exact` en `apps/mobile`, y no hace falta reconstruir el dev client.
 
 | Opción                                               | Estado (npm, Context7 `/omahili/react-native-reorderable-list`)                                                                                                                                                                            | Veredicto                 |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
@@ -158,7 +179,7 @@ Cosas que quedan para validar en el dispositivo (no se pueden probar en Jest):
 | `react-native-draggable-flatlist` 4.0.3              | Último release el 2025-05-06, sin cambios desde entonces. Peers viejos (Reanimated `>=2.8`) y sin pruebas declaradas con Reanimated 4                                                                                                      | Descartada                |
 | Implementación propia (Gesture Handler + Reanimated) | Posible, pero hay que medir celdas y hacer autoscroll a mano                                                                                                                                                                               | Solo si la librería falla |
 
-Notas para 4.9:
+Notas (aplicadas en 4.9):
 
 - Usa la API `Gesture.Pan()` de Gesture Handler, que en v3 está marcada deprecada pero funciona. En nuestro código conviene usar las APIs de hooks de v3 (`usePanGesture`, etc.); la regla `@typescript-eslint/no-deprecated` las exige.
 - El arrastre no es accesible con lector de pantalla. Cada fila necesita `accessibilityActions` "Mover arriba" / "Mover abajo" que llamen a `FavoritosRepository.reorder` sin gesto.
@@ -178,7 +199,7 @@ En Jest, `jest.setup.ts` mockea MapLibre (`test/mocks/maplibre.tsx`) y `expo-loc
 - **Refs de la cámara y del mapa:** son `jest.fn` en `mapLibreMock`.
 - **Ubicación:** arranca en `undetermined`. Se controla con `locationMock.setPermission`, `setRequestAnswer`, `setPosition` y `emitPosition`.
 
-Ejemplos en `test/mocks/native-deps.test.tsx`. Tests de este módulo:
+Ejemplos en `test/mocks/native-deps.test.tsx`. `react-native-reorderable-list` tiene mock propio (`test/mocks/reorderable-list.tsx`): en Jest, `useAnimatedRef` de Reanimated devuelve un objeto y la librería lo llama como función. Tests de este módulo:
 
 - `__tests__/MapView.test.tsx`: estilo por tema y su cambio en vivo, atribución, cámara inicial, franja de iOS, "Norte arriba" con y sin Reducir movimiento, "Centrar en mí" (oculto sin permiso, sin pedirlo; con permiso centra; sin GPS no rompe) y `ref`.
 - `__tests__/geojson.test.ts`: los helpers.
