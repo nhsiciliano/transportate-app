@@ -89,10 +89,11 @@ export function useFavoritoLiveData(
   const posiciones = usePosicionesLinea(tipo === 'linea_colectivo' ? refId : null, { enabled });
 
   /** Edad del dato y si está viejo para el intervalo elegido (S6). */
-  const age = (ts: string | null) => {
+  // El reloj nunca va detrás de la última respuesta (si no, un dato recién llegado "rejuvenece").
+  const age = (ts: string | null, dataUpdatedAt: number) => {
     const t = ts === null ? NaN : Date.parse(ts);
     if (Number.isNaN(t)) return { stale: false, veryStale: false, suffix: '' };
-    const ageSeconds = Math.max(0, (now - t) / 1000);
+    const ageSeconds = Math.max(0, (Math.max(now, dataUpdatedAt) - t) / 1000);
     const level = freshnessLevel(ageSeconds, seconds);
     const stale = level === 'stale' || level === 'veryStale';
     return {
@@ -111,7 +112,7 @@ export function useFavoritoLiveData(
       }
       if (linea === undefined) return error;
       const { estado: e } = estadoDeLinea(linea, estado.data.lineas);
-      const a = age(estado.sourceTimestamp);
+      const a = age(estado.sourceTimestamp, estado.dataUpdatedAt);
       const label = STATUS[e].label;
       return {
         status: a.stale ? 'stale' : 'ok',
@@ -129,14 +130,14 @@ export function useFavoritoLiveData(
       if (arribos.data === undefined || (linea === undefined && red.isPending)) {
         return arribos.isLoadingError || red.isLoadingError ? error : loading;
       }
-      const a = age(arribos.sourceTimestamp);
+      const a = age(arribos.sourceTimestamp, arribos.dataUpdatedAt);
       const bloques =
         linea === undefined || red.red === undefined
           ? []
           : agruparArribos(
               refId,
               linea,
-              arribosVigentes(arribos.data.arribos, now),
+              arribosVigentes(arribos.data.arribos, Math.max(now, arribos.dataUpdatedAt)),
               red.red.estacionPorId,
             ).filter((b) => b.arribos.length > 0);
       // Con dato de más de 10 min, un "2 min" engaña (S30): se muestra solo la antigüedad.
@@ -149,12 +150,15 @@ export function useFavoritoLiveData(
           sourceTimestamp: arribos.sourceTimestamp,
         };
       }
-      const primeros = bloques.flatMap((b) => {
-        const first = b.arribos[0];
-        return first === undefined
-          ? []
-          : [{ cabecera: b.cabecera, t: formatArribo(first.enSegundos) }];
-      });
+      // El sentido con el tren más próximo primero.
+      const primeros = bloques
+        .flatMap((b) => {
+          const first = b.arribos[0];
+          return first === undefined
+            ? []
+            : [{ cabecera: b.cabecera, en: first.enSegundos, t: formatArribo(first.enSegundos) }];
+        })
+        .sort((x, y) => x.en - y.en);
       return {
         status: a.stale ? 'stale' : 'ok',
         text: join(primeros.map((p) => `→ ${p.cabecera} ${p.t.short}`).join(' · '), a.suffix),
@@ -165,7 +169,7 @@ export function useFavoritoLiveData(
     }
     case 'linea_colectivo': {
       if (posiciones.data === undefined) return posiciones.isLoadingError ? error : loading;
-      const a = age(posiciones.sourceTimestamp);
+      const a = age(posiciones.sourceTimestamp, posiciones.dataUpdatedAt);
       const n = posiciones.data.vehiculos.length;
       return {
         status: a.stale ? 'stale' : 'ok',
