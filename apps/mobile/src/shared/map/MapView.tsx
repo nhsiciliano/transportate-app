@@ -42,7 +42,20 @@ const CONTROL_SIZE = 48;
 export interface MapViewHandle {
   flyTo(center: LngLat, zoom?: number): void;
   fitBounds(bounds: LngLatBounds): void;
+  /** Mueve la cámara sin cambiar el zoom (seguir un vehículo). */
+  centerOn(center: LngLat): void;
   resetNorth(): void;
+}
+
+/**
+ * Permiso de ubicación que maneja la pantalla (`useUbicacion()` de `features/ubicacion`). Con
+ * esto, "Centrar en mi ubicación" aparece también sin permiso y, al tocarlo, lo pide en contexto
+ * (S32). Sin esta prop el mapa solo consulta el permiso y nunca lo pide.
+ */
+export interface MapLocationControl {
+  granted: boolean;
+  /** Abre el diálogo del sistema; devuelve si quedó concedido. */
+  request: () => Promise<boolean>;
 }
 
 export interface MapViewProps {
@@ -64,6 +77,10 @@ export interface MapViewProps {
    * la barra ya deja el contenido por encima del indicador de inicio.
    */
   insetBottom?: boolean;
+  /** Alto (pt) que tapa algo propio de la pantalla abajo (un panel): sube controles y atribución. */
+  bottomOffset?: number;
+  /** Ver `MapLocationControl`. */
+  location?: MapLocationControl;
   testID?: string;
   ref?: Ref<MapViewHandle>;
 }
@@ -109,13 +126,16 @@ export function MapView({
   onPress,
   showsUserLocation = true,
   insetBottom = false,
+  bottomOffset = 0,
+  location,
   testID = 'map-view',
   ref,
 }: MapViewProps) {
   const { scheme, colors, space, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
-  const locationGranted = useLocationGranted();
+  const consulted = useLocationGranted();
+  const locationGranted = location?.granted ?? consulted;
   const camera = useRef<CameraRef>(null);
 
   const duration = reduceMotion ? 0 : CAMERA_ANIMATION_MS;
@@ -137,21 +157,35 @@ export function MapView({
     void camera.current?.setStop({ bearing: 0, pitch: 0, duration });
   }, [duration]);
 
-  useImperativeHandle(ref, () => ({ flyTo, fitBounds, resetNorth }), [
+  const centerOn = useCallback(
+    (center: LngLat) => {
+      if (reduceMotion) camera.current?.jumpTo({ center });
+      else camera.current?.easeTo({ center, duration });
+    },
+    [reduceMotion, duration],
+  );
+
+  useImperativeHandle(ref, () => ({ flyTo, fitBounds, centerOn, resetNorth }), [
     flyTo,
     fitBounds,
+    centerOn,
     resetNorth,
   ]);
 
-  const centerOnUser = useCallback(() => {
-    Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+  const centerOnUser = useCallback(async () => {
+    // Con `location`, sin permiso todavía: se pide en contexto y se centra solo si lo dio.
+    if (!locationGranted && location) {
+      const granted = await location.request().catch(() => false);
+      if (!granted) return;
+    }
+    await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
       .then(({ coords }) => {
         flyTo([coords.longitude, coords.latitude]);
       })
       .catch(() => {
         // Sin fix de GPS o servicios apagados: el mapa queda donde estaba.
       });
-  }, [flyTo]);
+  }, [flyTo, location, locationGranted]);
 
   // Se calcula una vez: la cámara inicial no se vuelve a aplicar después de montar.
   const initialViewState = useMemo<InitialViewState>(
@@ -163,7 +197,7 @@ export function MapView({
     [],
   );
 
-  const bottom = space[3] + (insetBottom ? insets.bottom : 0);
+  const bottom = space[3] + bottomOffset + (insetBottom ? insets.bottom : 0);
 
   return (
     <View style={styles.root} testID={testID}>
@@ -210,12 +244,17 @@ export function MapView({
         </Text>
       </View>
 
-      <View style={[styles.controls, { right: space[3] + insets.right, bottom, gap: space[2] }]}>
-        {locationGranted ? (
+      <View
+        style={[styles.controls, { right: space[3] + insets.right, bottom, gap: space[2] }]}
+        testID={`${testID}-controls`}
+      >
+        {locationGranted || location !== undefined ? (
           <ControlButton
             icon="centrarUbicacion"
             label="Centrar en mi ubicación"
-            onPress={centerOnUser}
+            onPress={() => {
+              void centerOnUser();
+            }}
             testID={`${testID}-center-user`}
           />
         ) : null}

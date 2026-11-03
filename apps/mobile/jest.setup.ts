@@ -44,3 +44,10 @@ jest.mock(
     jest.requireActual<{ mockedExpoLocation: object }>('./test/mocks/expo-location')
       .mockedExpoLocation,
 );
+
+// react-native-reorderable-list (arrastre en Favoritos) llama a `useAnimatedRef()` como función,
+// pero en Jest Reanimated resuelve su implementación web, que devuelve un objeto ("flatListRef is
+// not a function"). Mock: `test/mocks/reorderable-list.tsx` (un FlatList con las props a la vista).
+jest.mock('react-native-reorderable-list', () =>
+  jest.requireActual<object>('./test/mocks/reorderable-list'),
+);

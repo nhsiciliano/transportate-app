@@ -3,8 +3,10 @@
 // test depende del orden en que corren los otros.
 import { locationMock } from './expo-location';
 import { resetMapLibreMock } from './maplibre';
+import { resetReorderableListMock } from './reorderable-list';
 
 beforeEach(() => {
   locationMock.reset();
   resetMapLibreMock();
+  resetReorderableListMock();
 });

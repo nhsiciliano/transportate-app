@@ -4,7 +4,13 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import ReorderableList, {
+  useReorderableDrag,
+  type ReorderableListReorderEvent,
+} from 'react-native-reorderable-list';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { useRedSubte, usePullToRefresh } from '@/features/subtes/hooks';
 import { invalidateRealtime } from '@/shared/api';
@@ -19,6 +25,8 @@ import {
   SearchInput,
   SnackbarProvider,
   Text,
+  triggerHaptic,
+  useReduceMotion,
   useSnackbar,
 } from '@/shared/ui';
 
@@ -51,6 +59,7 @@ export function FavoritosScreen() {
 
 function FavoritosContent() {
   const { space, colors } = useTheme();
+  const reduceMotion = useReduceMotion(); // 4.9-drag
   const router = useRouter();
   const snackbar = useSnackbar();
   const { favoritos, repository } = useFavoritos();
@@ -201,57 +210,80 @@ function FavoritosContent() {
     </View>
   ) : undefined;
 
+  // 4.9-drag: el orden que queda al soltar se guarda igual que "Mover arriba / abajo".
+  const dragEnabled = editing && canMove;
+  const onReorder = ({ from, to }: ReorderableListReorderEvent) => {
+    const ids = visible.map((f) => f.id);
+    const [moved] = ids.splice(from, 1);
+    if (moved === undefined || from === to) return;
+    ids.splice(to, 0, moved);
+    repository.reorder(ids);
+  };
+
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg.base }]}>
-      {/* 4.9-drag: high-dev reemplaza este FlatList por la lista con arrastre. */}
-      <FlatList
-        testID="favoritos-lista"
-        data={visible}
-        keyExtractor={(item) => item.id}
-        contentInsetAdjustmentBehavior="automatic"
-        initialNumToRender={20}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: space[3], gap: space[2] }}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={
-          <Text tone="secondary" style={styles.noResults}>
-            {`No encontramos favoritos con «${query.trim()}».`}
-          </Text>
-        }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        viewabilityConfig={VIEWABILITY}
-        onViewableItemsChanged={onViewableItemsChanged}
-        renderItem={({ item, index }) => {
-          const resolved = resolveFavorito(item, red);
-          return (
-            <FavoritoItem
-              favorito={item}
-              visible={viewable === null ? index < INITIAL_VISIBLE : viewable.has(item.id)}
-              onTimestamp={onTimestamp}
-              onHealth={onHealth}
-              subteBadge={resolved.badge}
-              editing={editing}
-              isFirst={!canMove || index === 0}
-              isLast={!canMove || index === visible.length - 1}
-              onOpen={() => {
-                router.push(hrefFor(item));
-              }}
-              onRename={() => {
-                setRenaming(item);
-              }}
-              onRemove={() => {
-                remove(item);
-              }}
-              onMoveUp={() => {
-                move(item, -1);
-              }}
-              onMoveDown={() => {
-                move(item, 1);
-              }}
-            />
-          );
-        }}
-      />
+      {/* 4.9-drag: lista con arrastre (react-native-reorderable-list). Solo en edición y sin filtro;
+          la alternativa sin gesto son las acciones "Mover arriba / abajo" de cada fila. */}
+      {/* Anidado bajo el de `_layout.tsx` no hace nada (RNGH lo detecta); deja la lista
+          autocontenida para montarla sola en tests. */}
+      <GestureHandlerRootView style={styles.flex}>
+        <ReorderableList
+          testID="favoritos-lista"
+          dragEnabled={dragEnabled}
+          onReorder={onReorder}
+          onDragStart={onDragHaptic}
+          onDragEnd={onDragHaptic}
+          // Reducir movimiento: las filas se reacomodan sin animar.
+          animationDuration={reduceMotion ? 0 : REORDER_ANIMATION_MS}
+          // La librería pide un array mutable; `visible` es de solo lectura.
+          data={[...visible]}
+          keyExtractor={(item) => item.id}
+          contentInsetAdjustmentBehavior="automatic"
+          initialNumToRender={20}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: space[3], gap: space[2] }}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={
+            <Text tone="secondary" style={styles.noResults}>
+              {`No encontramos favoritos con «${query.trim()}».`}
+            </Text>
+          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          viewabilityConfig={VIEWABILITY}
+          onViewableItemsChanged={onViewableItemsChanged}
+          renderItem={({ item, index }) => {
+            const resolved = resolveFavorito(item, red);
+            return (
+              <FavoritoItem
+                favorito={item}
+                visible={viewable === null ? index < INITIAL_VISIBLE : viewable.has(item.id)}
+                onTimestamp={onTimestamp}
+                onHealth={onHealth}
+                subteBadge={resolved.badge}
+                editing={editing}
+                isFirst={!canMove || index === 0}
+                isLast={!canMove || index === visible.length - 1}
+                onOpen={() => {
+                  router.push(hrefFor(item));
+                }}
+                onRename={() => {
+                  setRenaming(item);
+                }}
+                onRemove={() => {
+                  remove(item);
+                }}
+                onMoveUp={() => {
+                  move(item, -1);
+                }}
+                onMoveDown={() => {
+                  move(item, 1);
+                }}
+                {...(dragEnabled ? { dragHandle: <DragHandle /> } : {})}
+              />
+            );
+          }}
+        />
+      </GestureHandlerRootView>
       <AliasSheet
         favorito={renaming}
         onCancel={() => {
@@ -266,7 +298,37 @@ function FavoritosContent() {
   );
 }
 
+// ---------------------------------------------------------------- 4.9-drag
+
+export const REORDER_ANIMATION_MS = 200;
+export const DRAG_HANDLE_LABEL = 'Reordenar';
+
+/** Háptico al levantar y al soltar una fila (corre en el hilo de UI: worklet). */
+function onDragHaptic() {
+  'worklet';
+  scheduleOnRN(triggerHaptic, 'selection');
+}
+
+/** Manija de arrastre (44 × 44). Arranca el arrastre al apoyar el dedo. */
+function DragHandle() {
+  const drag = useReorderableDrag();
+  const { component } = useTheme();
+  return (
+    <Pressable
+      onPressIn={drag}
+      accessibilityRole="button"
+      accessibilityLabel={DRAG_HANDLE_LABEL}
+      accessibilityHint="Mantené apretado y arrastrá. También podés usar las acciones Mover arriba y Mover abajo."
+      style={[styles.handle, { width: component.hitSlop, height: component.hitSlop }]}
+      testID="favorito-drag-handle"
+    >
+      <Icon name="reordenar" size={24} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  handle: { alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
   emptyButtons: { alignItems: 'center' },
   noResults: { textAlign: 'center', padding: 16 },

@@ -309,9 +309,18 @@ Agregado en la tarea F4-LOW-C:
 | Frescura | `FreshnessLabel` arriba de la lista, con el `sourceTimestamp` más viejo de las filas visibles y el intervalo de `useRefreshInterval()`. Sin datos vivos no se muestra |
 | Pull to refresh | `RefreshControl` con `usePullToRefresh` e `invalidateRealtime` (estado, arribos y posiciones; los estáticos no se tocan) |
 
+Agregado en la tarea F4-HIGH-C (arrastre, 4.9):
+
+| Pieza | Qué hace |
+| --- | --- |
+| Arrastre | `ReorderableList` de `react-native-reorderable-list` 0.18.3 (JS puro) en lugar del `FlatList`. Solo en edición y sin filtro de búsqueda (`dragEnabled`). Al soltar, el orden nuevo va a `repository.reorder`, igual que "Mover arriba"/"Mover abajo" |
+| Manija | `dragHandle` de `FavoritoRow` (a través de `FavoritoItem`): botón de 44 × 44 con el ícono `reordenar` y la etiqueta "Reordenar"; arranca el arrastre al apoyar el dedo. Las acciones "Mover arriba"/"Mover abajo" siguen siendo la vía accesible |
+| Háptico y movimiento | Háptico de selección al levantar y al soltar (worklets `onDragStart`/`onDragEnd` con `scheduleOnRN`). Con Reducir movimiento, `animationDuration` 0 |
+| Gestos | La lista va dentro de un `GestureHandlerRootView` propio. Anidado bajo el de `_layout.tsx` no hace nada (RNGH lo detecta), y deja la pantalla montable sola en tests |
+| Jest | `test/mocks/reorderable-list.tsx`: la librería llama a `useAnimatedRef()` como función, y en Jest Reanimated devuelve un objeto. Tests en `test/favoritos-arrastre.test.tsx` |
+
 **Lo que queda:**
 
-- **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder`; las acciones "Mover arriba/abajo" tienen que seguir andando.
 - **Resuelto en 4.5 / F4-MID-D:** huérfanos de colectivos y el dato de las paradas (sus líneas) con el índice de colectivos.
 - **Limpieza hecha (F4-LOW-E):** `FavoritosScreen` ya no le pasa `orphan` a `FavoritoItem` y se borró `isOrphanColectivo`. `resolveFavorito` sigue devolviendo `orphan` porque `useFavoritoLiveData` lo usa para subte; la pantalla solo usa su `badge`.
 - **Servicio caído:** si **todas** las filas visibles con dato vivo fallan por un error reintentable (red, timeout, 5xx, 429), aparece una sola `Alert` "El servicio de la Ciudad no responde" con "Reintentar" (`invalidateRealtime`). Si anda al menos una fila, o el error es de contenido (404), no hay Alert y cada fila afectada dice "Sin información". El error se lee del estado de la query de cada fila (`servicio.ts`), porque `useFavoritoLiveData` no lo expone. Un huérfano no cuenta para la Alert (no pide datos vivos).
@@ -365,6 +374,7 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
 - **Colores de los trazos (N2, resuelta):** se usan los colores del GTFS con contorno del color de texto del tema y la letra de cada línea sobre el trazo. El detalle está en `briefs/README.md` y en `shared/map/README.md`.
 - **Gestos:** `GestureHandlerRootView` envuelve toda la app (`src/app/_layout.tsx`). El layout de siempre se llama `AppTree` y el `RootLayout` exportado solo lo envuelve.
 - **Jest:** MapLibre y `expo-location` están mockeados (`test/mocks/`). Los componentes del mapa se renderizan como `View` con `testID` (`maplibre-Layer-<id>`, `maplibre-GeoJSONSource-<id>`) y todas sus props. Lo que Jest no prueba (render real de los estilos, gesto de volver con el mapa, toques en el mapa) lo valida el coordinador en el dispositivo.
+- **4.6:** `MapView` suma `location` (pide el permiso en contexto con `useUbicacion().request()`), `bottomOffset` y `ref.centerOn`. `BottomPanel` es el panel inferior con tres alturas del detalle de línea de colectivos (§21).
 - **Pendiente:**
   - Autoalojar los tiles (PMTiles en R2, plan en `shared/map/README.md`).
   - Sumar los `.geojson` a `useStaticArchivo` (con última versión conocida) y sacar `useStaticGeoJson`.
@@ -413,9 +423,9 @@ Estado después de la reconciliación F4-MID-D.
 
 Queda pendiente, sacado de los README de cada feature.
 
-**En curso al cerrar esta tarea:**
-- **Mapa de línea de colectivos (4.6, high-dev):** `colectivos/[linea].tsx` con vehículos en vivo. Recibe `linea` = `lineaId` y `?parada=<paradaId>` para centrar (§19).
-- **Arrastre en Favoritos (4.9-drag, high-dev):** reemplaza el `FlatList` del bloque `// 4.9-drag`.
+**Hecho después (F4-HIGH-C):**
+- **Mapa de línea de colectivos (4.6):** `colectivos/[linea].tsx` con vehículos en vivo, panel inferior y selector de ramal (§21).
+- **Arrastre en Favoritos (4.9-drag):** `ReorderableList` en el bloque `// 4.9-drag` (§16).
 - **Integrado en `main` (F4-LOW-D):** la Alert única "El servicio de la Ciudad no responde" en Favoritos, el large title de Subtes con `headerLargeTitleEnabled` y `docs/11-prueba-manual.md`.
 
 **Para la Fase 5 (o cuando haya fuente):**
@@ -430,7 +440,7 @@ Queda pendiente, sacado de los README de cada feature.
   - el "Deshacer" de Ajustes se pierde al salir de la pantalla (F4-ajustes-1);
   - limpieza menor del huérfano (§16): `FavoritosScreen` deja de pasar `orphan`, y `resolveFavorito` deja de calcularlo.
 - **Colectivos:**
-  - con más de un ramal por número, la parada abre el primero en CABA (F4-colectivos-3); falta el selector de ramal en el detalle de línea;
+  - con más de un ramal por número, la parada abre el primero en CABA (F4-colectivos-3); el detalle de línea tiene selector de ramal (§21);
   - arribos por parada solo donde hay equivalencia (ADR-0006).
 - **Validación:**
   - dev build en el iPhone de cada ola;
@@ -439,3 +449,25 @@ Queda pendiente, sacado de los README de cada feature.
   - `audit` nativo de Impeccable;
   - pruebas E2E (no hay ninguna).
 - **Docs de otras features:** `features/ajustes/README.md` todavía lista como pendientes la fila Ubicación (4.7) y el progreso del índice (4.5). Las dos ya están hechas.
+
+## 21. Colectivos: línea y mapa
+
+Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada=<paradaId>`) monta `features/colectivos/LineaScreen.tsx`. El brief operativo, los estados con su copy y las suposiciones `F4-colectivos-mapa-1…11` están en el [README de Colectivos](../apps/mobile/src/features/colectivos/README.md), sección "Línea y mapa".
+
+| Pieza | Qué hace |
+| --- | --- |
+| `LineaScreen` | `usePosicionesLinea(lineaId, { enabled: useIsFocused() })`: polling solo con la pantalla a la vista (S10). Línea, ramales y paradas salen de `useIndiceColectivos()`; el recorrido, de `useStaticArchivoGrande('recorridos-colectivos.geojson')`; la posición de la persona, de `useUbicacion()` (solo en memoria). La cámara se encuadra una vez (parada, recorrido o vehículos) |
+| `MapaLinea` | Recorrido aproximado punteado, paradas desde zoom 14 y vehículos (círculo con el número, flecha ▲ solo si hay `rumbo`, atenuados por S31, feed viejo, sin conexión o actualización fallida). Con más de 80 vehículos se agrupan hasta zoom 13. Hit box de 44 |
+| `VehiculosSheet` | Encabezado siempre visible (insignia, ramal, cantidad, frescura, favorito, "Actualizar", avisos y el vehículo elegido con "Seguir"). Cuerpo con ramales y la lista accesible de vehículos |
+| `BottomPanel` (`shared/map`) | Panel con tres alturas, arrastrable y con un botón accesible en la manija (§18) |
+
+- **Sentido:** el feed no lo informa. Se ven todos los vehículos del ramal y el selector es de ramal.
+- **Interno:** es el `id` del vehículo del feed.
+- **Alertas de colectivos:** el contrato v1 no las trae.
+- **Tests:**
+  - `test/colectivos/linea.test.tsx` (16 casos), con `test/colectivos/lineaFixtures.tsx` (posiciones validadas con `PosicionesLineaResponseV1` y recorrido con `GeoJsonFeatureCollectionV1`).
+  - `src/features/colectivos/__tests__/lineaModel.test.ts`.
+- **A validar en el dispositivo:**
+  - que el panel y el mapa no compitan por los gestos;
+  - el gesto de volver con el mapa;
+  - el render de los marcadores y de la flecha cuando el feed traiga `rumbo`.
