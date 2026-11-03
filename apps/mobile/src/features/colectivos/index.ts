@@ -1,5 +1,5 @@
-// API pública de la feature de Colectivos (README.md). El detalle de línea (`LineaScreen`, mapa)
-// es de la tarea 4.6.
+// API pública de la feature de Colectivos (README.md). El detalle de línea con mapa (`LineaScreen`,
+// `MapaLinea`, `VehiculosSheet`) lo monta la ruta `colectivos/[linea].tsx` directo desde su archivo.
 export {
   ColectivosScreen,
   ERROR_INDICE,

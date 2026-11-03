@@ -2,7 +2,7 @@
 
 Guía para validar la Fase 4 con el dev client en el iPhone. Es una checklist: tildá cada casilla, y si algo no se ve como dice, andá al bloque [Qué anotar si algo falla](#qué-anotar-si-algo-falla). Lo que Jest no puede probar (mapa real, gestos, háptico, tab bar nativa, VoiceOver) está marcado con **📱**.
 
-Las pantallas de Colectivos (raíz, parada, línea con mapa) todavía no están integradas en `main`: se describen según el brief ([`briefs/02-colectivos.md`](briefs/02-colectivos.md)) y están marcadas **(a confirmar cuando se integre)**.
+Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectivos (raíz, parada y línea con mapa) y el arrastre de Favoritos. El detalle de cada una está en [`07-app.md`](07-app.md) y en el README de su feature.
 
 ## 0. Preparación
 
@@ -76,30 +76,39 @@ Las pantallas de Colectivos (raíz, parada, línea con mapa) todavía no están 
 - [ ] **Controles:** "Norte arriba" se toca bien (48 pt); "Centrar en mi ubicación" aparece solo si ya diste el permiso y **nunca lo pide**.
 - [ ] Con Reducir movimiento la cámara salta en lugar de animar.
 
-## 3. Colectivos (a confirmar cuando se integre)
+## 3. Colectivos
 
 ### Raíz
 
-- [ ] **Primer uso, descarga del índice (4.5):** "Preparando el listado de líneas y paradas…" con barra de progreso que avanza. La búsqueda se habilita al terminar. 📱 Probalo con la red lenta o cortá la red a mitad: tiene que mostrar "No pudimos descargar las líneas y paradas" con reintentar, y retomar al volver.
+- [ ] **Primer uso, descarga del índice (4.5):** "Preparando el listado de líneas y paradas…" con barra de progreso que avanza. La búsqueda se habilita al terminar. 📱 Probalo con la red lenta o cortá la red a mitad: tiene que mostrar "No pudimos descargar las líneas y paradas" con "Volver a intentar", y retomar al volver.
 - [ ] En **Ajustes → Índice de líneas y paradas** se ve la misma descarga con el progreso ("Descargando… 40 %") y el peso.
-- [ ] **Búsqueda local:** por número ("60"), por ramal o por calle. Sin resultados: "No encontramos «608». Probá con el número de línea o el nombre de una calle." Anda también en modo avión.
-- [ ] **📱 Paradas cercanas y permiso de ubicación pedido en contexto:** la app **no** pide la ubicación al abrirse. Recién al tocar "Paradas cercanas" (o "Activar") sale el diálogo del sistema ("Mientras se usa la app"). Con permiso: lista de paradas con distancia ("a 120 m") y las líneas que pasan.
-- [ ] **Sin permiso:** si tocás "No permitir", queda el bloque "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." con "Buscar a mano". Si ya lo negaste antes, el botón dice "Abrir configuración" y abre los Ajustes del iPhone.
-- [ ] **Fuera de CABA:** si la ubicación está fuera de la Ciudad (podés simular una ubicación en el simulador de Xcode), "No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires."
+- [ ] **Búsqueda local:** por número ("60"), por ramal o por calle (desde 3 caracteres para paradas). Sin resultados: "No encontramos «608». Probá con el número de línea o el nombre de una calle." Anda también en modo avión.
+- [ ] **📱 Paradas cercanas y permiso de ubicación pedido en contexto:** la app **no** pide la ubicación al abrirse. Recién al tocar "Activar" en el bloque de paradas cercanas sale el diálogo del sistema ("Mientras se usa la app"). Con permiso: las 10 paradas más cercanas con distancia ("a 120 m") y las líneas que pasan, y "Ver más" hasta 30.
+- [ ] **Sin permiso:** si tocás "No permitir", queda el bloque "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." con "Buscar a mano". Si ya lo negaste antes, el botón dice "Abrir configuración" y abre los Ajustes del iPhone; al volver, la pantalla se actualiza sola.
+- [ ] **Fuera de CABA:** con una ubicación fuera de la Ciudad (podés simularla en el simulador de Xcode): "No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires." con la búsqueda a mano disponible.
+- [ ] **Líneas recientes:** abrí una línea; al volver a la raíz aparece entre las últimas 5.
 
 ### Parada
 
-- [ ] Líneas que paran, con insignia tocable que abre la línea. Estrella de favorito. **No** hay arribos ni un "próximamente" (decisión N4).
+- [ ] Calle y altura, barrio, estrella de favorito y las líneas que paran, con insignia tocable que abre la línea **con la cámara en esa parada**.
+- [ ] **"Próximos arribos" solo si la respuesta los trae:** hoy lo normal es que **no** haya sección ni un "próximamente" (decisión N4). Si aparece, hasta 3 tiempos por línea con la frescura.
+- [ ] Una parada que ya no existe en el índice dice "No encontramos esta parada".
 
 ### Línea con mapa
 
-- [ ] **📱 Mapa a pantalla casi completa** con la línea, sus paradas y los colectivos activos como marcadores.
-- [ ] **📱 La `formSheet` deja tocar el mapa:** con la hoja a media altura, tiene que poder arrastrarse, hacer zoom y tocar marcadores del mapa que queda visible arriba. Si el mapa no responde con la hoja abierta, anotalo (hay un plan B documentado).
-- [ ] **📱 Tocar otro marcador** con la hoja abierta reemplaza el detalle; no apila hojas.
-- [ ] Tres alturas de la hoja: colapsada (encabezado, "18 colectivos en servicio", frescura, estrella), media (alertas, ramal) y expandida (lista de vehículos).
+- [ ] **📱 Mapa a pantalla casi completa** con el recorrido de la línea (punteado: es aproximado), las paradas (recién desde cierto zoom) y los colectivos activos como círculos con el número encima.
+- [ ] **📱 Panel inferior con tres alturas:** colapsado (insignia, ramal, "18 colectivos en servicio", frescura, estrella y "Actualizar"), medio (ramales y la nota del sentido) y expandido (lista de vehículos). Se arrastra desde la manija o el encabezado; el botón de la manija ("Ver más" / "Ver la lista completa" / "Ver menos") hace lo mismo sin arrastrar.
+- [ ] **📱 El panel y el mapa no compiten por los gestos:** arrastrar el panel no mueve el mapa, y arrastrar o hacer zoom en el mapa visible por encima del panel funciona con el panel en cualquier altura. En el nivel expandido, la lista scrollea sin mover el panel.
+- [ ] **📱 Gesto de volver:** desde el borde izquierdo vuelve a la pantalla anterior sin arrastrar el mapa.
+- [ ] **Seguir un vehículo:** tocá un colectivo en el mapa (o en la lista): se resalta y el panel muestra "Interno 1404 · actualizado hace 25 s" con **"Seguir"**. Con "Seguir" la cámara lo acompaña en cada actualización (📱 con un háptico de selección); con Reducir movimiento, la cámara salta. Volvé a tocar para dejar de seguir.
+- [ ] **Ramal:** si el número tiene más de un ramal, los `Chip`s del nivel medio cambian de ramal y la cámara se vuelve a encuadrar. Aparece la nota "El GPS de los colectivos no informa el sentido: ves los de las dos direcciones."
+- [ ] **Línea con muchos vehículos (más de 80):** los círculos se agrupan hasta cierto zoom; tocar un grupo acerca la cámara.
+- [ ] **Flecha de rumbo:** la flecha ▲ solo aparece si el vehículo trae rumbo; hoy el proxy no lo manda, así que **no** tenés que ver flechas (es lo esperado).
+- [ ] **"Centrar en mi ubicación"** en el mapa: pide el permiso en contexto la primera vez; con permiso centra el mapa y la lista suma "a 600 m de vos". Sin permiso no hay punto azul.
 - [ ] **Línea sin vehículos:** "No hay colectivos de esta línea con GPS activo ahora." (de noche, por ejemplo).
-- [ ] **Dato viejo / servicio caído:** marcadores atenuados + "El servicio de la Ciudad no responde" con "Reintentar".
-- [ ] **VoiceOver:** la hoja se anuncia como diálogo y al cerrarla el foco vuelve al mapa; la lista de vehículos da la misma información que el mapa.
+- [ ] **Dato viejo / servicio caído:** con el proxy apagado, los marcadores se atenúan y aparece "No pudimos actualizar. Mostramos lo último que sabemos." con "Reintentar"; con el feed de más de 10 minutos, "Las posiciones pueden no ser actuales". Sin datos en absoluto: mapa sin marcadores y `ErrorState` en el panel.
+- [ ] **Polling solo a la vista:** salí de la línea (a otra tab) y fijate en la terminal de `wrangler dev` que dejan de llegar pedidos de posiciones de esa línea.
+- [ ] **VoiceOver:** el panel se lee con su botón de la manija; la lista de vehículos da la misma información que el mapa ("Interno 1404, actualizado hace 25 segundos, a 600 metros de vos").
 
 ## 4. Favoritos
 
@@ -110,7 +119,7 @@ Las pantallas de Colectivos (raíz, parada, línea con mapa) todavía no están 
 - [ ] **Frescura:** arriba de la lista, "Actualizado hace N s" con el dato más viejo de las filas que se ven. Pull to refresh actualiza.
 - [ ] **Editar → Cambiar nombre:** sheet con contador "12/30"; no deja pasar de 30 (probá con emojis); "Guardar" lo muestra en la fila; campo vacío quita el alias; "Cancelar" no cambia nada.
 - [ ] **Editar → Quitar:** sale al instante, sin diálogo, y aparece "Quitaste «Casa»." con **Deshacer**. 📱 El aviso tiene que verse **por encima de la tab bar nativa**, sin taparse. Deshacer lo devuelve a su lugar.
-- [ ] **📱 Arrastre para reordenar** (cuando high-dev lo integre): en modo edición, agarrá el asa, el ítem se eleva con un háptico al levantar y otro al soltar; el orden queda guardado al cerrar y reabrir la app. Con Reducir movimiento no hay animación de reacomodo. **(a confirmar cuando se integre)**
+- [ ] **📱 Arrastre para reordenar:** en modo edición cada fila tiene una manija "Reordenar" de 44 × 44 a la izquierda; apoyá el dedo y arrastrá. La fila se eleva con un háptico al levantar y otro al soltar, y el orden queda guardado al cerrar y reabrir la app. Con Reducir movimiento no hay animación de reacomodo. Con un texto escrito en la búsqueda (más de 15 favoritos) el arrastre se desactiva a propósito.
 - [ ] **Búsqueda:** con más de 15 favoritos aparece el campo; filtra por alias y nombre sin tildes.
 - [ ] **Favorito huérfano:** no es fácil de forzar; si ves "Esta estación ya no figura en los datos oficiales", la fila no navega y tiene "Quitar".
 - [ ] **Servicio caído:** con **todos** los favoritos en vivo fallando (apagá `wrangler dev` y esperá un refresco) aparece **una sola** Alert "El servicio de la Ciudad no responde" con "Reintentar" y cada fila dice "Sin información". Si solo falla un tipo (por ejemplo, colectivos), no hay Alert: solo esas filas dicen "Sin información".

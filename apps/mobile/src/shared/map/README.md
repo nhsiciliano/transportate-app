@@ -1,6 +1,6 @@
 # `src/shared/map` — mapa compartido (tareas 4.0 y 4.3)
 
-Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/MapaRedScreen.tsx`) y, después, el de colectivos (4.6). Las dependencias nativas están en `apps/mobile/README.md`, "Dependencias nativas de la Fase 4".
+Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/MapaRedScreen.tsx`) y el de colectivos (4.6, `features/colectivos/LineaScreen.tsx`). Las dependencias nativas están en `apps/mobile/README.md`, "Dependencias nativas de la Fase 4".
 
 | Archivo                 | Qué exporta                                                                                                                                                  |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -108,7 +108,7 @@ Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRe
   - Los esquemas son `SubteRedGeoJsonV1` para la red y `GeoJsonFeatureCollectionV1`, una FeatureCollection mínima, para los recorridos.
   - Respeta la convención de `shared/static`: la versión sale de `archivos[archivo].url`, la key es `['static', 'archivo', <archivo>, <version>]`, con `staleTime: Infinity` y `gcTime` de 24 h, y en la caché va el dato solo.
   - Si el manifiesto no publica el archivo, devuelve `isLoadingError` con un `HttpError` 404 ("Esta información no está disponible por ahora.") en vez de quedar cargando.
-- **Pendiente:** sumar los `.geojson` a `useStaticArchivo` (con su última versión conocida) cuando `shared/static` acepte `GEOJSON_ESTATICOS_V1`. Los recorridos de colectivos (742 KB) entran en la estrategia de archivos grandes de 4.5.
+- **Pendiente:** sumar los `.geojson` a `useStaticArchivo` (con su última versión conocida) cuando `shared/static` acepte `GEOJSON_ESTATICOS_V1`. Los recorridos de colectivos (742 KB) ya van por la estrategia de archivos grandes (`useStaticArchivoGrande`, 4.5 y 4.6).
 
 ## Colectivos (4.6): cómo se usa
 
@@ -140,6 +140,8 @@ Implementado en `features/colectivos` (`LineaScreen.tsx`, `MapaLinea.tsx`, `Vehi
 
 ## Bottom sheet sobre el mapa (S24): sheet nativa, sin `@gorhom/bottom-sheet`
 
+> **Estado tras 4.6:** el detalle de línea de colectivos terminó usando el `BottomPanel` propio (ver arriba y F4-colectivos-mapa-1), no la `formSheet`. Esta sección queda como referencia para detalles pasajeros sobre un mapa, que todavía no usa ninguna pantalla.
+
 **Decisión:** el detalle sobre el mapa (parada, vehículo, estación) es una **ruta de Expo Router con `presentation: 'formSheet'`**, apilada sobre la ruta del mapa en el mismo `Stack`. **No se instala `@gorhom/bottom-sheet`.**
 
 Fuentes:
@@ -148,7 +150,7 @@ Fuentes:
 - react-native-screens 4.30.1 (Context7 `/software-mansion/react-native-screens`, escenario "largest undimmed detent index"): verifica que "the screen underneath stays interactive while the sheet is undimmed".
 - En **Android** lo confirmé en el código de la versión instalada: `bottomsheet/DimmingView.kt` bloquea gestos solo si su `alpha` no es 0, y `DimmingViewPointerEvents.kt` le pone `PointerEvents.NONE` cuando no atenúa. En **iOS** es `UISheetPresentationController.largestUndimmedDetentIdentifier`, el mismo mecanismo que usa Apple Maps.
 
-Configuración sugerida para 4.6:
+Configuración de referencia (no la usa 4.6):
 
 ```tsx
 <Stack.Screen

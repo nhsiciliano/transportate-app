@@ -2,7 +2,7 @@
 
 Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y tránsito de CABA en tiempo real, sin cuentas ni datos personales. Esta carpeta reúne todo lo que se decide, se investiga y se verifica a lo largo del proyecto. El trabajo avanza por fases con freno y validación al final de cada una (ver `00-plan.md`).
 
-**Estado:** **Fase 3 (base de la app) cerrada técnicamente el 2026-11-02, pendiente de validación; Fase 4 sin iniciar.** Las Fases 1 y 2 se cerraron el 2026-11-01 y el 2026-11-02. Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
+**Estado:** **Fase 4 (features) cerrada técnicamente el 2026-11-03, pendiente de validación del usuario en el iPhone ([`11-prueba-manual.md`](11-prueba-manual.md)); Fase 5 sin iniciar.** Las Fases 1, 2 y 3 se cerraron el 2026-11-01, el 2026-11-02 y el 2026-11-02 (la 3 la validó el usuario el 2026-11-03). Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
 
 ## Cómo leer esto
 
@@ -24,7 +24,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`00-plan.md`](00-plan.md) | Plan maestro: contexto, decisiones de arquitectura, fases, riesgos | ✅ |
-| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1, 2 y 3 cerradas técnicamente) |
+| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1 a 4 cerradas técnicamente) |
 | [`versiones.md`](versiones.md) | Versiones fijadas y verificadas con Context7, y lo pendiente de fijar | ✅ |
 
 ### Investigación (Fase 1)
@@ -58,7 +58,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 |---|---|---|
 | [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd con fixtures reales; Jest + RNTL en la app), cómo se corre y qué queda afuera | ✅ |
 | [`10-deploy.md`](10-deploy.md) | Despliegue del proxy en Cloudflare (entornos, R2, secrets, workflow manual de GitHub Actions) y operación sin datos personales | ✅ |
-| [`11-prueba-manual.md`](11-prueba-manual.md) | Checklist de prueba manual en el iPhone con el dev client (Fase 4): preparación, cómo forzar cada estado, qué tocar y qué debería verse por pantalla, y qué anotar si algo falla | ✅ |
+| [`11-prueba-manual.md`](11-prueba-manual.md) | Checklist de prueba manual en el iPhone con el dev client (Fase 4, todas las pantallas): preparación, cómo forzar cada estado, qué tocar y qué debería verse por pantalla, y qué anotar si algo falla | ✅ |
 | [`../apps/proxy/README.md`](../apps/proxy/README.md) | Rutas v1, headers, composición, rate limit y estáticos del Worker | ✅ |
 | [`06-proxy.md`](06-proxy.md) | Referencia del Worker: rutas, adaptadores, fuente con caché, estáticos, rate limit, límites de CPU, cómo agregar un servicio | ✅ |
 
@@ -76,14 +76,14 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 
 Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecuencias**. Los ADR no se reescriben: si una decisión cambia, se crea uno nuevo que reemplaza al anterior y se marca el estado.
 
-### Fase 3 (app)
+### Fases 3 y 4 (app)
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| [`07-app.md`](07-app.md) | Referencia de la app: estructura, navegación, providers, tema, fuentes, almacenamiento (MMKV), favoritos, decisiones y suposiciones de la Fase 3 | ✅ |
+| [`07-app.md`](07-app.md) | Referencia de la app: estructura, navegación, providers, tema, fuentes, almacenamiento (MMKV), favoritos, estático, ubicación, mapas, cada feature de la Fase 4 y el estado al cierre | ✅ |
 | [`08-design-system.md`](08-design-system.md) | Sistema de diseño en código: tokens, componentes de `shared/ui` y cuándo usarlos, accesibilidad, háptica e íconos (mapa curado) | ✅ |
 
-`09-testing.md` y `10-deploy.md` ya existen y se amplían en las Fases 3 a 5 (tests de la app con Jest + RNTL, EAS Build y OTA).
+`09-testing.md`, `10-deploy.md` y `11-prueba-manual.md` ya existen y se amplían en la Fase 5 (EAS Build y OTA, CI y la prueba manual de cada ola).
 
 ## Herramientas
 

@@ -232,13 +232,35 @@ Dependencias nativas de toda la Fase 4 en un solo commit, para reconstruir el de
 
 **Evaluadas y no instaladas:**
 
-- `@gorhom/bottom-sheet` 5.2.14. La sheet nativa de Expo Router (`presentation: 'formSheet'` + `sheetLargestUndimmedDetentIndex`) deja usar el mapa de fondo en iOS y Android. Plan B si en el dispositivo no anda.
-- `react-native-reorderable-list` 0.18.3. Es la elegida para 4.9, pero es puro JS: la instala 4.9 sin rebuild.
+- `@gorhom/bottom-sheet` 5.2.14. Descartada: el detalle de línea de colectivos (4.6) usa un `BottomPanel` propio (Gesture Handler + Reanimated, sin dependencia nueva) y no la `formSheet` nativa, que es una ruta modal y chocaba con el gesto de volver (F4-colectivos-mapa-1).
+- `react-native-reorderable-list` 0.18.3. Era la elegida para 4.9 y es puro JS: se instaló en 4.9 sin rebuild (ver abajo).
 - `react-native-draggable-flatlist` 4.0.3. Descartada: sin releases desde 2025-05.
 
 El detalle de estas decisiones está en `apps/mobile/src/shared/map/README.md`.
 
 **Sin `babel.config.js` ni cambios en `metro.config.js`.** `babel-preset-expo` 58.0.23 agrega `react-native-worklets/plugin` solo, y lo verifiqué: un bundle de prueba con `useAnimatedStyle` sale con `__workletHash`. Jest usa los setups oficiales de cada librería y un resolver propio (`apps/mobile/test/mocks/resolver.js`), porque con pnpm el resolver de Worklets confunde la carpeta de Reanimated con la suya.
+
+### Instalada después de 4.0: `react-native-reorderable-list` (tarea 4.9) — 2026-11-03
+
+| Paquete | Versión | Para qué tarea | Cómo se verificó |
+|---|---|---|---|
+| `react-native-reorderable-list` | **0.18.3** | 4.9 (arrastre en Favoritos) | npm (`apps/mobile/package.json`, versión exacta). Licencia MIT, publicada el 2026-11-01. Peers: `react: *`, `react-native: *`, `react-native-reanimated >=3.12.0` y `react-native-gesture-handler >=2.12.0`, que cumplen con Reanimated 4.7.1 y Gesture Handler 3.3.0. **Puro JS** (el paquete trae solo `lib/` y `src/`): no pidió rebuild del dev client. Context7 `/omahili/react-native-reorderable-list`. En Jest tiene mock propio (`test/mocks/reorderable-list.tsx`): la librería llama a `useAnimatedRef()` como función y en Jest Reanimated devuelve un objeto |
+
+### Resumen de las dependencias nuevas de la Fase 4
+
+Todas con versión exacta en `apps/mobile/package.json` y verificadas arriba. Revisadas contra `package.json` el 2026-11-03 al cierre de la fase: no falta ninguna.
+
+| Paquete | Versión | Tipo | Tarea | ¿Nativa? |
+|---|---|---|---|---|
+| `@maplibre/maplibre-react-native` | 11.5.1 | `dependencies` | 4.3, 4.6 | Sí |
+| `expo-location` | 58.0.20 | `dependencies` | 4.7 | Sí |
+| `react-native-reanimated` | 4.7.1 | `dependencies` | 4.6, 4.9 | Sí |
+| `react-native-worklets` | 0.13.0 | `dependencies` | 4.6, 4.9 | Sí |
+| `react-native-gesture-handler` | 3.3.0 | `dependencies` | 4.6, 4.9 | Sí |
+| `react-native-reorderable-list` | 0.18.3 | `dependencies` | 4.9 | No (JS puro) |
+| `@types/geojson` | 7946.0.16 | `devDependencies` | 4.3, 4.6 | No (tipos) |
+
+El único script nuevo es `"licencias"` (`node scripts/licencias.mjs`, sin dependencias). El dev client se reconstruyó una sola vez para todo lo nativo; ver la bitácora, Fase 4.
 
 ## Pendiente de fijar
 
@@ -250,7 +272,7 @@ Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al ini
 | 2 | Cómo testear Cache API y rate limit con `@cloudflare/vitest-plugin`; configuración compartida de ESLint/Prettier/TS en el monorepo | probar en `apps/proxy` |
 | 3 | `eas-cli` | consultar Context7 (solo se verificó la versión en npm) |
 | 3 | `react-native-nitro-modules` con `react-native-mmkv` en RN 0.88 | confirmar en el primer dev build (decisión 6); hasta ahora solo en Jest y `expo export` |
-| 4 | `@maplibre/maplibre-react-native` + `react-native-nitro-modules`/MMKV en el dev build con MapLibre | confirmar en el dev build de la ola 1 de la Fase 4 (instaladas en 4.0, ver arriba) |
+| 4 | `@maplibre/maplibre-react-native` + `react-native-nitro-modules`/MMKV en el dev build con MapLibre | el coordinador lanzó un segundo dev build en EAS (`cabc9c80`) con las dependencias nativas nuevas (ver bitácora); falta confirmar su comportamiento en el iPhone con `docs/11-prueba-manual.md` |
 | 5 | EAS Build / Update | si se usa OTA, declararlo en `05-privacidad.md` |
 
 Cada fila se cierra con: versión fijada, fecha, y fuente consultada.
