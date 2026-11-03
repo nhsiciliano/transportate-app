@@ -216,7 +216,26 @@ Cobertura de `apps/mobile` (informativa, sin umbral): 3.11 anotó 93,2 % stateme
 
 ## Fase 4 — Features
 
-_Iniciada el 2026-11-03._
+_Iniciada el 2026-11-03._ Coordinación con Orca (Run `run_6bc551486d73`), mismas sesiones que la Fase 3 (`low-dev`, `mid-dev`, `high-dev`). La tarea 4.1 (Impeccable) se reemplaza por un brief operativo en el README de cada feature, porque el skill no está disponible; la 4.8 (Tránsito) sigue diferida.
+
+### Integrado en `main`
+
+| Qué | Tarea | Worker | Commits / docs |
+| --- | --- | --- | --- |
+| Dependencias nativas de la fase en un solo commit: `@maplibre/maplibre-react-native` 11.5.1, `expo-location` 58.0.20 (permiso solo "mientras se usa", texto en voseo), `react-native-reanimated` 4.7.1 + `react-native-worklets` 0.13.0, `react-native-gesture-handler` 3.3.0; mocks de Jest; sheet nativa `formSheet` en lugar de `@gorhom/bottom-sheet`; `react-native-reorderable-list` elegida para 4.9 (puro JS, se instala en 4.9) | 4.0 (previa a 4.3/4.6/4.7/4.9) | high-dev | merge de `nhsiciliano/High-Dev` · [`../apps/mobile/src/shared/map/README.md`](../apps/mobile/src/shared/map/README.md), [`versiones.md`](versiones.md) |
+| Ajustes (tema, intervalo, índice estático, limpiar datos, borrar favoritos con diálogo nativo y Deshacer), Acerca de (atribución CC-BY-2.5-AR, "no es app oficial", privacidad, mapa, diseño), Licencias de terceros (`scripts/licencias.mjs` → `licencias.json`), `Snackbar`/`SnackbarProvider` compartido, 42 tests | 4.10 | low-dev | merge de `nhsiciliano/Low-Dev` · [`../apps/mobile/src/features/ajustes/README.md`](../apps/mobile/src/features/ajustes/README.md), [`07-app.md`](07-app.md) |
+
+### En curso
+
+- mid-dev: 4.2 Subtes completa + `shared/static` + `FavoriteToggle` + `OfflineBanner` global.
+- high-dev: 4.3 mapa de la red de subte sobre `shared/map`.
+- low-dev: 4.9 Favoritos base (sin arrastre ni datos vivos; el arrastre lo agrega high-dev y los datos vivos mid-dev).
+- Coordinador: segundo dev build de iOS en EAS (`cabc9c80`) con las dependencias nativas nuevas.
+
+### Hallazgos
+
+- Los tipos generados de rutas (`.expo/types/router.d.ts`, gitignored) quedan viejos cuando se agrega una ruta desde otro worktree y rompen `tsc` en el worktree del coordinador: se borran y `expo start` los regenera.
+- Con la máquina muy cargada (load average 40–65 con tres workers corriendo Jest a la vez), `integracion`, `navegacion` y `layout` de `apps/mobile` superan el timeout; pasan solos. Sigue siendo un riesgo de CI (ver Fase 3).
 
 ## Fase 5 — Pulido y escalado
 
