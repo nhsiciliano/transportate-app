@@ -151,6 +151,10 @@ Todos se construyen una vez en `shared/ui` (plan, tarea 3.7) y se usan igual en 
 ## Decisiones abiertas transversales
 
 - **N1** — Navegación cruzada entre tabs (ver arriba).
-- **N2** — Estilo de mapa claro/oscuro (Fase 4, tarea 4.3), incluido si los trazos de subte usan colores de GTFS o de señalética (`docs/02b-colores-subte.md:81`).
+- **N2 — RESUELTA (tarea 4.3, 2026-11-03):**
+  - **Estilo del mapa:** OpenFreeMap `positron` en claro y `dark` en oscuro. Cambia con el tema y el estilo oscuro existe, así que no hay que derivarlo.
+  - **Trazos de subte:** van con los **colores del GTFS** (`route_color` del estático, `02b-colores-subte.md` §3), no con los de señalética. La app no hardcodea colores de línea.
+  - **Contraste:** cada trazo lleva un contorno del color de texto del tema (oscuro sobre claro y claro sobre oscuro), que delimita A, H y Premetro sobre fondo claro y C y E sobre oscuro (WCAG 1.4.11), y la letra de la línea a lo largo, para que el color no sea la única pista.
+  - Detalle en `apps/mobile/src/shared/map/README.md`.
 - **N3 — RESUELTA (usuario, 2026-11-01):** `/transito/v1/cortes` devuelve 500 (`docs/01-api-transporte.md`). **Se oculta el tab Tránsito por ahora**: la barra queda con 4 destinos (Inicio, Colectivos, Subtes, Favoritos). El brief `04-transito.md` se conserva como diferido para cuando exista una fuente de cortes; nada de Tránsito se implementa en Fases 2–4.
 - **N4** — Si en el futuro aparece un feed de arribos de colectivos: dónde entra está marcado en `02-colectivos.md` y `05-favoritos.md`, pero **no** se diseña ni se promete.

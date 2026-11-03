@@ -191,7 +191,74 @@ export const IndiceColectivosArchivoV1 = z.object({
 });
 export type IndiceColectivosArchivoV1 = z.infer<typeof IndiceColectivosArchivoV1>;
 
-/** Esquema de cada archivo JSON del paquete (los GeoJSON no tienen contrato v1). */
+// ---------------------------------------------------------------- GeoJSON del paquete
+
+/** Posición GeoJSON `[lon, lat]` (RFC 7946 §3.1.1; una altura opcional se tolera). */
+const PosicionGeoJsonV1 = z.array(z.number()).min(2);
+
+const GeometriaGeoJsonV1 = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('Point'), coordinates: PosicionGeoJsonV1 }),
+  z.object({ type: z.literal('MultiPoint'), coordinates: z.array(PosicionGeoJsonV1) }),
+  z.object({ type: z.literal('LineString'), coordinates: z.array(PosicionGeoJsonV1).min(2) }),
+  z.object({
+    type: z.literal('MultiLineString'),
+    coordinates: z.array(z.array(PosicionGeoJsonV1).min(2)),
+  }),
+  z.object({ type: z.literal('Polygon'), coordinates: z.array(z.array(PosicionGeoJsonV1)) }),
+  z.object({
+    type: z.literal('MultiPolygon'),
+    coordinates: z.array(z.array(z.array(PosicionGeoJsonV1))),
+  }),
+]);
+
+/**
+ * `FeatureCollection` GeoJSON mínima (RFC 7946): valida la forma que necesita el mapa
+ * (tipo, geometría y coordenadas), no el contenido de `properties`. Para los `.geojson` del
+ * paquete que no tienen un esquema propio (`recorridos-colectivos.geojson`).
+ */
+export const GeoJsonFeatureCollectionV1 = z.object({
+  type: z.literal('FeatureCollection'),
+  features: z.array(
+    z.object({
+      type: z.literal('Feature'),
+      id: z.union([z.string(), z.number()]).optional(),
+      geometry: GeometriaGeoJsonV1,
+      properties: z.record(z.string(), z.unknown()).nullable(),
+    }),
+  ),
+});
+export type GeoJsonFeatureCollectionV1 = z.infer<typeof GeoJsonFeatureCollectionV1>;
+
+/** Trazo de una línea de subte en `subte-red.geojson` (lo genera tools/gtfs desde `shapes.txt`). */
+export const SubteRedFeatureV1 = z.object({
+  type: z.literal('Feature'),
+  geometry: z.object({
+    type: z.literal('LineString'),
+    coordinates: z.array(PosicionGeoJsonV1).min(2),
+  }),
+  properties: z.object({
+    linea: LineaSubteId,
+    routeId: z.string().min(1),
+    /** `route_color` del GTFS (docs/02b-colores-subte.md §3). */
+    color: HexColor,
+  }),
+});
+export type SubteRedFeatureV1 = z.infer<typeof SubteRedFeatureV1>;
+
+/** `subte-red.geojson`: un `LineString` por línea (los dos ramales del Premetro por separado). */
+export const SubteRedGeoJsonV1 = z.object({
+  type: z.literal('FeatureCollection'),
+  features: z.array(SubteRedFeatureV1),
+});
+export type SubteRedGeoJsonV1 = z.infer<typeof SubteRedGeoJsonV1>;
+
+/** Esquema de cada `.geojson` del paquete (lo usa `staticGeoJson` del cliente de la app). */
+export const GEOJSON_ESTATICOS_V1 = {
+  'subte-red.geojson': SubteRedGeoJsonV1,
+  'recorridos-colectivos.geojson': GeoJsonFeatureCollectionV1,
+} as const;
+
+/** Esquema de cada archivo JSON del paquete (los GeoJSON están en `GEOJSON_ESTATICOS_V1`). */
 export const ARCHIVOS_ESTATICOS_V1 = {
   'paradas.json': ParadasArchivoV1,
   'lineas-colectivos.json': LineasColectivoArchivoV1,
