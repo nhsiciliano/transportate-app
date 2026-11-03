@@ -32,6 +32,12 @@ Notas:
 ## 3. Qué nunca sale del teléfono
 
 - **La ubicación.** Se pide con permiso *"mientras se usa"* (`expo-location`), solo para encontrar paradas cercanas, y se mantiene **solo en memoria**: no se escribe en MMKV, no se loguea, no viaja en ninguna request a nuestro proxy. Las paradas cercanas se calculan **localmente** contra el índice estático. Si no hay permiso, hay búsqueda manual.
+  - **Permiso declarado (tarea 4.0, `apps/mobile/app.config.ts`):**
+    - iOS: solo `NSLocationWhenInUseUsageDescription`, con el texto "Transportate usa tu ubicación solo mientras la app está abierta, para mostrarte paradas cercanas. No sale de tu teléfono.". Las claves de "siempre" y de movimiento se borran del `Info.plist`, y no se declara el modo de ubicación en segundo plano.
+    - Android: `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION`, sin `ACCESS_BACKGROUND_LOCATION` ni servicio en primer plano.
+    - Verificado con `expo prebuild` el 2026-11-03.
+  - **Cuándo se pide:** en contexto, al tocar "Paradas cercanas" o "centrar en mí" (S32), nunca al abrir la app. Sin permiso, la app sigue andando.
+  - **El mapa no cambia nada de esto.** La posición que dibuja el mapa se procesa en el teléfono y no forma parte de las requests de tiles. Lo único que OpenFreeMap puede inferir es la zona que se está mirando, como con cualquier mapa (sección 4).
 - Los **favoritos y alias**.
 - Cualquier identificador del dispositivo.
 
@@ -42,7 +48,7 @@ Para pedir datos de una línea, la app envía solo el identificador público de 
 | Tercero | Qué ve | Mitigación |
 |---|---|---|
 | **Cloudflare** (infraestructura del proxy) | Como proveedor de red, procesa las conexiones, incluida la IP, según su propia política. Nuestro código no la lee ni la guarda | Configuración mínima de observabilidad (sección 6); revisar su política al publicar |
-| **OpenFreeMap** (tiles del mapa, mientras se use; ADR-0002) | El teléfono pide los tiles **directo** a ese servicio: ve la IP y, por los tiles pedidos, la zona que se mira | **(Decisión pendiente, Fase 4/5):** declararlo en "Acerca de" y migrar a tiles propios (PMTiles en R2, servidos por nuestro proxy) para sacarlo del camino |
+| **OpenFreeMap** (tiles del mapa, mientras se use; ADR-0002) | El teléfono pide el estilo, los tiles, las fuentes y los íconos del mapa **directo** a `tiles.openfreemap.org`, sin pasar por nuestro proxy. El servicio ve la IP y, por los tiles que se piden, la zona que se mira. No recibe la ubicación de la persona (la posición no viaja en esas requests), cookies ni identificadores: MapLibre no tiene telemetría y la app no agrega headers | Declararlo en "Acerca de" (4.10). **(Decisión pendiente, Fase 5):** migrar a tiles propios (PMTiles en R2, servidos por nuestro proxy) para sacarlo del camino |
 | **API Transporte del GCBA** (upstream) | Ve solo las requests del proxy con nuestras credenciales; nunca al teléfono | La app no habla con el upstream |
 | **Tiendas (App Store / Google Play)** | Datos de instalación según sus reglas | Fuera de nuestro control |
 | **Fuentes tipográficas** | Nada: Nunito y Open Sans se empaquetan en la app (no se descargan en ejecución) | — |

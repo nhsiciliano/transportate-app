@@ -217,6 +217,29 @@ Si la Fase 4 necesita animaciones o gestos (por ejemplo, el bottom sheet de S24)
 
 **Diferencias con lo planificado, en una línea:** (1) `react-dom` y `zod` se declararon de más respecto de 3.1; (2) se sumaron `@transportate/contracts` y `react-native-svg-transformer`; (3) `test-renderer` y `@react-native/jest-preset` quedan solo como peers resueltos por pnpm; (4) `react-native-gesture-handler` 3.4.0 y `react-native-worklets` 0.13.1 quedaron por encima de lo que fija el SDK; (5) Nitro 0.37.1 se confirmó solo en Jest, con el fallback 0.35.9 sin usar. `eas-cli` 27.2.0 no está en el monorepo (se corre con `npx eas-cli@27.2.0`).
 
+## Instaladas en la Fase 4 (tarea 4.0) — 2026-11-03
+
+Dependencias nativas de toda la Fase 4 en un solo commit, para reconstruir el dev client una sola vez. Las de Expo y Software Mansion se instalaron con `pnpm exec expo install` (versiones de `bundledNativeModules.json` del SDK 58) y después se pasaron a versión exacta. `npx expo install --check`: "Dependencies are up to date"; `npx expo-doctor`: 20/20.
+
+| Paquete | Versión | Para qué tarea | Cómo se verificó |
+|---|---|---|---|
+| `@maplibre/maplibre-react-native` | **11.5.1** | 4.3, 4.6 (ADR-0002) | npm (última). Peers: `expo >=54`, `react >=19.1`, `react-native >=0.80`, `@types/geojson ^7946`. Solo New Architecture. Context7 `/websites/maplibre_maplibre-react-native` (setup Expo: plugin obligatorio en iOS). No está en `bundledNativeModules.json`, así que `expo install` toma la última |
+| `@types/geojson` (dev) | **7946.0.16** | 4.3, 4.6 | Peer de MapLibre, declarado para tipar los GeoJSON propios. npm |
+| `expo-location` | **58.0.20** | 4.7 | `bundledNativeModules.json` (`~58.0.20`), Context7 `/websites/expo_dev` (config plugin) y lectura de `plugin/build/withLocation.d.ts` (opciones `locationWhenInUsePermission`, `…Always…: false`) |
+| `react-native-reanimated` | **4.7.1** | 4.6, 4.9 | `bundledNativeModules.json` (4.7.1). Peers: `react-native 0.86-0.88` y `react-native-worklets 0.13.x`. Context7 `/software-mansion/react-native-reanimated` (4.7.1: plugin en Worklets; guía de Jest) |
+| `react-native-worklets` | **0.13.0** | 4.6, 4.9 | `bundledNativeModules.json` (0.13.0; npm ya tiene 0.13.1). Antes era solo un peer resuelto en el lockfile, en 0.13.1 |
+| `react-native-gesture-handler` | **3.3.0** | 4.6, 4.9 | `bundledNativeModules.json` (`~3.3.0`; npm ya tiene 3.4.0). Antes era solo un peer en el lockfile, en 3.4.0, que no coincidía con el SDK. Context7 `/software-mansion/react-native-gesture-handler` (guía de testing, `jestSetup.js`) |
+
+**Evaluadas y no instaladas:**
+
+- `@gorhom/bottom-sheet` 5.2.14. La sheet nativa de Expo Router (`presentation: 'formSheet'` + `sheetLargestUndimmedDetentIndex`) deja usar el mapa de fondo en iOS y Android. Plan B si en el dispositivo no anda.
+- `react-native-reorderable-list` 0.18.3. Es la elegida para 4.9, pero es puro JS: la instala 4.9 sin rebuild.
+- `react-native-draggable-flatlist` 4.0.3. Descartada: sin releases desde 2025-05.
+
+El detalle de estas decisiones está en `apps/mobile/src/shared/map/README.md`.
+
+**Sin `babel.config.js` ni cambios en `metro.config.js`.** `babel-preset-expo` 58.0.23 agrega `react-native-worklets/plugin` solo, y lo verifiqué: un bundle de prueba con `useAnimatedStyle` sale con `__workletHash`. Jest usa los setups oficiales de cada librería y un resolver propio (`apps/mobile/test/mocks/resolver.js`), porque con pnpm el resolver de Worklets confunde la carpeta de Reanimated con la suya.
+
 ## Pendiente de fijar
 
 Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al inicio de cada fase):
@@ -227,8 +250,7 @@ Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al ini
 | 2 | Cómo testear Cache API y rate limit con `@cloudflare/vitest-plugin`; configuración compartida de ESLint/Prettier/TS en el monorepo | probar en `apps/proxy` |
 | 3 | `eas-cli` | consultar Context7 (solo se verificó la versión en npm) |
 | 3 | `react-native-nitro-modules` con `react-native-mmkv` en RN 0.88 | confirmar en el primer dev build (decisión 6); hasta ahora solo en Jest y `expo export` |
-| 3 | Alinear `react-native-gesture-handler`, `react-native-reanimated` y `react-native-worklets` al SDK | si la Fase 4 los usa, declararlos con `expo install` |
-| 4 | `@maplibre/maplibre-react-native`, `expo-location` | fijar al empezar la Fase 4 |
+| 4 | `@maplibre/maplibre-react-native` + `react-native-nitro-modules`/MMKV en el dev build con MapLibre | confirmar en el dev build de la ola 1 de la Fase 4 (instaladas en 4.0, ver arriba) |
 | 5 | EAS Build / Update | si se usa OTA, declararlo en `05-privacidad.md` |
 
 Cada fila se cierra con: versión fijada, fecha, y fuente consultada.

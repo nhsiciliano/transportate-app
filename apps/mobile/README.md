@@ -224,8 +224,30 @@ apps/mobile/
   - Marca de `design/brand/` centrada, 200 px de ancho, sobre `#ffffff` en claro y sobre `#1d3343` (primary de Obelisco) en oscuro (ver "Assets").
   - En Android, edge-to-edge es obligatorio desde RN 0.81; la opción `android.edgeToEdgeEnabled` ya no existe en `ExpoConfig` de SDK 58.
 - **Privacidad:**
-  - Sin `expo-updates`, analytics ni permisos declarados. La ubicación llega en la Fase 4 (`docs/05-privacidad.md`).
+  - Sin `expo-updates` ni analytics. El único permiso es la ubicación "mientras se usa" (ver "Dependencias nativas de la Fase 4" y `docs/05-privacidad.md` §3).
   - Sin fuentes descargadas por red: Nunito y Open Sans se empaquetan con `@expo-google-fonts/*` (tarea 3.4).
+
+## Dependencias nativas de la Fase 4
+
+Tarea 4.0. Están instaladas todas juntas para reconstruir el dev client **una sola vez** (EAS) antes de las features. Versiones y fuentes en [`docs/versiones.md`](../../docs/versiones.md), "Instaladas en la Fase 4". El plan del mapa está en [`src/shared/map/README.md`](src/shared/map/README.md).
+
+| Paquete | Versión | Config nativa | Para qué |
+|---|---|---|---|
+| `@maplibre/maplibre-react-native` | 11.5.1 | Plugin `@maplibre/maplibre-react-native` (en iOS agrega `$MLRN.post_install` al Podfile) | Mapas de subte (4.3) y colectivos (4.6), con tiles de OpenFreeMap |
+| `expo-location` | 58.0.20 | Plugin `expo-location`: solo `NSLocationWhenInUseUsageDescription`; sin "siempre", movimiento ni segundo plano | Paradas cercanas y "centrar en mí" (4.7) |
+| `react-native-reanimated` + `react-native-worklets` | 4.7.1 + 0.13.0 | Ninguna: `babel-preset-expo` agrega el plugin de Worklets solo | Bottom sheet y seguimiento (4.6), reorden (4.9) |
+| `react-native-gesture-handler` | 3.3.0 | Ninguna; falta `<GestureHandlerRootView>` en `_layout.tsx`, que lo agrega el primer uso | Gestos del mapa y reorden por arrastre |
+
+- **Después de cambiar algo de esta tabla** (versión o plugin) hay que reconstruir el dev client: `npx eas-cli@27.2.0 build --profile development`. Un `expo start` no alcanza.
+- **Sin `babel.config.js`** y sin cambios en `metro.config.js`.
+- **Comprobado:** `npx expo-doctor` 20/20, `expo export` para iOS y Android, y `expo prebuild --clean` (el `Info.plist` y el `AndroidManifest.xml` generados tienen solo los permisos de arriba, más los de la plantilla de Expo).
+- **Bottom sheet:** se usa la `formSheet` nativa de Expo Router; `@gorhom/bottom-sheet` no se instala.
+- **Reorden:** se usa `react-native-reorderable-list`, que es JS puro y la instala 4.9. Las dos decisiones están explicadas en `src/shared/map/README.md`.
+- **Jest:**
+  - `jest.setup.ts` registra el mock de MapLibre (`test/mocks/maplibre.tsx`) y el de `expo-location` (`test/mocks/expo-location.ts`, con `locationMock`). También carga `setUpTests()` de Reanimated, el mock oficial de Worklets y el `jestSetup` de Gesture Handler.
+  - `test/mocks/setup-after-env.ts` reinicia la ubicación y los refs del mapa antes de cada test.
+  - `test/mocks/resolver.js` compone el resolver de Reanimated con el del preset. Con pnpm, el de Worklets confundía la carpeta de Reanimated (`react-native-reanimated@…_react-native-worklets@…`) con la suya.
+  - Ejemplos de uso en `test/mocks/native-deps.test.tsx`.
 
 ## Íconos
 
