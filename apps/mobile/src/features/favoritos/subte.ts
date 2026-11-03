@@ -1,5 +1,7 @@
 // Qué dice el estático de subte sobre un favorito: el color de su insignia y si ya no existe
 // ("huérfano", brief `docs/briefs/05-favoritos.md`, estados). Puro: recibe la red ya armada.
+// `orphan` lo consume `useFavoritoLiveData` (único criterio de huérfano para los cuatro tipos);
+// la pantalla solo usa `badge`.
 import { isLineaKey, type LineaSubte, type RedSubte } from '@/features/subtes/model';
 
 import type { FavoritoV1 } from './model';
@@ -43,14 +45,10 @@ export function resolveFavorito(fav: FavoritoV1, red: RedSubte | undefined): Res
     }
     case 'linea_colectivo':
     case 'parada_colectivo':
-      // Gancho: se completa en 4.5, cuando la app tenga el índice de colectivos para comparar.
-      return { orphan: isOrphanColectivo() };
+      // Sin criterio acá: el estático de subte no dice nada de colectivos. Su huérfano (línea
+      // contra las vigentes del proxy, parada contra el índice) lo decide `useFavoritoLiveData`.
+      return { orphan: false };
   }
-}
-
-/** TODO(4.5): comparar con el índice estático de colectivos. Hoy nunca se marca huérfano. */
-function isOrphanColectivo(): boolean {
-  return false;
 }
 
 export function orphanMessage(fav: FavoritoV1): string {

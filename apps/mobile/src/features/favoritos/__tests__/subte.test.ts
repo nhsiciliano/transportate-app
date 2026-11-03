@@ -47,7 +47,7 @@ describe('resolveFavorito', () => {
     expect(resolveFavorito(fav('estacion_subte', '999'), undefined)).toEqual({ orphan: false });
   });
 
-  it('colectivos: gancho, hoy nunca huérfanos', () => {
+  it('colectivos: sin criterio acá (lo decide useFavoritoLiveData), sin insignia ni huérfano', () => {
     expect(resolveFavorito(fav('linea_colectivo', '60'), red)).toEqual({ orphan: false });
     expect(resolveFavorito(fav('parada_colectivo', '1'), undefined)).toEqual({ orphan: false });
   });

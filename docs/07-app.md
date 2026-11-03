@@ -313,7 +313,7 @@ Agregado en la tarea F4-LOW-C:
 
 - **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder`; las acciones "Mover arriba/abajo" tienen que seguir andando.
 - **Resuelto en 4.5 / F4-MID-D:** huérfanos de colectivos y el dato de las paradas (sus líneas) con el índice de colectivos.
-- **Limpieza menor:** `FavoritosScreen` todavía le pasa `orphan={resolved.orphan}` a `FavoritoItem`, que lo ignora; `resolveFavorito` puede dejar de devolver `orphan` y `isOrphanColectivo` (`subte.ts`) puede borrarse.
+- **Limpieza hecha (F4-LOW-E):** `FavoritosScreen` ya no le pasa `orphan` a `FavoritoItem` y se borró `isOrphanColectivo`. `resolveFavorito` sigue devolviendo `orphan` porque `useFavoritoLiveData` lo usa para subte; la pantalla solo usa su `badge`.
 - **Servicio caído:** si **todas** las filas visibles con dato vivo fallan por un error reintentable (red, timeout, 5xx, 429), aparece una sola `Alert` "El servicio de la Ciudad no responde" con "Reintentar" (`invalidateRealtime`). Si anda al menos una fila, o el error es de contenido (404), no hay Alert y cada fila afectada dice "Sin información". El error se lee del estado de la query de cada fila (`servicio.ts`), porque `useFavoritoLiveData` no lo expone. Un huérfano no cuenta para la Alert (no pide datos vivos).
 
 ## 16b. Ubicación

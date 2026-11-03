@@ -26,7 +26,7 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 | F4-favoritos-4 | El alias se edita en un `Modal` de React Native con `presentationStyle="formSheet"` (iOS); en Android ocupa la pantalla. No hay ruta nueva.                                                                                              |
 | F4-favoritos-5 | El `SnackbarProvider` se monta dentro de la pantalla (igual que Ajustes, F4-ajustes-1): el "Deshacer" vale mientras la persona siga en Favoritos.                                                                                        |
 | F4-favoritos-6 | En edición, tocar el texto de la fila también abre el alias (brief §3) además del botón "Cambiar nombre". Fuera de edición no hay long press ni menú contextual (queda para después).                                                    |
-| F4-favoritos-7 | **Resuelta para subte.** Un favorito huérfano se detecta contra el estático ya cargado (ver abajo). Los colectivos quedan sin detectar hasta 4.5, cuando exista el índice de colectivos en la app. |
+| F4-favoritos-7 | **Resuelta.** El huérfano se decide en un solo lugar, `useFavoritoLiveData` (`status: 'orphan'`), para los cuatro tipos (ver abajo). `FavoritoItem` lo lee de ahí y `FavoritosScreen` no lo calcula. |
 | F4-favoritos-8 | **Resuelta (F4-LOW-C).** Hay `FreshnessLabel` global y pull to refresh. |
 
 ## Colores de subte y favorito huérfano (tarea F4-LOW-C)
@@ -37,15 +37,15 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 |---|---|
 | Estático sin cargar o con error | Insignia neutra (la fila anda igual y se pinta síncrona; no hay skeleton) |
 | Línea o estación que existe | Insignia con el color de la línea |
-| **Huérfano**: el `refId` no existe en el estático cargado | "Esta estación ya no figura en los datos oficiales" (o "Esta línea ya no figura en los datos oficiales"), con ícono de alerta, y la fila **no navega**: tiene un botón "Quitar" siempre visible. Mantiene el alias y el nombre guardados |
-| Línea o parada de colectivo | Nunca se marca huérfana todavía: gancho `isOrphan` en `subte.ts`, se completa en 4.5 |
+| **Huérfano**: el destino no figura en los datos cargados | "Esta estación ya no figura en los datos oficiales" (o "Esta línea…" / "Esta parada…"), con ícono de alerta, y la fila **no navega**: tiene un botón "Quitar" siempre visible y no pide datos. Mantiene el alias y el nombre guardados |
+| Cómo se decide | **Un solo criterio, en `useFavoritoLiveData` (`status: 'orphan'`)**, para los cuatro tipos: línea o estación de subte contra el estático de subte; línea de colectivo contra las líneas vigentes del proxy; parada contra `paradas.json`. Sin el dato cargado no se afirma nada |
 
 **Suposiciones nuevas:**
 
 | # | Suposición |
 |---|---|
-| F4-favoritos-9 | El `refId` de una línea de subte es la clave de la app (`A`…`H`, `PM`) y el de una estación, su `id` del estático (`FavoriteToggle` los guarda así). Cualquier otro valor es huérfano. |
-| F4-favoritos-10 | Un huérfano de subte no abre el detalle (no existe) y se quita con un botón en la fila, con el mismo aviso "Quitaste «…». Deshacer" que en edición. Se espera a tener el estático cargado para marcarlo: con error de red no se marca nada. |
+| F4-favoritos-9 | El `refId` de una línea de subte es la clave de la app (`A`…`H`, `PM`) y el de una estación, su `id` del estático (`FavoriteToggle` los guarda así). Cualquier otro valor es huérfano (`resolveFavorito` en `subte.ts`, que usa el hook). |
+| F4-favoritos-10 | Un huérfano de subte no abre el detalle (no existe) y se quita con un botón en la fila, con el mismo aviso "Quitaste «…». Deshacer" que en edición. Se espera a tener el dato cargado para marcarlo: con error de red no se marca nada. |
 | F4-favoritos-11 | `FavoritosScreen` importa `useRedSubte` de `@/features/subtes/hooks` (no del índice de la feature) para no crear un ciclo: Subtes ya importa `FavoriteToggle` de acá. |
 | F4-favoritos-12 | Solo piden datos las filas visibles. Hasta que la lista informe cuáles se ven, se consideran visibles las primeras 10 (`INITIAL_VISIBLE`). La etiqueta de frescura toma la más vieja de las visibles; sin datos vivos no se muestra. El dato estático de la parada (sus líneas) no se repite como dato vivo. |
 | F4-favoritos-13 | **Alert única de servicio caído:** "El servicio de la Ciudad no responde" + "Reintentar" (`invalidateRealtime`) cuando TODAS las filas visibles con dato vivo están en `status: 'error'` por un error reintentable (`ApiError.retryable`: red, timeout, 5xx, 429). Un error de contenido (404) no cuenta, y una sola fila que ande la apaga. `useFavoritoLiveData` no expone el error, así que `FavoritoItem` lo lee del estado de la query de la fila (`servicio.ts › serviceHealth`), sin tocar el hook. Las filas siguen con "Sin información". |
@@ -66,7 +66,8 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 | `EditMode.tsx` | `EditModeProvider`, `useEditMode()` y `EditModeButton` (el "Editar"/"Listo" del header) |
 | `describe.ts`, `search.ts` | Textos, íconos y rutas por tipo; búsqueda sin tildes |
 | `servicio.ts` | `serviceHealth` / `isServiceDown`: decide si el servicio está caído para la Alert única |
-| `subte.ts` | `resolveFavorito`: color de la insignia de subte y detección de huérfanos contra el estático |
+| `subte.ts` | `resolveFavorito`: color de la insignia de subte y huérfano de subte contra el estático (lo consume `useFavoritoLiveData`), y `orphanMessage` |
+| `useFavoritoLiveData.ts`, `FavoritoLiveData.tsx` | Dato vivo por tipo y su presentación; deciden también el huérfano (mid-dev) |
 | `FavoritosProvider.tsx` | `FavoritosProvider` (recibe el repositorio por prop, default MMKV), `useFavoritos()` y `useFavoritosRepository()`                             |
 
 ## Reglas
@@ -103,7 +104,6 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 ## Qué falta (otras tareas)
 
 - **Arrastre (high-dev, `4.9-drag`):** reemplazar el `FlatList` de `FavoritosScreen` y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder(idsEnOrden)`. Las acciones "Mover arriba/abajo" ya existen y tienen que seguir funcionando.
-- **Colectivos (4.5):** completar `isOrphanColectivo` en `subte.ts` con el índice de colectivos y mostrar las líneas de la parada.
 
 ## Datos vivos (tarea 4.4)
 
@@ -114,14 +114,15 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 | `linea_subte` | `StatusChip` del estado (Premetro: el más severo de sus dos ramales) | `useEstadoSubtes` |
 | `estacion_subte` | Próximo arribo por sentido, el más cercano primero: "→ Leandro N. Alem 2 min · → Juan Manuel de Rosas 5 min". Sin arribos o con dato de más de 10 min: "Sin arribos informados" + antigüedad | `useArribosEstacion(refId)` |
 | `linea_colectivo` | "N en servicio" (vehículos del feed). El contrato no trae alertas de colectivos: no se muestra "con alertas" | `usePosicionesLinea(refId)` |
-| `parada_colectivo` | Solo el `subtitulo` guardado. El índice de paradas (`paradas.json`, 1,7 MB) llega con la tarea 4.5 | — |
+| `parada_colectivo` | Las líneas que paran (de `paradas.json`, archivo grande de `shared/static`); mientras no está descargado, el `subtitulo` guardado. Si la parada ya no figura: huérfano | `useStaticArchivoGrande` |
 
 - **Resultado:** `{ status, text, spoken, tone, sourceTimestamp, estado?, ageText? }`.
-  - `status`: `loading`, `ok`, `stale`, `error`, `static` o `none`.
+  - `status`: `loading`, `ok`, `stale`, `error`, `static`, `none` u `orphan`.
   - `spoken` es para la etiqueta de la fila ("Trabajo. Estación Medrano, Línea B. Hacia Leandro N. Alem en 2 minutos.").
 - **Estados:**
   - Carga: skeleton chico.
-  - Error: "Sin información" atenuado.
+  - Error: "Sin información" atenuado. Si fallan todas las filas visibles por un error reintentable, una sola `Alert` de servicio caído arriba de la lista (F4-favoritos-13).
+  - Huérfano: el aviso de arriba, sin pedir datos.
   - Dato viejo (más de 3 × intervalo, S6): atenuado + "hace 6 min".
 - **Solo lo visible:** con `enabled: false` no se pide nada. La lista de Favoritos pasa `enabled` según la visibilidad de la fila (o monta solo lo visible con `FlatList`).
 - **Accesibilidad:** `FavoritoLiveData` se oculta al lector, porque la fila arma su etiqueta con `spoken`. Para no calcular dos veces, la fila puede llamar al hook y pasarle el resultado con `live={…}`.

@@ -13,6 +13,7 @@ Ajustes, Acerca de y Licencias (tarea 4.10; brief [`docs/briefs/06-ajustes.md`](
 | Datos | Índice de líneas y paradas | "Versión del 12/10/2026 · 4,8 MB" · acción "Buscar actualización" |
 | Datos | Limpiar datos guardados | "Borra los datos de transporte guardados en tu teléfono. No toca tus favoritos." → aviso "Listo, limpiamos los datos guardados" |
 | Favoritos | Borrar todos los favoritos | Diálogo "¿Borrar todos tus favoritos?" (Cancelar / Borrar) → aviso "Borraste tus favoritos." + "Deshacer" |
+| Privacidad | Ubicación | Estado real del permiso: "Permitida mientras usás la app" · "No permitida" ("Podés buscar paradas a mano") · "Todavía no la pediste". Tocar pide el permiso o abre la configuración (F4-ubicacion-6) |
 | Información | Acerca de Transportate | — |
 
 **Estados de la fila del índice** (único dato remoto de la pantalla, `useManifest()`):
@@ -20,7 +21,7 @@ Ajustes, Acerca de y Licencias (tarea 4.10; brief [`docs/briefs/06-ajustes.md`](
 | Estado | Qué se ve |
 |---|---|
 | Carga (sin caché) | Indicador en la fila y "Buscando…". No hay skeleton de pantalla porque lo demás es local |
-| Datos | La versión y el peso. Con `downloadProgress` (lo pasa la tarea 4.5): "Descargando… 40 %" |
+| Datos | La versión y el peso. Mientras se baja un archivo grande de Colectivos (`shared/static`): "Descargando… 40 %"; "Buscar actualización" también baja la versión nueva de lo ya descargado |
 | Actualización fallida con datos | Se queda la versión y debajo: "No pudimos actualizar. Tocá para reintentar." |
 | Error sin datos | "No pudimos actualizar. Tocá para reintentar." y la acción pasa a "Reintentar" |
 | Sin conexión | La acción dice "Necesitás conexión" y la fila queda deshabilitada. El banner global lo pone otra capa |
@@ -49,7 +50,7 @@ Ajustes, Acerca de y Licencias (tarea 4.10; brief [`docs/briefs/06-ajustes.md`](
 | Archivo | Qué hay |
 |---|---|
 | `AjustesScreen.tsx` | Pantalla. Recibe `queryCacheStore` (el `KeyValueStore` de la caché persistida) para poder probarla sin MMKV |
-| `IndiceRow.tsx` | Fila del índice con sus estados; lista para que 4.5 le pase `downloadProgress` |
+| `IndiceRow.tsx` | Fila del índice con sus estados. Lee el avance de la descarga de `shared/static` (o el `downloadProgress` que le pasen) |
 | `AcercaScreen.tsx` | Acerca de. Versión con `expo-constants` (`expoConfig.version` + `nativeBuildVersion`) |
 | `LicenciasScreen.tsx`, `licencias.ts`, `licencias.json` | Pantalla, esquema Zod del JSON y el JSON generado |
 | `SettingsList.tsx` | `Section` y `Row`, las piezas de la lista agrupada (solo para estas pantallas) |
@@ -69,5 +70,4 @@ pnpm licencias
 
 ## Pendiente
 
-- `// TODO 4.7`: fila **Ubicación** (estado del permiso y enlace a la configuración del sistema) cuando llegue `expo-location`.
-- Progreso de descarga del índice (4.5).
+Nada propio de esta feature. Solo queda validar en el iPhone que el `Snackbar` quede por encima de la tab bar nativa y la fila Ubicación contra los permisos reales (ver [`docs/11-prueba-manual.md`](../../../../../docs/11-prueba-manual.md)).

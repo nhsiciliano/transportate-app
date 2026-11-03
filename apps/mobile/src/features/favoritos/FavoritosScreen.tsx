@@ -55,7 +55,8 @@ function FavoritosContent() {
   const snackbar = useSnackbar();
   const { favoritos, repository } = useFavoritos();
   const { editing, setEditing } = useEditMode();
-  // El color de las insignias de subte y los huérfanos salen del estático (F4-favoritos-9).
+  // El color de las insignias de subte sale del estático (F4-favoritos-9); el huérfano lo decide
+  // `useFavoritoLiveData` (único criterio, F4-favoritos-7).
   const { red } = useRedSubte();
   const queryClient = useQueryClient();
   const { seconds } = useRefreshInterval();
@@ -229,7 +230,6 @@ function FavoritosContent() {
               onTimestamp={onTimestamp}
               onHealth={onHealth}
               subteBadge={resolved.badge}
-              orphan={resolved.orphan}
               editing={editing}
               isFirst={!canMove || index === 0}
               isLast={!canMove || index === visible.length - 1}

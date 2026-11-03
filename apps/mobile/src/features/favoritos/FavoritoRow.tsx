@@ -4,7 +4,7 @@
 //   unidad: "Casa. Estación Medrano, línea B.".
 // - Edición: el texto abre el alias, hay botones "Cambiar nombre" y "Quitar", y las acciones de
 //   accesibilidad "Mover arriba" / "Mover abajo" (alternativa al arrastre).
-// - Slots: `liveData` (dato vivo, lo conecta la tarea de datos) y `dragHandle` (4.9-drag).
+// - Slots: `liveData` (dato vivo, lo conecta `FavoritoItem`) y `dragHandle` (4.9-drag).
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from 'react-native';
 
