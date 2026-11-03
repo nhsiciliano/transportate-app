@@ -1,13 +1,49 @@
 # features/favoritos
 
-Lógica de favoritos (tarea 3.10). Las pantallas llegan en la Fase 4, con las rutas en `src/app/(tabs)/favoritos/`. Todo se importa desde `@/features/favoritos`.
+## Brief operativo de la pantalla (tarea 4.9)
 
-| Archivo | Qué hay |
-|---|---|
-| `model.ts` | Esquemas Zod 4: `FavoritoV1`, `FavoritosDocV1 = { schemaVersion: 1, items }`, los tipos de favorito y `ALIAS_MAX_LENGTH` (30, suposición S16) |
-| `repository.ts` | Interfaz `FavoritosRepository` + `MmkvFavoritosRepository(store)` sobre un `KeyValueStore`, con la clave `transportate.favoritos.v1` |
-| `migrations.ts` | Migraciones `schemaVersion` N → N + 1. Hoy están vacías, porque la v1 es la primera versión |
-| `FavoritosProvider.tsx` | `FavoritosProvider` (recibe el repositorio por prop, default MMKV), `useFavoritos()` y `useFavoritosRepository()` |
+Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05-favoritos.md) (S14–S16, S19, S33). Esta primera parte no tiene datos vivos ni arrastre: los slots están listos para mid-dev (datos) y high-dev (arrastre).
+
+**Qué muestra:** una lista única, en el orden guardado, pintada síncrona desde MMKV (sin skeleton de estructura). Cada fila: ícono del tipo, `LineBadge` en las líneas, alias (o el nombre oficial) como texto principal, el nombre oficial y el subtítulo debajo cuando corresponde, y a la derecha el slot `liveData`. Toda la fila lleva al detalle del tipo. Con más de 15 favoritos aparece la búsqueda.
+
+| Estado                                 | Qué se ve y qué dice                                                                                                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vacío (0)                              | Estrella + "Todavía no guardaste favoritos." + "Tocá la estrella en una línea, parada o estación para tenerla acá." + botones "Ver subtes" y "Buscar colectivo". El botón Editar no se muestra               |
+| Normal                                 | La lista. Lector de pantalla: "Casa. Estación Medrano, línea B."                                                                                                                                             |
+| Edición                                | Botón "Listo" en el header. Cada fila: "Cambiar nombre" y "Quitar", más las acciones de accesibilidad "Mover arriba" y "Mover abajo". Hay un lugar para el handle de arrastre (`dragHandle`)                 |
+| Quitar                                 | Al instante, sin diálogo. Aviso "Quitaste «Casa». Deshacer" (8 s); "Deshacer" lo devuelve a su lugar                                                                                                         |
+| Alias                                  | Sheet con campo de 30 caracteres, contador "12/30", "Guardar" y "Cancelar". Vacío quita el alias                                                                                                             |
+| Búsqueda sin resultados                | "No encontramos favoritos con «xyz»."                                                                                                                                                                        |
+| Carga, error, dato viejo, sin conexión | **No aplican todavía**: no hay datos vivos. Los resuelve mid-dev dentro del slot `liveData` (skeleton propio, "Sin información", antigüedad) y con la Alert única del servicio. El `OfflineBanner` es global |
+
+**Suposiciones nuevas:**
+
+| #              | Suposición                                                                                                                                                                                                                               |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F4-favoritos-1 | El modo edición se comparte entre el header y la pantalla con un contexto (`EditModeProvider`, montado en el `_layout.tsx` de la pestaña). Sin favoritos el botón Editar no se muestra, y si la lista queda vacía se sale de la edición. |
+| F4-favoritos-2 | La línea de subte usa por ahora `LineBadge kind: 'colectivo'` (neutro): `shared/static` todavía no está en `main`. Cuando llegue (4.2), se pasa `kind: 'subte'` con `route_color` y `route_text_color` (`TODO` en `FavoritoRow.tsx`).    |
+| F4-favoritos-3 | El alias se corta en 30 **caracteres** (puntos de código, igual que el repositorio) mientras se escribe, sin usar `maxLength` del `TextInput` (contaría unidades UTF-16 y rompería los emojis).                                          |
+| F4-favoritos-4 | El alias se edita en un `Modal` de React Native con `presentationStyle="formSheet"` (iOS); en Android ocupa la pantalla. No hay ruta nueva.                                                                                              |
+| F4-favoritos-5 | El `SnackbarProvider` se monta dentro de la pantalla (igual que Ajustes, F4-ajustes-1): el "Deshacer" vale mientras la persona siga en Favoritos.                                                                                        |
+| F4-favoritos-6 | En edición, tocar el texto de la fila también abre el alias (brief §3) además del botón "Cambiar nombre". Fuera de edición no hay long press ni menú contextual (queda para después).                                                    |
+| F4-favoritos-7 | Un favorito huérfano (que ya no figura en el índice) se verá en una etapa posterior, cuando exista el estático; hoy toda fila navega.                                                                                                    |
+| F4-favoritos-8 | No hay `RefreshControl` ni `FreshnessLabel` global: sin datos vivos no tienen nada que refrescar. Mid-dev los agrega junto con los hooks.                                                                                                |
+
+## Lógica
+
+Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la ruta es `src/app/(tabs)/favoritos/index.tsx`. Todo se importa desde `@/features/favoritos`.
+
+| Archivo                 | Qué hay                                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model.ts`              | Esquemas Zod 4: `FavoritoV1`, `FavoritosDocV1 = { schemaVersion: 1, items }`, los tipos de favorito y `ALIAS_MAX_LENGTH` (30, suposición S16) |
+| `repository.ts`         | Interfaz `FavoritosRepository` + `MmkvFavoritosRepository(store)` sobre un `KeyValueStore`, con la clave `transportate.favoritos.v1`          |
+| `migrations.ts`         | Migraciones `schemaVersion` N → N + 1. Hoy están vacías, porque la v1 es la primera versión                                                   |
+| `FavoritosScreen.tsx` | La pantalla (lista, vacío, búsqueda, edición, quitar con Deshacer y sheet de alias) |
+| `FavoritoRow.tsx` | La fila, con los slots `liveData` y `dragHandle` y las acciones de accesibilidad "Mover arriba/abajo" |
+| `AliasSheet.tsx` | `Modal` con el campo de alias (30 caracteres, contador) |
+| `EditMode.tsx` | `EditModeProvider`, `useEditMode()` y `EditModeButton` (el "Editar"/"Listo" del header) |
+| `describe.ts`, `search.ts` | Textos, íconos y rutas por tipo; búsqueda sin tildes |
+| `FavoritosProvider.tsx` | `FavoritosProvider` (recibe el repositorio por prop, default MMKV), `useFavoritos()` y `useFavoritosRepository()`                             |
 
 ## Reglas
 
@@ -15,7 +51,7 @@ Lógica de favoritos (tarea 3.10). Las pantallas llegan en la Fase 4, con las ru
   - Agregar algo que ya existe devuelve el existente, sin duplicar.
   - `has(tipo, refId)` sirve para el estado del botón ☆/★.
 - **Se guardan `nombre` y `subtitulo`:** los ids del upstream pueden cambiar (`docs/01-api-transporte.md`), y así el favorito se puede seguir mostrando.
-- **Alias** (*suposición*): opcional. Se recorta y, si supera 30 caracteres (contados como caracteres, no como unidades UTF-16), se trunca. `null` o un texto vacío lo quita. El límite visible con contador lo pone la UI (brief de Favoritos).
+- **Alias** (_suposición_): opcional. Se recorta y, si supera 30 caracteres (contados como caracteres, no como unidades UTF-16), se trunca. `null` o un texto vacío lo quita. El límite visible con contador lo pone la UI (brief de Favoritos).
 - **Orden:** `orden` va de 0 a n−1 y se renumera en cada escritura.
   - `add` agrega al final.
   - `reorder(ids)` ignora los ids desconocidos y deja al final los que falten.
@@ -38,4 +74,10 @@ Lógica de favoritos (tarea 3.10). Las pantallas llegan en la Fase 4, con las ru
 
 ## Montaje
 
-`FavoritosProvider` todavía **no** está montado en `src/app/_layout.tsx`: lo hace la tarea de integración 3.11, junto con el ThemeProvider y el QueryClient.
+`FavoritosProvider` está montado en `src/app/_layout.tsx` (tarea 3.11). `EditModeProvider` se monta en `src/app/(tabs)/favoritos/_layout.tsx`, alrededor del `Stack`, para que el botón del header y la pantalla compartan el modo edición.
+
+## Qué falta (otras tareas)
+
+- **Datos vivos (mid-dev):** pasar `liveData` (y `liveDataLabel` para el lector) a `FavoritoRow` desde `FavoritosScreen`. Cada tipo tiene su dato: `StatusChip` en la línea de subte, próximo arribo en la estación, "N en servicio" en la línea de colectivo y las líneas que paran en la parada. También el `FreshnessLabel`, el pull to refresh, la Alert única del servicio y el favorito huérfano.
+- **Arrastre (high-dev, `4.9-drag`):** reemplazar el `FlatList` de `FavoritosScreen` y pasar `dragHandle` a `FavoritoRow`. El reorden se persiste con `repository.reorder(idsEnOrden)`. Las acciones "Mover arriba/abajo" ya existen y tienen que seguir funcionando.
+- **Color del subte (4.2):** `LineBadge kind: 'subte'` con los colores del estático (`TODO(4.2)` en `FavoritoRow.tsx`).
