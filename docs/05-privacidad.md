@@ -51,7 +51,7 @@ Para pedir datos de una línea, la app envía solo el identificador público de 
 | **OpenFreeMap** (tiles del mapa, mientras se use; ADR-0002) | El teléfono pide el estilo, los tiles, las fuentes y los íconos del mapa **directo** a `tiles.openfreemap.org`, sin pasar por nuestro proxy. El servicio ve la IP y, por los tiles que se piden, la zona que se mira. No recibe la ubicación de la persona (la posición no viaja en esas requests), cookies ni identificadores: MapLibre no tiene telemetría y la app no agrega headers | Declararlo en "Acerca de" (4.10). **(Decisión pendiente, Fase 5):** migrar a tiles propios (PMTiles en R2, servidos por nuestro proxy) para sacarlo del camino |
 | **API Transporte del GCBA** (upstream) | Ve solo las requests del proxy con nuestras credenciales; nunca al teléfono | La app no habla con el upstream |
 | **Tiendas (App Store / Google Play)** | Datos de instalación según sus reglas | Fuera de nuestro control |
-| **Fuentes tipográficas** | Nada: Nunito y Open Sans se empaquetan en la app (no se descargan en ejecución) | — |
+| **Fuentes tipográficas** | Nada: Fira Sans se empaqueta en la app (no se descargan en ejecución) | — |
 | **Actualizaciones OTA (EAS Update)** | Si se usaran, las consultas llegan a servidores de Expo | **(Decisión pendiente, Fase 5):** no usar OTA o declararlo |
 
 ## 5. Rate limiting sin persistir IPs

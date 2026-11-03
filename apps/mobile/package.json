@@ -13,8 +13,7 @@
     "licencias": "node scripts/licencias.mjs"
   },
   "dependencies": {
-    "@expo-google-fonts/nunito": "0.4.2",
-    "@expo-google-fonts/open-sans": "0.4.2",
+    "@expo-google-fonts/fira-sans": "0.4.1",
     "@maplibre/maplibre-react-native": "11.5.1",
     "@material-symbols/svg-400": "0.48.2",
     "@react-native-community/netinfo": "12.0.1",

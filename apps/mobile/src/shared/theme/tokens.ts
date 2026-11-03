@@ -7,8 +7,9 @@
 //
 // Decisiones que mandan sobre el doc (docs/00-plan.md, "Correcciones tras la Fase 1"):
 // - Identidad VIGENTE: primary #1d3343, secondary #035c80, tertiary #009688.
-// - Tipografía: Nunito (títulos) + Open Sans (texto), pesos 400/600/700. El doc §2 cita Archivo
-//   para títulos en el código vigente de Obelisco; la decisión del usuario es Nunito.
+// - Tipografía: Fira Sans en títulos y texto, pesos 400/600/700 (dirección «Señalética de
+//   terminal», Fase 5; reemplaza a Nunito + Open Sans). El doc §2 cita Archivo para títulos en el
+//   código vigente de Obelisco; la tipografía es libre por decisión del usuario (2026-11-03).
 
 // ---------------------------------------------------------------- 1. Primitivas
 
@@ -410,21 +411,21 @@ export type SchemeName = keyof typeof schemes;
 // ---------------------------------------------------------------- 3. Tipografía
 
 /**
- * Nombres de `fontFamily` que exportan @expo-google-fonts/nunito y /open-sans (0.4.2, Context7
- * /expo/google-fonts). En RN no hay cascada de pesos: cada peso es una familia distinta. Mientras
- * la fuente no está cargada, RN usa la del sistema (no rompe el layout).
+ * Nombres de `fontFamily` que exporta @expo-google-fonts/fira-sans (0.4.1). Una sola familia,
+ * tres pesos: `heading` y `text` apuntan a la misma; se separan para que la escala siga sabiendo
+ * qué es título (tope de Dynamic Type 1.2) y qué es texto (1.3). En RN no hay cascada de pesos:
+ * cada peso es una familia distinta. Mientras la fuente no está cargada, RN usa la del sistema
+ * (no rompe el layout).
  */
+const firaSans = {
+  400: 'FiraSans_400Regular',
+  600: 'FiraSans_600SemiBold',
+  700: 'FiraSans_700Bold',
+} as const;
+
 export const fontFamily = {
-  heading: {
-    400: 'Nunito_400Regular',
-    600: 'Nunito_600SemiBold',
-    700: 'Nunito_700Bold',
-  },
-  text: {
-    400: 'OpenSans_400Regular',
-    600: 'OpenSans_600SemiBold',
-    700: 'OpenSans_700Bold',
-  },
+  heading: firaSans,
+  text: firaSans,
 } as const;
 
 export type FontWeight = 400 | 600 | 700;

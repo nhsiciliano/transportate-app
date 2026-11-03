@@ -209,4 +209,4 @@ Reglas: `size` es 16, 20, 24 (default) o 32; el color sale siempre de los tokens
 
 - `@material-symbols/svg-400` declara **Apache-2.0** (campo `license` del `package.json` publicado y archivo `LICENSE` del paquete, consultados el 2026-11-02). Es una redistribución de los íconos de Google hecha por <https://github.com/marella/material-symbols>; el paquete no trae un archivo `NOTICE` (HTTP 404 en `NOTICE` y `NOTICE.md`).
 - Apache-2.0 permite uso comercial y redistribución, y pide conservar el aviso de licencia al redistribuir. Como los trazos quedan embebidos en la app, **la pantalla "Acerca de" tiene que mencionar "Íconos: Material Symbols (Google), licencia Apache 2.0" y enlazar al texto de la licencia** *(suposición: lo pide la licencia, pero la forma exacta es decisión del usuario; sumarlo al texto de `docs/05-privacidad.md` / Acerca de en la Fase 4)*.
-- Las tipografías Nunito y Open Sans (campo `license` de `@expo-google-fonts/nunito` y `/open-sans` en npm: `MIT AND OFL-1.1`) también van en esa lista de licencias.
+- La tipografía Fira Sans (campo `license` de `@expo-google-fonts/fira-sans` en npm: `MIT AND OFL-1.1`) también van en esa lista de licencias.

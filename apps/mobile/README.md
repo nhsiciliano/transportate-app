@@ -56,18 +56,18 @@ El identificador nativo `app.transportate.mobile` (`ios.bundleIdentifier` y `and
 
 ## Fuentes
 
-- **Familias:** Nunito para títulos y Open Sans para texto, en los pesos 400, 600 y 700. Son exactamente 6 archivos de `@expo-google-fonts/nunito` y `@expo-google-fonts/open-sans` 0.4.2, unos 0,79 MB en total.
-  - Se importan por subpath de peso (`@expo-google-fonts/nunito/600SemiBold`, etc.).
+- **Familia:** Fira Sans para títulos y texto, en los pesos 400, 600 y 700 (dirección «Señalética de terminal», Fase 5; antes Nunito + Open Sans). Son exactamente 3 archivos de `@expo-google-fonts/fira-sans` 0.4.1, unos 1,39 MB en total.
+  - Se importan por subpath de peso (`@expo-google-fonts/fira-sans/600SemiBold`, etc.).
   - Nunca se usa `@expo-google-fonts/dev`, que descarga las fuentes por red.
 - **Dónde está:** `src/shared/fonts`.
-  - `fontFamilies` tiene los nombres exactos: `fontFamilies.heading.bold` es `'Nunito_700Bold'`, `fontFamilies.body.regular` es `'OpenSans_400Regular'`, etc.
+  - `fontFamilies` tiene los nombres exactos: `fontFamilies.heading.bold` es `'FiraSans_700Bold'`, `fontFamilies.body.regular` es `'FiraSans_400Regular'`, etc. (`heading` y `body` apuntan a la misma familia).
   - `useAppFonts()` devuelve `{ loaded, error }`.
 - **Arranque (`src/app/_layout.tsx`):**
   - `SplashScreen.preventAutoHideAsync()` se llama en el scope del módulo.
   - El splash se oculta cuando las fuentes cargan **o fallan**. Si fallan, la app sigue con la fuente del sistema y el error se loguea solo en `__DEV__`.
 - **Por qué `useFonts` y no el config plugin de `expo-font`:**
   - La doc de Expo prefiere el plugin, que embebe las fuentes en el binario.
-  - Pero con el plugin, iOS toma el nombre de familia del archivo (p. ej. "Nunito") y Android el nombre del archivo ("Nunito_400Regular"), así que el `fontFamily` cambiaría según la plataforma.
+  - Pero con el plugin, iOS toma el nombre de familia del archivo (p. ej. "Fira Sans") y Android el nombre del archivo ("FiraSans_400Regular"), así que el `fontFamily` cambiaría según la plataforma.
   - Con `useFonts`, el nombre es el mismo en iOS, Android y Jest, y coincide con DESIGN.md §3.
   - Los `.ttf` igual viajan dentro de la app como assets del bundle; no hay descargas.
 - **Escala de fuente:** no hay un `maxFontSizeMultiplier` global. Lo aplica cada componente: 1,3 en texto y 1,2 en títulos (DESIGN.md §3.2).
@@ -226,7 +226,7 @@ apps/mobile/
   - En Android, edge-to-edge es obligatorio desde RN 0.81; la opción `android.edgeToEdgeEnabled` ya no existe en `ExpoConfig` de SDK 58.
 - **Privacidad:**
   - Sin `expo-updates` ni analytics. El único permiso es la ubicación "mientras se usa" (ver "Dependencias nativas de la Fase 4" y `docs/05-privacidad.md` §3).
-  - Sin fuentes descargadas por red: Nunito y Open Sans se empaquetan con `@expo-google-fonts/*` (tarea 3.4).
+  - Sin fuentes descargadas por red: Fira Sans se empaqueta con `@expo-google-fonts/fira-sans` (Fase 5; antes Nunito y Open Sans, tarea 3.4).
 
 ## Dependencias nativas de la Fase 4
 

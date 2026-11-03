@@ -163,7 +163,7 @@ const DEFAULT_THEME: Theme = buildTheme('light', 'system', () => undefined);
 
 /**
  * Estilo de texto de una variante (`heading.h1`, `headline.md`, `text.sm`…). En RN no hay cascada
- * de pesos: cada peso es una familia (`Nunito_700Bold`), así que no se setea `fontWeight`
+ * de pesos: cada peso es una familia (`FiraSans_700Bold`), así que no se setea `fontWeight`
  * (Android sintetiza negrita falsa si se combinan). Si la fuente todavía no cargó, RN usa la del
  * sistema con el mismo tamaño e interlineado.
  */

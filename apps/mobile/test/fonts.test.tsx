@@ -16,9 +16,16 @@ jest.mock('expo-font', () => {
 const useFontsMock = jest.mocked(useFonts);
 
 describe('fuentes', () => {
-  it('carga exactamente los 6 pesos y cada fontFamily tiene su asset', () => {
-    const families = [...Object.values(fontFamilies.heading), ...Object.values(fontFamilies.body)];
-    expect(families).toHaveLength(6);
+  it('carga exactamente los 3 pesos de Fira Sans y cada fontFamily tiene su asset', () => {
+    const families = new Set([
+      ...Object.values(fontFamilies.heading),
+      ...Object.values(fontFamilies.body),
+    ]);
+    expect([...families].sort()).toEqual([
+      'FiraSans_400Regular',
+      'FiraSans_600SemiBold',
+      'FiraSans_700Bold',
+    ]);
     expect([...families].sort()).toEqual(Object.keys(fontAssets).sort());
   });
 

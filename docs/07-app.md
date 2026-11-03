@@ -26,7 +26,7 @@ apps/mobile/
     ├── features/            # lógica por feature: inicio, colectivos, subtes, transito, favoritos, ajustes
     └── shared/
         ├── api/             # cliente del proxy y QueryClient (tarea 3.9)
-        ├── fonts/           # carga de Nunito y Open Sans
+        ├── fonts/           # carga de Fira Sans
         ├── icons/           # Icon + mapa curado de Material Symbols
         ├── static/          # paquete estático versionado: useStaticArchivo + última versión conocida (§13)
         ├── storage/         # KeyValueStore (MMKV), persister de queries, preferencias
@@ -105,10 +105,10 @@ Todos los providers reciben sus dependencias por prop, con un default de producc
 
 ## 5. Fuentes
 
-- **Qué se carga:** 6 archivos de `@expo-google-fonts` 0.4.2, `Nunito_400Regular`/`600SemiBold`/`700Bold` y `OpenSans_400Regular`/`600SemiBold`/`700Bold` (unos 0,79 MB).
+- **Qué se carga:** 3 archivos de `@expo-google-fonts/fira-sans` 0.4.1, `FiraSans_400Regular`/`600SemiBold`/`700Bold` (unos 1,39 MB). Una sola familia para títulos y texto: dirección «Señalética de terminal» (Fase 5, piloto en Inicio); antes, Nunito + Open Sans.
   - Se cargan con `useFonts` de `expo-font` en `src/shared/fonts`.
   - Viajan en el bundle: no hay descargas en ejecución.
-- **Nombres:** `fontFamilies` (`shared/fonts`) y `fontFamily` (`shared/theme/tokens.ts`) nombran las mismas 6 familias. Los componentes usan las del tema.
+- **Nombres:** `fontFamilies` (`shared/fonts`) y `fontFamily` (`shared/theme/tokens.ts`) nombran las mismas 3 familias (`heading` y `text` apuntan a Fira Sans; se mantienen separados por el tope de Dynamic Type). Los componentes usan las del tema.
 - **Por qué `useFonts` y no el plugin de `expo-font`:** con el plugin, el nombre de familia difiere entre iOS y Android.
 
 ## 6. Íconos

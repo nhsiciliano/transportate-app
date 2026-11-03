@@ -90,6 +90,8 @@ Registro de las versiones que usa (o usará) Transportate, con la fecha y la fue
 
 ### Fuentes (tarea 3.4)
 
+> Historial: en la Fase 5 (F5-HIGH-A) Nunito y Open Sans se reemplazaron por Fira Sans 0.4.1; ver «Fase 5: tipografía de la dirección…» más abajo.
+
 | Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
 |---|---|---|---|---|
 | **`@expo-google-fonts/nunito`** | **0.4.2** | 0.4.2 | Context7 `/expo/google-fonts` (patrón `useFonts`), npm, `data.jsdelivr.net` (listado de archivos) | Licencia `MIT AND OFL-1.1`. Se importa **por peso** (un subpath por archivo): `@expo-google-fonts/nunito/400Regular`, `/600SemiBold`, `/700Bold`. Cada uno exporta una constante con el mismo nombre que el `fontFamily` a usar (verificado en el `index.js` de cada subpath): **`Nunito_400Regular`**, **`Nunito_600SemiBold`**, **`Nunito_700Bold`**. Los `.ttf` pesan 132.200, 132.152 y 132.148 bytes. |
@@ -148,7 +150,7 @@ Carga: `import { useFonts } from '@expo-google-fonts/nunito/useFonts'` (también
 5. **Persister de TanStack Query:** `@tanstack/query-async-storage-persister` + `@tanstack/react-query-persist-client` con el adaptador de MMKV; no usar el persister síncrono (deprecado).
 6. **Nitro/MMKV:** fijar `react-native-nitro-modules@0.37.1` como dependencia directa y probar el primer dev build; fallback `0.35.9`. Es el riesgo abierto principal de esta tabla.
 7. **Alinear a la plantilla del SDK, no a `latest`:** `react` 19.3.0 (no 19.3.1) y `react-native-safe-area-context` 5.10.1 (no 5.11.0). Tras `npx expo install`, convertir los `~` en versión exacta y correr `npx expo install --check`.
-8. **Fuentes:** cargar solo los 6 archivos de arriba y usar los `fontFamily` `Nunito_*` / `OpenSans_*` tal cual figuran.
+8. **Fuentes:** cargar solo los 6 archivos de arriba y usar los `fontFamily` `Nunito_*` / `OpenSans_*` tal cual figuran. *(Reemplazadas por Fira Sans en la Fase 5: ver «Fase 5: tipografía…».)*
 9. **Antigüedad mínima de pnpm (1 día):** las versiones de esta tabla ya la cumplen; si 3.2 se corre en un día en que una versión de la tabla tuviera menos de 24 h (no es el caso hoy), esperar en lugar de agregarla a `minimumReleaseAgeExclude`.
 
 ## Instaladas en la Fase 3 (2026-11-02)
@@ -261,6 +263,18 @@ Todas con versión exacta en `apps/mobile/package.json` y verificadas arriba. Re
 | `@types/geojson` | 7946.0.16 | `devDependencies` | 4.3, 4.6 | No (tipos) |
 
 El único script nuevo es `"licencias"` (`node scripts/licencias.mjs`, sin dependencias). El dev client se reconstruyó una sola vez para todo lo nativo; ver la bitácora, Fase 4.
+
+## Fase 5: tipografía de la dirección «Señalética de terminal» (F5-HIGH-A) — 2026-11-03
+
+Reemplaza a Nunito y Open Sans (tarea 3.4; filas de arriba quedan como historial). Una sola familia en títulos y texto; la tipografía es libre por decisión del usuario (2026-11-03).
+
+| Paquete | Versión | Tipo | Fuente | Notas |
+|---|---|---|---|---|
+| **`@expo-google-fonts/fira-sans`** | **0.4.1** | `dependencies` | npm (`npm view @expo-google-fonts/fira-sans@0.4.1`); subpaths verificados en `node_modules` | Licencia `MIT AND OFL-1.1`. Se importa **por peso**: `@expo-google-fonts/fira-sans/400Regular`, `/600SemiBold`, `/700Bold`, que exportan **`FiraSans_400Regular`**, **`FiraSans_600SemiBold`**, **`FiraSans_700Bold`** (mismo patrón que nunito/open-sans, verificado en el `index.js` de cada subpath). `.ttf` de 440.984, 473.160 y 473.876 bytes (1.388.020 en total, ≈ 1,39 MB: cubre más glifos que Nunito/Open Sans). Carga con `useFonts` de `expo-font` en `src/shared/fonts`; nada se descarga por red. Sin itálicas ni otros pesos. |
+| ~~`@expo-google-fonts/nunito`~~ | — | quitada | — | Ya no se usa: Fira Sans la reemplaza en títulos. |
+| ~~`@expo-google-fonts/open-sans`~~ | — | quitada | — | Ya no se usa: Fira Sans la reemplaza en texto. |
+
+`licencias.json` se regeneró con `pnpm licencias` (30 paquetes).
 
 ## Pendiente de fijar
 

@@ -106,17 +106,17 @@ describe('ThemeProvider', () => {
 describe('textStyle', () => {
   it('usa una familia por peso (sin fontWeight) y los tamaños mobile de Obelisco', () => {
     expect(textStyle('heading.h1')).toEqual({
-      fontFamily: 'Nunito_700Bold',
+      fontFamily: 'FiraSans_700Bold',
       fontSize: 38,
       lineHeight: 48,
     });
     expect(textStyle('headline.md')).toEqual({
-      fontFamily: 'Nunito_600SemiBold',
+      fontFamily: 'FiraSans_600SemiBold',
       fontSize: 18,
       lineHeight: 24,
     });
     expect(textStyle('text.sm')).toEqual({
-      fontFamily: 'OpenSans_400Regular',
+      fontFamily: 'FiraSans_400Regular',
       fontSize: 14,
       lineHeight: 20,
     });

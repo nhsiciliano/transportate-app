@@ -190,12 +190,9 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@expo-google-fonts/nunito':
-        specifier: 0.4.2
-        version: 0.4.2
-      '@expo-google-fonts/open-sans':
-        specifier: 0.4.2
-        version: 0.4.2
+      '@expo-google-fonts/fira-sans':
+        specifier: 0.4.1
+        version: 0.4.1
       '@maplibre/maplibre-react-native':
         specifier: 11.5.1
         version: 11.5.1(@types/geojson@7946.0.16)(@types/react@19.3.0)(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
@@ -1117,11 +1114,8 @@ packages:
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
 
-  '@expo-google-fonts/nunito@0.4.2':
-    resolution: {integrity: sha512-1KCWphw/I2ugqfs9iRHUCkPTnomNgGPtF4AvqVquoEKxr0EL+mcLNLgeixsslbaSFevRR6/KJAE3sc8g0VaY0Q==}
-
-  '@expo-google-fonts/open-sans@0.4.2':
-    resolution: {integrity: sha512-gvhPqLXYnltWgll3iBwRGUwf5yN2HCh4mgQmFoQ8oU66LTs23oX4N7T3t0BDsKfP/1Z8F8+4c7wSkA11Nnk4kA==}
+  '@expo-google-fonts/fira-sans@0.4.1':
+    resolution: {integrity: sha512-zQVs67baYyBVEScaCGKG3MBtGe2hPNc7R3Axmj7JmWs310kOem4poL1mB+O52rwfFqiigzxV876BHFZBxoie1Q==}
 
   '@expo/cli@58.1.18':
     resolution: {integrity: sha512-voZUcir9mEwvLKBNqQM6Jy2Yp67z8ONmcINXb6ZrLMayb7yxzwvEnN0eeH8ADzUABKL288pv1eJ1WRqtYxXQ/Q==}
@@ -6440,9 +6434,7 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
-  '@expo-google-fonts/nunito@0.4.2': {}
-
-  '@expo-google-fonts/open-sans@0.4.2': {}
+  '@expo-google-fonts/fira-sans@0.4.1': {}
 
   '@expo/cli@58.1.18(@expo/dom-webview@58.0.2)(@expo/metro-runtime@58.0.16)(expo-constants@58.0.14)(expo-font@58.0.11(expo@58.0.22)(react-native@0.88.1(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0))(expo-router@58.0.29)(expo@58.0.22)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.1(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)(typescript@6.0.3)':
     dependencies:

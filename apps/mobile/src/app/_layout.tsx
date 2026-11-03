@@ -1,7 +1,7 @@
 // Layout raíz: un Stack que contiene el grupo de tabs y la pantalla de "no encontrado".
 // Áreas seguras con SafeAreaProvider y barra de estado automática (sigue el modo claro/oscuro).
 //
-// Fuentes (tarea 3.4): el splash nativo queda visible hasta que cargan Nunito y Open Sans. Si la
+// Fuentes (tarea 3.4): el splash nativo queda visible hasta que carga Fira Sans (3 pesos). Si la
 // carga falla, se oculta igual para no colgar la app, que sigue con la fuente del sistema.
 //
 // Providers (tarea 3.9), de afuera hacia adentro: áreas seguras → tema (Sistema/Claro/Oscuro,
