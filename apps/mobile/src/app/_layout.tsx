@@ -13,6 +13,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { FavoritosProvider } from '@/features/favoritos';
@@ -29,7 +30,7 @@ import { ThemeProvider } from '@/shared/theme';
 // (https://docs.expo.dev/versions/latest/sdk/splash-screen/).
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function AppTree() {
   const { loaded, error } = useAppFonts();
   const [themeStore] = useState(() => createThemePreferenceStore(getDefaultKeyValueStore()));
   const [intervalStore] = useState(() => createRefreshIntervalStore(getDefaultKeyValueStore()));
@@ -63,5 +64,14 @@ export default function RootLayout() {
         </QueryProvider>
       </ThemeProvider>
     </SafeAreaProvider>
+  );
+}
+
+// Gestos (mapa, reorden): RNGH solo los reconoce dentro de su raíz, que envuelve toda la app.
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppTree />
+    </GestureHandlerRootView>
   );
 }
