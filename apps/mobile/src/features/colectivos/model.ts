@@ -3,6 +3,8 @@
 // guarda en ningún lado (docs/05-privacidad.md).
 import type { LineaColectivoV1, ParadaV1 } from '@transportate/contracts';
 
+import { distanceMeters, type LatLon } from '../ubicacion/geo';
+
 /** Lo que trae `lineas-colectivos.json` (o `/v1/colectivos/lineas`, que no trae los extras). */
 export type LineaColectivoFuente = LineaColectivoV1 & {
   numero?: number | null;
@@ -172,35 +174,8 @@ export function buscar(
 
 // ---------------------------------------------------------------- cercanía
 
-export interface Punto {
-  latitude: number;
-  longitude: number;
-}
-
-const R_TIERRA = 6_371_000;
+// Geografía (haversine y el rectángulo de CABA): una sola fuente, `features/ubicacion/geo.ts`.
 const rad = (g: number) => (g * Math.PI) / 180;
-
-/** Distancia en metros (haversine). */
-export function distanceMeters(a: Punto, b: Punto): number {
-  const dLat = rad(b.latitude - a.latitude);
-  const dLon = rad(b.longitude - a.longitude);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(a.latitude)) * Math.cos(rad(b.latitude)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R_TIERRA * Math.asin(Math.sqrt(h));
-}
-
-/** Rectángulo que contiene a la Ciudad (con un margen de ~1 km). */
-const CABA = { minLat: -34.715, maxLat: -34.525, minLon: -58.54, maxLon: -58.33 };
-
-export function isInsideCaba({ latitude, longitude }: Punto): boolean {
-  return (
-    latitude >= CABA.minLat &&
-    latitude <= CABA.maxLat &&
-    longitude >= CABA.minLon &&
-    longitude <= CABA.maxLon
-  );
-}
 
 export interface ParadaCercana {
   parada: ParadaV1;
@@ -216,17 +191,16 @@ export const RADIO_CERCANAS_M = 1500;
  */
 export function paradasCercanas(
   paradas: readonly ParadaV1[],
-  punto: Punto,
+  punto: LatLon,
   limit: number,
   radio = RADIO_CERCANAS_M,
 ): ParadaCercana[] {
   const dLat = radio / 111_320;
-  const dLon = radio / (111_320 * Math.cos(rad(punto.latitude)));
+  const dLon = radio / (111_320 * Math.cos(rad(punto.lat)));
   const out: ParadaCercana[] = [];
   for (const p of paradas) {
-    if (Math.abs(p.lat - punto.latitude) > dLat || Math.abs(p.lon - punto.longitude) > dLon)
-      continue;
-    const metros = distanceMeters(punto, { latitude: p.lat, longitude: p.lon });
+    if (Math.abs(p.lat - punto.lat) > dLat || Math.abs(p.lon - punto.lon) > dLon) continue;
+    const metros = distanceMeters(punto, { lat: p.lat, lon: p.lon });
     if (metros <= radio) out.push({ parada: p, metros });
   }
   return out.sort((a, b) => a.metros - b.metros).slice(0, limit);

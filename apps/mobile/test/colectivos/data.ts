@@ -27,7 +27,7 @@ const parada = (
 });
 
 /** El Obelisco (posición por defecto del mock de expo-location). */
-export const OBELISCO = { latitude: -34.6037, longitude: -58.3816 };
+export const OBELISCO = { lat: -34.6037, lon: -58.3816 };
 
 export const paradasArchivo = ParadasArchivoV1.parse({
   version: 1,
@@ -39,6 +39,8 @@ export const paradasArchivo = ParadasArchivoV1.parse({
     parada('p-9dejulio', 'Av. 9 de Julio', 500, -34.6067, -58.3812, [10, 'EBUS']),
     // ~2,7 km: fuera del radio de 1,5 km.
     parada('p-plazaitalia', 'Av. Santa Fe', 3900, -34.5812, -58.4208, [152], 'Palermo'),
+    // La parada de los tests de Favoritos (low-dev).
+    parada('9002', 'Av. Rivadavia y Acoyte', null, -34.6185, -58.4366, [1, 25, 132], 'Caballito'),
     // Fuera de CABA (La Plata).
     parada('p-laplata', 'Calle 7', 800, -34.9205, -57.9536, [60], null),
   ],

@@ -189,7 +189,7 @@ describe('Colectivos (raíz): paradas cercanas', () => {
     await renderColectivos();
     await userEvent.setup().press(await screen.findByRole('button', { name: 'Buscar a mano' }));
     expect(screen.getByLabelText('Buscá una línea o parada')).toHaveProp('autoFocus', true);
-    expect(OBELISCO.latitude).toBeLessThan(0);
+    expect(OBELISCO.lat).toBeLessThan(0);
   });
 });
 
@@ -286,7 +286,12 @@ describe('favorito de parada', () => {
     await waitFor(() => {
       expect(result.current[0]?.text).toBe('Líneas 10, EBUS');
     });
-    expect(result.current[1]).toMatchObject({ status: 'orphan', text: HUERFANO, tone: 'muted' });
+    expect(result.current[1]).toMatchObject({
+      status: 'orphan',
+      text: 'Esta parada ya no figura en los datos oficiales',
+      tone: 'muted',
+    });
+    expect(HUERFANO).toBe('Ya no figura en los datos oficiales');
     expect(new MmkvFavoritosRepository(new MemoryKeyValueStore()).list()).toEqual([]);
   });
 });

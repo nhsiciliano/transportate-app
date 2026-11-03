@@ -18,12 +18,7 @@ import { DRAG_HANDLE_LABEL, REORDER_ANIMATION_MS } from '@/features/favoritos/Fa
 import { reorderableListMock } from './mocks/reorderable-list';
 import { createHarness, defaultRoutes } from './subtes/fixtures';
 
-// El mock compartido (test/mocks/reorderable-list.tsx). Hasta que `jest.setup.ts` lo registre para
-// toda la suite, este archivo lo activa por su cuenta.
-jest.mock('react-native-reorderable-list', () =>
-  jest.requireActual<object>('./mocks/reorderable-list'),
-);
-
+// `react-native-reorderable-list` usa el mock global (jest.setup.ts → test/mocks/reorderable-list.tsx).
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));

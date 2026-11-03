@@ -304,7 +304,7 @@ Agregado en la tarea F4-LOW-C:
 | Pieza | Qué hace |
 | --- | --- |
 | Colores de subte | La línea y la estación de subte usan `LineBadge kind="subte"` con `color` y `colorTexto` del estático (`useRedSubte()`, `subte.ts › resolveFavorito`). Sin el estático cargado, insignia neutra |
-| Favorito huérfano | Si el `refId` de una línea o estación de subte no existe en el estático cargado: "Esta estación ya no figura en los datos oficiales" (o "línea"), sin navegar y con "Quitar" siempre visible. Para colectivos hay un gancho (`isOrphanColectivo`) que se completa en 4.5 |
+| Favorito huérfano | **Un solo criterio** (F4-MID-D): lo decide `useFavoritoLiveData` (`status: 'orphan'`) para los cuatro tipos. Subte: el `refId` no está en el estático (`resolveFavorito` con `useRedSubte`). Línea de colectivo: no está entre las líneas vigentes del proxy (`useLineasColectivo`). Parada: no está en el índice (`paradas.json`). Sin el dato cargado no se marca nada. `FavoritoItem` lo lee de ahí y `FavoritoRow` muestra "Esta parada/estación/línea ya no figura en los datos oficiales", sin navegar y con "Quitar" siempre visible. Un huérfano no pide datos vivos |
 | Datos vivos | `FavoritoItem` llama a `useFavoritoLiveData` por fila y le pasa `liveData` y `liveDataLabel` (lo que lee el lector) a `FavoritoRow`. Solo piden datos las filas visibles (`onViewableItemsChanged`; hasta que la lista informe, las primeras 10). El dato estático de la parada no se repite |
 | Frescura | `FreshnessLabel` arriba de la lista, con el `sourceTimestamp` más viejo de las filas visibles y el intervalo de `useRefreshInterval()`. Sin datos vivos no se muestra |
 | Pull to refresh | `RefreshControl` con `usePullToRefresh` e `invalidateRealtime` (estado, arribos y posiciones; los estáticos no se tocan) |
@@ -321,8 +321,9 @@ Agregado en la tarea F4-HIGH-C (arrastre, 4.9):
 
 **Lo que queda:**
 
-- **4.5:** huérfanos de colectivos y el dato de las paradas con el índice de colectivos.
-- **Pendiente de decisión:** la Alert única "El servicio de la Ciudad no responde" del brief (hoy cada fila muestra "Sin información").
+- **Resuelto en 4.5 / F4-MID-D:** huérfanos de colectivos y el dato de las paradas (sus líneas) con el índice de colectivos.
+- **Limpieza hecha (F4-LOW-E):** `FavoritosScreen` ya no le pasa `orphan` a `FavoritoItem` y se borró `isOrphanColectivo`. `resolveFavorito` sigue devolviendo `orphan` porque `useFavoritoLiveData` lo usa para subte; la pantalla solo usa su `badge`.
+- **Servicio caído:** si **todas** las filas visibles con dato vivo fallan por un error reintentable (red, timeout, 5xx, 429), aparece una sola `Alert` "El servicio de la Ciudad no responde" con "Reintentar" (`invalidateRealtime`). Si anda al menos una fila, o el error es de contenido (404), no hay Alert y cada fila afectada dice "Sin información". El error se lee del estado de la query de cada fila (`servicio.ts`), porque `useFavoritoLiveData` no lo expone. Un huérfano no cuenta para la Alert (no pide datos vivos).
 
 ## 16b. Ubicación
 
@@ -330,10 +331,10 @@ Agregado en la tarea F4-HIGH-C (arrastre, 4.9):
 
 | Pieza | Qué hace |
 | --- | --- |
-| `usePermisoUbicacion()` | Solo el permiso: `permission` (`undetermined` / `granted` / `denied` / `blocked`), `canAskAgain`, `request()`, `refresh()`, `openSettings()`. Lee el permiso al montar **sin** abrir el diálogo y lo vuelve a leer cuando la app vuelve a primer plano |
-| `useUbicacion({ watch })` | Permiso + `position: { lat, lon, accuracy, timestamp } \| null`. Con permiso lee la posición y, si `watch` (default), se suscribe con `Accuracy.Balanced` (cada 10 s o 25 m). El `watch` se suelta al desmontar y en segundo plano |
+| `usePermisoUbicacion()` | Solo el permiso: `permission` (`undetermined` / `granted` / `denied` / `blocked`), `canAskAgain`, `checked` (ya se leyó el permiso real), `request()`, `refresh()`, `openSettings()`. Lee el permiso al montar **sin** abrir el diálogo y lo vuelve a leer cuando la app vuelve a primer plano |
+| `useUbicacion({ watch })` | Permiso + `position: { lat, lon, accuracy, timestamp } \| null` + `positionUnavailable` (con permiso, la lectura falló). Con permiso lee la posición y, si `watch` (default), se suscribe con `Accuracy.Balanced` (cada 10 s o 25 m). El `watch` se suelta al desmontar y en segundo plano. Colectivos usa `watch: false` (una lectura) |
 | `request()` | **Solo desde una acción de la persona** (S32): "Paradas cercanas", "centrar en mí" o la fila de Ajustes. Nunca al montar |
-| `isInsideCaba(lat, lon)` | Rectángulo lat −34,71 a −34,52 y lon −58,54 a −58,33 (el bbox con el que se relevó la Ciudad, `01b-gtfs-alternativos.md`). Para "Ubicación fuera de CABA" |
+| `isInsideCaba(lat, lon)` | Rectángulo lat −34,71 a −34,52 y lon −58,54 a −58,33 (el bbox con el que se relevó la Ciudad, `01b-gtfs-alternativos.md`). Para "Ubicación fuera de CABA". Es el **único** rectángulo de CABA para decidir: Colectivos lo usa directamente (el `CABA_BOUNDS` de `shared/map/styles.ts` es solo el encuadre de la cámara del mapa) |
 | `distanceMeters(a, b)` | Haversine, en metros |
 | `PermisoUbicacionBloque` | "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." + "Activar" (o "Abrir configuración" si el sistema ya no deja preguntar) + "Buscar a mano" |
 
@@ -373,7 +374,7 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
 - **Colores de los trazos (N2, resuelta):** se usan los colores del GTFS con contorno del color de texto del tema y la letra de cada línea sobre el trazo. El detalle está en `briefs/README.md` y en `shared/map/README.md`.
 - **Gestos:** `GestureHandlerRootView` envuelve toda la app (`src/app/_layout.tsx`). El layout de siempre se llama `AppTree` y el `RootLayout` exportado solo lo envuelve.
 - **Jest:** MapLibre y `expo-location` están mockeados (`test/mocks/`). Los componentes del mapa se renderizan como `View` con `testID` (`maplibre-Layer-<id>`, `maplibre-GeoJSONSource-<id>`) y todas sus props. Lo que Jest no prueba (render real de los estilos, gesto de volver con el mapa, toques en el mapa) lo valida el coordinador en el dispositivo.
-- **4.6:** `MapView` suma `location` (pide el permiso en contexto con `useUbicacion().request()`), `bottomOffset` y `ref.centerOn`. `BottomPanel` es el panel inferior con tres alturas del detalle de línea de colectivos (§20).
+- **4.6:** `MapView` suma `location` (pide el permiso en contexto con `useUbicacion().request()`), `bottomOffset` y `ref.centerOn`. `BottomPanel` es el panel inferior con tres alturas del detalle de línea de colectivos (§21).
 - **Pendiente:**
   - Autoalojar los tiles (PMTiles en R2, plan en `shared/map/README.md`).
   - Sumar los `.geojson` a `useStaticArchivo` (con última versión conocida) y sacar `useStaticGeoJson`.
@@ -397,21 +398,59 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
   - Paradas cercanas: 10, con "Ver más" hasta 30. Tiene el bloque de permiso con "Activar", "Abrir configuración" y "Buscar a mano", y el caso fuera de CABA.
   - Líneas recientes (MMKV, `transportate.colectivos.recientes.v1`, Zod, 5) y favoritos de colectivo con su dato vivo.
   - Todo funciona sin red una vez descargado el índice.
-- **Ubicación (`useUbicacionCercana`):**
-  - Permiso "mientras se usa", pedido solo al tocar "Activar" (S32).
-  - Posición única con precisión `Balanced`, solo en memoria.
-  - Es un mínimo propio de la feature hasta que `features/ubicacion` esté en `main`.
+- **Ubicación:** `useUbicacion({ watch: false })` y `PermisoUbicacionBloque` de `features/ubicacion` (§16b).
+  - Una sola lectura de la posición, precisión `Balanced`, solo en memoria.
+  - Permiso pedido solo al tocar "Activar" (S32). Con el permiso bloqueado, "Abrir configuración".
+  - Mientras se lee el permiso o la posición, skeleton. Si la posición falla (`positionUnavailable`), "No pudimos saber dónde estás…" con "Volver a intentar" y "Buscar a mano".
+  - `paradasCercanas` usa `distanceMeters` y "fuera de CABA" usa `isInsideCaba`, los de `features/ubicacion/geo.ts`.
 - **Parada:**
   - Calle y altura, barrio y `FavoriteToggle` (nombre = calle y altura; subtítulo = "Líneas 10, 60, 152").
   - Insignias de las líneas, que abren `/colectivos/[linea]` con `linea` = `lineaId` y el query param **`parada=<paradaId>`** (`PARAM_PARADA`), para que el mapa centre la cámara.
   - "Próximos arribos" (`useArribosParada`) **solo si hay arribos**: por línea hasta 3 tiempos, con `FreshnessLabel` y la Alert de actualización fallida. Vacío, cargando o con error sin datos, la sección no existe (N4).
-- **Favorito de parada:** `useFavoritoLiveData` muestra las líneas que paran desde el índice; si la parada ya no figura, `status: 'orphan'` ("Ya no figura en el listado").
+- **Favorito de parada:** `useFavoritoLiveData` muestra las líneas que paran desde el índice. Si la parada ya no figura, `status: 'orphan'`: es el mismo criterio único de huérfano de §16.
 - **Tests:**
   - `src/features/colectivos/__tests__/model.test.ts`.
   - `test/colectivos/largeFiles.test.tsx`.
   - `test/colectivos/pantallas.test.tsx`: índice descargando, error y listo; búsqueda; cercanas con y sin permiso y fuera de CABA; parada con y sin arribos; huérfano.
 
-## 20. Colectivos: línea y mapa
+## 20. Estado al cierre de la Fase 4
+
+Estado después de la reconciliación F4-MID-D.
+
+- Ubicación hay una sola: `features/ubicacion`.
+- El huérfano se decide en un solo lugar: `useFavoritoLiveData`, con `status: 'orphan'`.
+- Colectivos usa el índice real: `paradas.json` + `lineas-colectivos.json`, sin `indice-colectivos.json`.
+
+Queda pendiente, sacado de los README de cada feature.
+
+**Hecho después (F4-HIGH-C):**
+- **Mapa de línea de colectivos (4.6):** `colectivos/[linea].tsx` con vehículos en vivo, panel inferior y selector de ramal (§21).
+- **Arrastre en Favoritos (4.9-drag):** `ReorderableList` en el bloque `// 4.9-drag` (§16).
+- **Integrado en `main` (F4-LOW-D):** la Alert única "El servicio de la Ciudad no responde" en Favoritos, el large title de Subtes con `headerLargeTitleEnabled` y `docs/11-prueba-manual.md`.
+
+**Para la Fase 5 (o cuando haya fuente):**
+- **Tránsito (4.8):** diferido. No hay fuente de cortes (N3).
+- **Arribos de subte:** `forecastGTFS` está congelado upstream, así que la estación muestra "No hay próximos trenes informados" con el dato viejo. Hay que revisarlo cuando el feed vuelva.
+- **Subtes:**
+  - combinaciones ("Combinás con D") y "El servicio no está funcionando a esta hora", porque el estático no trae `transfers.txt` ni horarios;
+  - marcar en el diagrama las estaciones afectadas solo si la alerta trae `stop_id`.
+- **Mapa:** autoalojar los tiles (PMTiles en R2, `shared/map/README.md`), y el ícono de brújula si "Norte arriba" lo necesita (F4-mapa-4). Los `.geojson` ya se pueden bajar con `useStaticArchivoGrande`, con persistencia y versión.
+- **Favoritos:**
+  - menú contextual con long press (F4-inicio-1, F4-favoritos-6);
+  - el "Deshacer" de Ajustes se pierde al salir de la pantalla (F4-ajustes-1);
+  - limpieza menor del huérfano (§16): `FavoritosScreen` deja de pasar `orphan`, y `resolveFavorito` deja de calcularlo.
+- **Colectivos:**
+  - con más de un ramal por número, la parada abre el primero en CABA (F4-colectivos-3); el detalle de línea tiene selector de ramal (§21);
+  - arribos por parada solo donde hay equivalencia (ADR-0006).
+- **Validación:**
+  - dev build en el iPhone de cada ola;
+  - VoiceOver y TalkBack en las pantallas principales;
+  - modo avión;
+  - `audit` nativo de Impeccable;
+  - pruebas E2E (no hay ninguna).
+- **Docs de otras features:** `features/ajustes/README.md` todavía lista como pendientes la fila Ubicación (4.7) y el progreso del índice (4.5). Las dos ya están hechas.
+
+## 21. Colectivos: línea y mapa
 
 Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada=<paradaId>`) monta `features/colectivos/LineaScreen.tsx`. El brief operativo, los estados con su copy y las suposiciones `F4-colectivos-mapa-1…11` están en el [README de Colectivos](../apps/mobile/src/features/colectivos/README.md), sección "Línea y mapa".
 
@@ -432,4 +471,3 @@ Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada
   - que el panel y el mapa no compitan por los gestos;
   - el gesto de volver con el mapa;
   - el render de los marcadores y de la flecha cuando el feed traiga `rumbo`.
-

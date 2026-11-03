@@ -6,14 +6,14 @@ Ubicación compartida (Fase 4, tarea 4.7 y fila de Ajustes). La usan Colectivos 
 
 **Qué hay:** un hook (`useUbicacion`), un hook solo de permiso (`usePermisoUbicacion`), dos funciones puras (`isInsideCaba`, `distanceMeters`) y un bloque de pantalla (`PermisoUbicacionBloque`). No tiene pantalla propia.
 
-| Estado del permiso                                                         | `permission`                  | Qué se ve (bloque / fila de Ajustes)                                                                                                                                                          |
-| -------------------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nunca se preguntó                                                          | `undetermined`                | Bloque: "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." + "Activar" y "Buscar a mano". Ajustes: "Todavía no la pediste" |
-| Permitido                                                                  | `granted`                     | El bloque no se muestra. Ajustes: "Permitida mientras usás la app"                                                                                                                            |
-| Negado, se puede volver a preguntar (Android)                              | `denied`                      | Igual que `undetermined`: "Activar" vuelve a mostrar el diálogo. Ajustes: "No permitida" + "Podés buscar paradas a mano"                                                                      |
-| Negado para siempre (iOS tras un "No permitir", o "No volver a preguntar") | `blocked`                     | Bloque: el mismo texto + "La ubicación está desactivada para Transportate." y botones "Abrir configuración" y "Buscar a mano". Ajustes: "No permitida"                                        |
-| Sin posición todavía (permitido)                                           | `granted`, `position: null`   | La pantalla que consume decide (indicador propio). El hook no inventa una posición                                                                                                            |
-| Fuera de CABA                                                              | `isInsideCaba(...) === false` | Lo muestra la pantalla de Colectivos: "No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires."                                                                           |
+| Estado del permiso                                                         | `permission`                  | Qué se ve (bloque / fila de Ajustes)                                                                                                                                                                 |
+| -------------------------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nunca se preguntó                                                          | `undetermined`                | Bloque: "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." + "Activar" y "Buscar a mano". Ajustes: "Todavía no la pediste"        |
+| Permitido                                                                  | `granted`                     | El bloque no se muestra. Ajustes: "Permitida mientras usás la app"                                                                                                                                   |
+| Negado, se puede volver a preguntar (Android)                              | `denied`                      | Igual que `undetermined`: "Activar" vuelve a mostrar el diálogo. Ajustes: "No permitida" + "Podés buscar paradas a mano"                                                                             |
+| Negado para siempre (iOS tras un "No permitir", o "No volver a preguntar") | `blocked`                     | Bloque: el mismo texto + "La ubicación está desactivada para Transportate." y botones "Abrir configuración" y "Buscar a mano". Ajustes: "No permitida"                                               |
+| Sin posición todavía (permitido)                                           | `granted`, `position: null`   | La pantalla que consume decide (indicador propio). El hook no inventa una posición. Si la lectura falló, `positionUnavailable: true` (Colectivos deja de mostrar "buscando…" y ofrece buscar a mano) |
+| Fuera de CABA                                                              | `isInsideCaba(...) === false` | Lo muestra la pantalla de Colectivos: "No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires."                                                                                  |
 
 **Reglas:** `request()` solo se llama desde una acción de la persona (S32); montar el hook nunca abre el diálogo del sistema. Al volver de la configuración del teléfono el permiso se vuelve a leer solo.
 
@@ -33,15 +33,17 @@ Ubicación compartida (Fase 4, tarea 4.7 y fila de Ajustes). La usan Colectivos 
 | Archivo                      | Qué hay                                                                                   |
 | ---------------------------- | ----------------------------------------------------------------------------------------- |
 | `geo.ts`                     | `CABA_BBOX`, `isInsideCaba(lat, lon)` y `distanceMeters(a, b)` (haversine)                |
-| `useUbicacion.ts`            | `usePermisoUbicacion()` (solo permiso) y `useUbicacion()` (permiso + posición en memoria) |
+| `useUbicacion.ts`            | `usePermisoUbicacion()` (permiso + `checked`) y `useUbicacion()` (permiso + posición en memoria + `positionUnavailable`) |
 | `PermisoUbicacionBloque.tsx` | Bloque con el texto, "Activar" / "Abrir configuración" y "Buscar a mano"                  |
 | `index.ts`                   | Exports públicos                                                                          |
 
 ## Uso
 
 ```tsx
-const { permission, canAskAgain, position, request, openSettings } = useUbicacion();
-if (permission !== 'granted') {
+const { permission, checked, position, positionUnavailable, request, openSettings } = useUbicacion();
+// Antes de leer el permiso real, `permission` es `undetermined` por default: esperá a `checked`
+// para no mostrar el bloque de permiso de más.
+if (checked && permission !== 'granted') {
   return (
     <PermisoUbicacionBloque
       permission={permission}
@@ -51,6 +53,12 @@ if (permission !== 'granted') {
     />
   );
 }
+// Con permiso: `position === null && !positionUnavailable` → "buscando…"; `positionUnavailable` → buscar a mano.
 ```
 
-`useUbicacion({ watch: false })` lee el permiso y la posición una sola vez, sin suscripción. Los tests cambian el estado con `locationMock` (`test/mocks/expo-location.ts`).
+| Campo | Qué es |
+|---|---|
+| `checked` | Ya se leyó el permiso real al menos una vez (desde `usePermisoUbicacion`, que también usa `useUbicacion`) |
+| `positionUnavailable` | Con permiso, la última lectura falló y no hay posición (servicios apagados, sin señal): deja de mostrarse "buscando…" y se ofrece buscar a mano (F4-ubicacion-5) |
+
+`useUbicacion({ watch: false })` lee el permiso y la posición una sola vez, sin suscripción (para pantallas que solo necesitan "dónde estoy ahora", como Colectivos). El `watch` queda para el mapa. Ajustes usa solo `usePermisoUbicacion()`, que no lee la posición. Los tests cambian el estado con `locationMock` (`test/mocks/expo-location.ts`).

@@ -18,6 +18,7 @@ import { useRefreshInterval } from '@/shared/query';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
 import {
+  Alert,
   Button,
   EmptyState,
   FreshnessLabel,
@@ -36,11 +37,14 @@ import { FavoritoItem } from './FavoritoItem';
 import { useFavoritos } from './FavoritosProvider';
 import type { FavoritoV1 } from './model';
 import { filterFavoritos, SEARCH_THRESHOLD } from './search';
+import { isServiceDown, type ServiceHealth } from './servicio';
 import { resolveFavorito } from './subte';
 
 /** Hasta que la lista informe qué filas se ven, se consideran visibles las primeras. */
 export const INITIAL_VISIBLE = 10;
 const VIEWABILITY = { itemVisiblePercentThreshold: 1 } as const;
+
+export const SERVICE_DOWN_MESSAGE = 'El servicio de la Ciudad no responde';
 
 export const EMPTY_TITLE = 'Todavía no guardaste favoritos.';
 export const EMPTY_MESSAGE = 'Tocá la estrella en una línea, parada o estación para tenerla acá.';
@@ -60,7 +64,8 @@ function FavoritosContent() {
   const snackbar = useSnackbar();
   const { favoritos, repository } = useFavoritos();
   const { editing, setEditing } = useEditMode();
-  // El color de las insignias de subte y los huérfanos salen del estático (F4-favoritos-9).
+  // El color de las insignias de subte sale del estático (F4-favoritos-9); el huérfano lo decide
+  // `useFavoritoLiveData` (único criterio, F4-favoritos-7).
   const { red } = useRedSubte();
   const queryClient = useQueryClient();
   const { seconds } = useRefreshInterval();
@@ -69,6 +74,19 @@ function FavoritosContent() {
   // Filas en pantalla (null = todavía no se sabe) y el dato más viejo de las que se ven.
   const [viewable, setViewable] = useState<ReadonlySet<string> | null>(null);
   const [stamps, setStamps] = useState<Readonly<Record<string, string>>>({});
+  // Salud del dato vivo de cada fila visible: si todas fallan por un error reintentable, el servicio
+  // está caído y se avisa una sola vez (en vez de una vez por fila).
+  const [health, setHealth] = useState<Readonly<Record<string, ServiceHealth>>>({});
+  const onHealth = useCallback((id: string, h: ServiceHealth | null) => {
+    setHealth((prev) => {
+      if (h === null) {
+        if (!(id in prev)) return prev;
+        return Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id));
+      }
+      return prev[id] === h ? prev : { ...prev, [id]: h };
+    });
+  }, []);
+  const serviceDown = isServiceDown(health);
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: readonly { key: string }[] }) => {
       setViewable(new Set(viewableItems.map((v) => v.key)));
@@ -159,6 +177,39 @@ function FavoritosContent() {
     repository.reorder(ids);
   };
 
+  // Encabezado de la lista: Alert de servicio caído, búsqueda y frescura (las filas no dependen de él).
+  const showHeader = showSearch || oldest !== null || serviceDown;
+  const listHeader = showHeader ? (
+    <View style={{ gap: space[2], marginBottom: space[2] }}>
+      {serviceDown ? (
+        <Alert
+          role="danger"
+          message={SERVICE_DOWN_MESSAGE}
+          icon={<Icon name="error" size={24} color={colors.role.danger.text} />}
+          action={{
+            label: 'Reintentar',
+            onPress: () => {
+              void invalidateRealtime(queryClient);
+            },
+          }}
+        />
+      ) : null}
+      {showSearch ? (
+        <SearchInput
+          value={query}
+          onChangeText={setQuery}
+          label="Buscar en favoritos"
+          placeholder="Buscar en favoritos"
+          icon={<Icon name="buscar" size={16} />}
+          clearIcon={<Icon name="limpiarBusqueda" size={20} />}
+        />
+      ) : null}
+      {oldest !== null ? (
+        <FreshnessLabel sourceTimestamp={oldest} intervalSeconds={seconds} />
+      ) : null}
+    </View>
+  ) : undefined;
+
   // 4.9-drag: el orden que queda al soltar se guarda igual que "Mover arriba / abajo".
   const dragEnabled = editing && canMove;
   const onReorder = ({ from, to }: ReorderableListReorderEvent) => {
@@ -191,25 +242,7 @@ function FavoritosContent() {
           initialNumToRender={20}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: space[3], gap: space[2] }}
-          ListHeaderComponent={
-            showSearch || oldest !== null ? (
-              <View style={{ gap: space[2], marginBottom: space[2] }}>
-                {showSearch ? (
-                  <SearchInput
-                    value={query}
-                    onChangeText={setQuery}
-                    label="Buscar en favoritos"
-                    placeholder="Buscar en favoritos"
-                    icon={<Icon name="buscar" size={16} />}
-                    clearIcon={<Icon name="limpiarBusqueda" size={20} />}
-                  />
-                ) : null}
-                {oldest !== null ? (
-                  <FreshnessLabel sourceTimestamp={oldest} intervalSeconds={seconds} />
-                ) : null}
-              </View>
-            ) : undefined
-          }
+          ListHeaderComponent={listHeader}
           ListEmptyComponent={
             <Text tone="secondary" style={styles.noResults}>
               {`No encontramos favoritos con «${query.trim()}».`}
@@ -225,8 +258,8 @@ function FavoritosContent() {
                 favorito={item}
                 visible={viewable === null ? index < INITIAL_VISIBLE : viewable.has(item.id)}
                 onTimestamp={onTimestamp}
+                onHealth={onHealth}
                 subteBadge={resolved.badge}
-                orphan={resolved.orphan}
                 editing={editing}
                 isFirst={!canMove || index === 0}
                 isLast={!canMove || index === visible.length - 1}

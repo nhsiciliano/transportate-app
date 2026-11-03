@@ -37,12 +37,20 @@ describe('useFavoritoLiveData', () => {
         '/v1/subtes/estado': () => jsonResponse(estado({ 'PM-S': { estado: 'demorada' } })),
       },
     );
-    expect(result.current.status).toBe('loading');
     await waitFor(() => {
       expect(result.current.status).toBe('ok');
     });
     expect(result.current.estado).toBe('demorada');
     expect(result.current.spoken).toBe('Estado: con demoras');
+  });
+
+  it('linea_subte: mientras no llega el estado, loading', async () => {
+    // Respuesta que nunca llega: el estado de carga no depende del timing del mock.
+    const { result } = await live(
+      { tipo: 'linea_subte', refId: 'A' },
+      { ...defaultRoutes(), '/v1/subtes/estado': () => undefined },
+    );
+    expect(result.current.status).toBe('loading');
   });
 
   it('linea_subte: dato viejo → atenuado con la antigüedad', async () => {
