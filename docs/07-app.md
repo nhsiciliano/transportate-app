@@ -50,7 +50,7 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | `/inicio`                                                       | Inicio (§15). Engranaje "Ajustes" en el header   | `(tabs)/inicio/index.tsx`                 |
 | `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
 | `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
-| `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos → línea → parada                      | `(tabs)/colectivos/…`                     |
+| `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos (§18) → línea (`lineaId`, `?parada=`) → parada | `(tabs)/colectivos/…`                     |
 | `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea (`A`…`H`, `PM`) → estación (§14)  | `(tabs)/subtes/…`                         |
 | `/subtes/mapa`                                                  | Mapa de la red (tarea 4.3), desde "Ver mapa"     | `(tabs)/subtes/mapa.tsx`                  |
 | `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
@@ -253,7 +253,16 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
   - si la versión no cambió, no se vuelve a bajar;
   - si cambió, se muestra la vieja mientras baja la nueva;
   - sin red o con el manifiesto caído, sigue andando aunque la caché persistida haya vencido.
-- Hoy lo usan `subte-lineas.json` (5 KB) y `subte-estaciones.json` (17 KB). Los archivos grandes de colectivos (tarea 4.5) necesitan otra estrategia: `LastKnownStore` es una interfaz que se puede implementar sobre `expo-file-system`.
+- Hoy lo usan `subte-lineas.json` (5 KB) y `subte-estaciones.json` (17 KB).
+
+**Archivos grandes** (tarea 4.5): `useStaticArchivoGrande(archivo)` tiene la misma forma que `useStaticArchivo`, más `progress` (0 a 1), `isDownloading` y `bytes`. Lo usan `paradas.json` (1,7 MB) y `lineas-colectivos.json` (161 KB).
+
+- **Fuera de la caché de TanStack Query:** su persister reescribe toda la caché en una clave cada vez que algo cambia.
+- **`LargeFileManager`:** guarda en MMKV un par de claves por archivo, con una sola versión: `transportate.static.file.<archivo>.data` (el cuerpo tal cual) y `.meta` (`{ version, savedAt, bytes }`, escrita al final).
+- **Validación:** con Zod solo al descargar. Al leer de MMKV no se vuelve a validar: `JSON.parse` de 1,7 MB tarda unos 6 ms en Node, y Zod sumaría unos 15 ms.
+- **Descarga:** por `XMLHttpRequest`, con progreso (`loaded / total`, o los `bytes` del manifiesto si no hay total). Una versión nueva baja en segundo plano y la vieja sigue hasta que termina.
+- **Ajustes:** `useStaticDownloadProgress` alimenta el "Descargando… 40 %" de la fila del índice.
+- **Detalle:** [README de `shared/static`](../apps/mobile/src/shared/static/README.md#archivos-grandes-tarea-45).
 
 ## 15. Subtes
 
@@ -313,3 +322,35 @@ Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `Favor
 - **Datos vivos de favoritos** (`features/favoritos/useFavoritoLiveData.ts`, [README](../apps/mobile/src/features/favoritos/README.md#datos-vivos-tarea-44)): estado de línea, próximo arribo por sentido, vehículos en servicio o el subtítulo guardado. Reutilizan las queries de cada feature, sin endpoints ni polling nuevos. Los usa también la pantalla de Favoritos (slot `liveData` de `FavoritoRow`).
 - **Pull to refresh:** `invalidateRealtime`, que refresca el estado del subte y los datos vivos activos.
 - **Tests:** `test/inicio.test.tsx` y `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx`.
+
+## 18. Colectivos
+
+`src/features/colectivos` ([README](../apps/mobile/src/features/colectivos/README.md): brief operativo, estados y suposiciones `F4-colectivos-1…7`), tareas 4.5, 4.7, 4.11 y 4.12. Rutas finas: `colectivos/index.tsx` monta `ColectivosScreen` y `colectivos/parada/[id].tsx` monta `ParadaScreen`. El detalle de línea con el mapa (`colectivos/[linea].tsx`, tarea 4.6) es de otra tarea.
+
+- **Índice (`useIndiceColectivos`):** `paradas.json` + `lineas-colectivos.json` como archivos grandes (§14).
+  - Si `/v1/colectivos/lineas` tiene dato, sus líneas reemplazan a las del archivo, porque los `route_id` se reasignan (`06-proxy.md` §6).
+  - `indice-colectivos.json` es del proxy; la app no lo usa.
+- **Modelo (`model.ts`, funciones puras):**
+  - `buildIndice`, `numerosDeParada`, `lineaParaNumero`.
+  - `buscar`, sin tildes y con ranking: número exacto, nombre exacto, número que empieza igual, y después ramal, cabecera o empresa. Paradas desde 3 caracteres.
+  - `paradasCercanas`: filtro por rectángulo + haversine, radio de 1,5 km. Con 7.027 paradas tarda menos de 1 ms en Node.
+  - `isInsideCaba`, `distanceMeters`, `formatDistancia`.
+- **Raíz:**
+  - Primer uso con "Preparando el listado de líneas y paradas…" y barra de progreso. Si falla, `ErrorState` "No pudimos descargar las líneas y paradas".
+  - Búsqueda local con resultados mezclados.
+  - Paradas cercanas: 10, con "Ver más" hasta 30. Tiene el bloque de permiso con "Activar", "Abrir configuración" y "Buscar a mano", y el caso fuera de CABA.
+  - Líneas recientes (MMKV, `transportate.colectivos.recientes.v1`, Zod, 5) y favoritos de colectivo con su dato vivo.
+  - Todo funciona sin red una vez descargado el índice.
+- **Ubicación (`useUbicacionCercana`):**
+  - Permiso "mientras se usa", pedido solo al tocar "Activar" (S32).
+  - Posición única con precisión `Balanced`, solo en memoria.
+  - Es un mínimo propio de la feature hasta que `features/ubicacion` esté en `main`.
+- **Parada:**
+  - Calle y altura, barrio y `FavoriteToggle` (nombre = calle y altura; subtítulo = "Líneas 10, 60, 152").
+  - Insignias de las líneas, que abren `/colectivos/[linea]` con `linea` = `lineaId` y el query param **`parada=<paradaId>`** (`PARAM_PARADA`), para que el mapa centre la cámara.
+  - "Próximos arribos" (`useArribosParada`) **solo si hay arribos**: por línea hasta 3 tiempos, con `FreshnessLabel` y la Alert de actualización fallida. Vacío, cargando o con error sin datos, la sección no existe (N4).
+- **Favorito de parada:** `useFavoritoLiveData` muestra las líneas que paran desde el índice; si la parada ya no figura, `status: 'orphan'` ("Ya no figura en el listado").
+- **Tests:**
+  - `src/features/colectivos/__tests__/model.test.ts`.
+  - `test/colectivos/largeFiles.test.tsx`.
+  - `test/colectivos/pantallas.test.tsx`: índice descargando, error y listo; búsqueda; cercanas con y sin permiso y fuera de CABA; parada con y sin arribos; huérfano.

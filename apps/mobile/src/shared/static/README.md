@@ -37,11 +37,37 @@ lineas.data.lineas; // SubteLineasArchivoV1
 
 ## Archivos grandes (tarea 4.5)
 
-Esto está pensado para los archivos chicos de subte (`subte-lineas.json` 5 KB, `subte-estaciones.json` 17 KB). Los de colectivos (`indice-colectivos.json` 234 KB, `paradas.json` 1,7 MB) no deberían pasar por la caché de TanStack Query, que se serializa entera en cada escritura del persister. Para extenderlo:
+`paradas.json` (1,7 MB) y `lineas-colectivos.json` (161 KB) **no** pasan por la caché de TanStack Query: su persister guarda toda la caché en una sola clave MMKV y la reescribe entera en cada cambio. Con 2 MB adentro, cada refresco del estado del subte reescribiría 2 MB.
 
-- `LastKnownStore` es una interfaz: se puede implementar sobre `expo-file-system` y guardar ahí el archivo grande.
-- El hook puede recibir opciones (por ejemplo, no guardar el dato en la caché de queries y leerlo del store) sin cambiar su resultado (`StaticQuery<T>`).
+```tsx
+const paradas = useStaticArchivoGrande('paradas.json');
+if (paradas.isPending) return <Progreso progress={paradas.progress} />; // 0 a 1, o null
+paradas.data?.paradas; // ParadasArchivoV1
+```
+
+- **`LargeFileManager`** (`largeFiles.ts`), uno por app:
+  - Guarda el estado de cada archivo: dato, versión, progreso y error. Las pantallas lo leen con `useSyncExternalStore`.
+  - El JSON se parsea una sola vez por sesión, y todas las pantallas comparten el mismo dato y el mismo progreso.
+- **MMKV por archivo, una versión:**
+  - `transportate.static.file.<archivo>.data` guarda el cuerpo tal cual llegó; `.meta` guarda `{ version, savedAt, bytes }`.
+  - La meta se escribe última: si la app se corta en el medio, la copia queda inválida y se vuelve a bajar.
+  - Una versión nueva pisa a la anterior, así que no se acumulan versiones.
+- **Por qué MMKV y no `expo-file-system`:**
+  - MMKV maneja bien valores de un par de MB.
+  - `expo-file-system` no está en el dev client actual: sumarlo obliga a reconstruirlo.
+  - Medido en Node: `JSON.parse` de `paradas.json` tarda unos 6 ms, y validarlo con Zod unos 15 ms más (en Hermes es varias veces más lento).
+- **Validación:** con Zod solo al descargar. Al leer de MMKV solo se chequea que sea JSON con `version: 1`; una copia rota se borra y se vuelve a bajar.
+- **Descarga con progreso** (`downloader.ts`):
+  - Usa `XMLHttpRequest`, porque el `fetch` de React Native no expone el cuerpo como stream.
+  - El avance sale de `loaded / total`. Si el servidor no informa el total (Cloudflare comprime), se usan los `bytes` del manifiesto. Queda topeado en 99 % hasta validar.
+  - Timeout de 60 s y el mismo criterio de privacidad que el cliente: solo `Accept`, y errores con la ruta plantilla.
+- **Versión nueva:** se baja en segundo plano y la vieja se sigue mostrando hasta que termina (`fromLastKnown: true`). Sin manifiesto (offline), se usa la copia guardada.
+- **Errores:** una versión cuya descarga falló no se reintenta sola en cada render; `refetch()` la reintenta.
+- **`useStaticDownloadProgress(archivos)`:** avance combinado, para la fila del índice en Ajustes.
+- **Tests:** `StaticStoreProvider` acepta `largeFiles` (un `LargeFileManager` con un descargador falso). Sin provider se usan MMKV y XHR.
 
 ## Tests
+
+- `test/colectivos/largeFiles.test.tsx`: descarga con progreso, persistencia por archivo, relectura sin descargar, versión nueva, errores y copia rota.
 
 `test/subtes/static.test.tsx`: versión resuelta con el manifiesto, query key con versión, última conocida de la misma versión (no vuelve a bajar), manifiesto caído con y sin copia, versión nueva con placeholder y copia rota.

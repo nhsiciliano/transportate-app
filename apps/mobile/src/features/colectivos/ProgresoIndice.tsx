@@ -17,6 +17,7 @@ export function ProgresoIndice({ progress, label }: { progress: number | null; l
         </SkeletonGroup>
       ) : (
         <View
+          testID="indice-barra"
           accessible
           accessibilityRole="progressbar"
           accessibilityLabel={label}
