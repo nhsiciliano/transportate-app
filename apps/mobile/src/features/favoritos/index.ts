@@ -1,4 +1,4 @@
-// API pública de la feature de favoritos: modelo, repositorio, provider y `FavoriteToggle`.
+// API pública de la feature de favoritos: modelo, repositorio, provider, `FavoriteToggle` y pantalla.
 export {
   ALIAS_MAX_LENGTH,
   FAVORITO_TIPOS,
@@ -26,3 +26,8 @@ export {
   SAVED_ANNOUNCEMENT,
   type FavoriteToggleProps,
 } from './FavoriteToggle';
+export { FavoritosScreen } from './FavoritosScreen';
+export { EditModeButton, EditModeProvider, useEditMode } from './EditMode';
+export { FavoritoRow, type FavoritoRowProps } from './FavoritoRow';
+export { AliasSheet, clampAlias, type AliasSheetProps } from './AliasSheet';
+export { filterFavoritos, SEARCH_THRESHOLD } from './search';
