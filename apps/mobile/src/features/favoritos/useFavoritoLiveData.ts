@@ -10,7 +10,12 @@
 import type { EstadoServicioV1 } from '@transportate/contracts';
 import { useEffect, useState } from 'react';
 
-import { useArribosEstacion, useEstadoSubtes, usePosicionesLinea } from '@/shared/api';
+import {
+  useArribosEstacion,
+  useEstadoSubtes,
+  useLineasColectivo,
+  usePosicionesLinea,
+} from '@/shared/api';
 import { useRefreshInterval } from '@/shared/query';
 import { useStaticArchivoGrande } from '@/shared/static';
 import { formatAge, freshnessLevel, STATUS } from '@/shared/ui';
@@ -25,6 +30,7 @@ import {
   isLineaKey,
 } from '../subtes/model';
 import type { FavoritoV1 } from './model';
+import { orphanMessage, resolveFavorito } from './subte';
 
 export type LiveDataStatus =
   | 'loading'
@@ -36,7 +42,8 @@ export type LiveDataStatus =
   /** El destino ya no está en el listado (parada que desapareció del índice). */
   | 'orphan';
 
-export const HUERFANO = 'Ya no figura en el listado';
+/** Copy genérico del huérfano; las filas usan `orphanMessage` ("Esta parada ya no figura…"). */
+export const HUERFANO = 'Ya no figura en los datos oficiales';
 
 export interface FavoritoLiveDataResult {
   status: LiveDataStatus;
@@ -70,6 +77,18 @@ export function useNow(ms: number): number {
   return now;
 }
 
+/** `resolveFavorito` y `orphanMessage` solo miran `tipo` y `refId`. */
+function asFavorito(f: Pick<FavoritoV1, 'tipo' | 'refId' | 'subtitulo'>): FavoritoV1 {
+  return {
+    id: `${f.tipo}:${f.refId}`,
+    tipo: f.tipo,
+    refId: f.refId,
+    nombre: f.refId,
+    orden: 0,
+    creadoEn: '',
+  };
+}
+
 const loading: FavoritoLiveDataResult = {
   status: 'loading',
   text: '',
@@ -97,9 +116,24 @@ export function useFavoritoLiveData(
   const { seconds } = useRefreshInterval();
   const now = useNow(15_000);
   const red = useRedSubte();
-  const estado = useEstadoSubtes({ enabled: enabled && tipo === 'linea_subte' });
-  const arribos = useArribosEstacion(tipo === 'estacion_subte' ? refId : null, { enabled });
-  const posiciones = usePosicionesLinea(tipo === 'linea_colectivo' ? refId : null, { enabled });
+  // Huérfano (único criterio, F4-favoritos-7): subte contra el estático de subte (el mismo
+  // `resolveFavorito` que da el color de la insignia); línea de colectivo contra las líneas
+  // vigentes del proxy; parada contra el índice de paradas. Sin el dato cargado no se afirma nada.
+  const subteOrphan =
+    (tipo === 'linea_subte' || tipo === 'estacion_subte') &&
+    resolveFavorito(asFavorito(favorito), red.red).orphan;
+  const lineasVivas = useLineasColectivo({ enabled: enabled && tipo === 'linea_colectivo' });
+  const lineaOrphan =
+    tipo === 'linea_colectivo' &&
+    lineasVivas.data !== undefined &&
+    !lineasVivas.data.lineas.some((l) => l.lineaId === refId);
+  const estado = useEstadoSubtes({ enabled: enabled && tipo === 'linea_subte' && !subteOrphan });
+  const arribos = useArribosEstacion(tipo === 'estacion_subte' ? refId : null, {
+    enabled: enabled && !subteOrphan,
+  });
+  const posiciones = usePosicionesLinea(tipo === 'linea_colectivo' ? refId : null, {
+    enabled: enabled && !lineaOrphan,
+  });
   // Solo carga el índice de paradas (1,7 MB) para favoritos de parada.
   const paradas = useStaticArchivoGrande('paradas.json', {
     enabled: enabled && tipo === 'parada_colectivo',
@@ -120,6 +154,17 @@ export function useFavoritoLiveData(
     };
   };
   const join = (...parts: string[]) => parts.filter((p) => p !== '').join(' · ');
+  const orphan = (): FavoritoLiveDataResult => {
+    const message = orphanMessage(asFavorito(favorito));
+    return {
+      status: 'orphan',
+      text: message,
+      spoken: message,
+      tone: 'muted',
+      sourceTimestamp: null,
+    };
+  };
+  if (subteOrphan || lineaOrphan) return orphan();
 
   switch (tipo) {
     case 'linea_subte': {
@@ -199,15 +244,7 @@ export function useFavoritoLiveData(
     case 'parada_colectivo': {
       if (paradas.data !== undefined) {
         const parada = paradas.data.paradas.find((p) => p.id === refId);
-        if (parada === undefined) {
-          return {
-            status: 'orphan',
-            text: HUERFANO,
-            spoken: HUERFANO,
-            tone: 'muted',
-            sourceTimestamp: null,
-          };
-        }
+        if (parada === undefined) return orphan();
         const lineas = describirLineas(numerosDeParada(parada));
         return {
           status: 'static',

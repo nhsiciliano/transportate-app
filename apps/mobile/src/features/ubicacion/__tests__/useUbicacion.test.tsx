@@ -235,6 +235,39 @@ describe('useUbicacion', () => {
     expect(result.current.permission).toBe('granted');
   });
 
+  it('positionUnavailable: con permiso y la lectura fallida; se limpia al leer bien', async () => {
+    locationMock.setPermission('granted');
+    locationMock.setPositionError(new Error('sin señal'));
+    const { result } = await renderHook(() => useUbicacion({ watch: false }));
+    await waitFor(() => {
+      expect(result.current.positionUnavailable).toBe(true);
+    });
+    expect(result.current.position).toBeNull();
+    locationMock.setPositionError(null);
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.positionUnavailable).toBe(false);
+    expect(result.current.position).not.toBeNull();
+  });
+
+  it('checked: false hasta leer el permiso real', async () => {
+    locationMock.setPermission('granted');
+    const { result } = await renderHook(() => usePermisoUbicacion());
+    await waitFor(() => {
+      expect(result.current.checked).toBe(true);
+    });
+    expect(result.current.permission).toBe('granted');
+  });
+
+  it('sin permiso nunca está "unavailable"', async () => {
+    const { result } = await renderHook(() => useUbicacion({ watch: false }));
+    await waitFor(() => {
+      expect(Location.getForegroundPermissionsAsync).toHaveBeenCalled();
+    });
+    expect(result.current.positionUnavailable).toBe(false);
+  });
+
   it('refresh() vuelve a leer permiso y posición', async () => {
     locationMock.setPermission('granted');
     const { result } = await renderHook(() => useUbicacion({ watch: false }));

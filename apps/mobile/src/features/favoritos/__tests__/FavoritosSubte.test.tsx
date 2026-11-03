@@ -185,7 +185,7 @@ describe('Favoritos · huérfanos', () => {
     expect(screen.getByRole('button', { name: 'Quitar Mi estación' })).toBeOnTheScreen();
   });
 
-  it('los colectivos nunca se marcan huérfanos todavía (se completa en 4.5)', async () => {
+  it('colectivos que figuran en el índice y líneas sin dato del proxy no son huérfanos', async () => {
     const { renderUi, harness } = setup([colectivo, parada, lineaA]);
     await renderUi();
     await waitFor(() => {
@@ -196,5 +196,14 @@ describe('Favoritos · huérfanos', () => {
     });
     expect(screen.queryByText(/ya no figura/)).toBeNull();
     expect(screen.getByRole('button', { name: /^Línea 60 de colectivo\./ })).toBeOnTheScreen();
+  });
+
+  it('una parada que ya no está en el índice es huérfana (mismo criterio que subte)', async () => {
+    const { renderUi } = setup([{ ...parada, refId: 'p-que-ya-no-existe' }]);
+    await renderUi();
+    expect(
+      await screen.findByText('Esta parada ya no figura en los datos oficiales'),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Quitar / })).toBeOnTheScreen();
   });
 });

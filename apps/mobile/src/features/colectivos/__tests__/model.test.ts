@@ -6,9 +6,7 @@ import {
   buildIndice,
   buscar,
   describirLineas,
-  distanceMeters,
   formatDistancia,
-  isInsideCaba,
   lineaParaNumero,
   normalizar,
   numeroDeLinea,
@@ -16,6 +14,7 @@ import {
   paradasCercanas,
   paradasDeNumero,
 } from '../model';
+import { distanceMeters, isInsideCaba } from '../../ubicacion/geo';
 
 const indice = buildIndice(lineasArchivo.lineas, paradasArchivo.paradas);
 
@@ -86,8 +85,9 @@ describe('cercanía', () => {
   });
 
   it('CABA y distancias', () => {
-    expect(isInsideCaba(OBELISCO)).toBe(true);
-    expect(isInsideCaba({ latitude: -34.9205, longitude: -57.9536 })).toBe(false);
+    // Un solo rectángulo de CABA en la app: el de `features/ubicacion/geo.ts`.
+    expect(isInsideCaba(OBELISCO.lat, OBELISCO.lon)).toBe(true);
+    expect(isInsideCaba(-34.9205, -57.9536)).toBe(false);
     expect(Math.round(distanceMeters(OBELISCO, OBELISCO))).toBe(0);
     expect(formatDistancia(118)).toBe('a 120 m');
     expect(formatDistancia(3)).toBe('a 10 m');

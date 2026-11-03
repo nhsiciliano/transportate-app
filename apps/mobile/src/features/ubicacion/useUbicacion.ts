@@ -41,6 +41,11 @@ export function toPermiso(
 }
 
 export interface UsePermisoUbicacion extends PermisoState {
+  /**
+   * Ya se leyó el permiso real al menos una vez. Antes de eso `permission` es `undetermined` por
+   * default: la pantalla puede esperar para no mostrar el bloque de permiso de más.
+   */
+  checked: boolean;
   /** Pide el permiso (diálogo del sistema). Solo desde una acción de la persona. */
   request: () => Promise<PermisoUbicacion>;
   /** Vuelve a leer el permiso, sin diálogo. */
@@ -55,10 +60,12 @@ export function usePermisoUbicacion(): UsePermisoUbicacion {
     permission: 'undetermined',
     canAskAgain: true,
   });
+  const [checked, setChecked] = useState(false);
 
   const apply = useCallback((response: Location.LocationPermissionResponse): PermisoUbicacion => {
     const next = toPermiso(response);
     setState(next);
+    setChecked(true);
     return next.permission;
   }, []);
 
@@ -86,7 +93,10 @@ export function usePermisoUbicacion(): UsePermisoUbicacion {
       .then((response) => {
         if (alive) apply(response);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        // Sin poder leerlo, queda `undetermined`: "Activar" lo vuelve a intentar.
+        if (alive) setChecked(true);
+      });
     // Al volver de la configuración del teléfono, el permiso pudo haber cambiado.
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') void refresh();
@@ -97,7 +107,7 @@ export function usePermisoUbicacion(): UsePermisoUbicacion {
     };
   }, [apply, refresh]);
 
-  return { ...state, request, refresh, openSettings };
+  return { ...state, checked, request, refresh, openSettings };
 }
 
 export interface UseUbicacionOptions {
@@ -108,6 +118,11 @@ export interface UseUbicacionOptions {
 export interface UseUbicacion extends UsePermisoUbicacion {
   /** Última posición conocida, solo en memoria. `null` sin permiso o sin posición todavía. */
   position: PosicionUsuario | null;
+  /**
+   * Con permiso, la última lectura falló y no hay posición (servicios apagados, sin señal).
+   * Sirve para dejar de mostrar "buscando…" y ofrecer buscar a mano (F4-ubicacion-5).
+   */
+  positionUnavailable: boolean;
 }
 
 function toPosicion(location: Location.LocationObject): PosicionUsuario {
@@ -123,6 +138,7 @@ function toPosicion(location: Location.LocationObject): PosicionUsuario {
 export function useUbicacion({ watch = true }: UseUbicacionOptions = {}): UseUbicacion {
   const permiso = usePermisoUbicacion();
   const [raw, setRaw] = useState<PosicionUsuario | null>(null);
+  const [failed, setFailed] = useState(false);
   const [foreground, setForeground] = useState(AppState.currentState !== 'background');
   const granted = permiso.permission === 'granted';
 
@@ -142,10 +158,14 @@ export function useUbicacion({ watch = true }: UseUbicacionOptions = {}): UseUbi
 
     Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
       .then((location) => {
-        if (alive) setRaw(toPosicion(location));
+        if (!alive) return;
+        setRaw(toPosicion(location));
+        setFailed(false);
       })
       // F4-ubicacion-5: sin posición, la pantalla ofrece buscar a mano.
-      .catch(() => undefined);
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
 
     if (watch) {
       Location.watchPositionAsync(
@@ -181,12 +201,20 @@ export function useUbicacion({ watch = true }: UseUbicacionOptions = {}): UseUbi
           accuracy: Location.Accuracy.Balanced,
         });
         setRaw(toPosicion(location));
+        setFailed(false);
       } catch {
         // F4-ubicacion-5
+        setFailed(true);
       }
     }
     return next;
   }, [refresh]);
 
-  return { ...permiso, refresh: refreshAll, position: granted ? raw : null };
+  const position = granted ? raw : null;
+  return {
+    ...permiso,
+    refresh: refreshAll,
+    position,
+    positionUnavailable: granted && position === null && failed,
+  };
 }

@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { FavoritoLiveData, useFavoritos, type FavoritoV1 } from '@/features/favoritos';
+import { isInsideCaba, PermisoUbicacionBloque, useUbicacion } from '@/features/ubicacion';
 import { FilaTocable, ScreenScroll, Seccion, usePullToRefresh } from '@/features/subtes';
 import { invalidateColectivos } from '@/shared/api';
 import { Icon } from '@/shared/icons';
@@ -27,7 +28,6 @@ import {
   buscar,
   describirLineas,
   formatDistancia,
-  isInsideCaba,
   numerosDeParada,
   paradasCercanas,
   type IndiceColectivos,
@@ -36,14 +36,14 @@ import {
 import { useAbrirLinea } from './navigation';
 import { ProgresoIndice } from './ProgresoIndice';
 import { useRecientes } from './recientes';
-import { useUbicacionCercana } from './useUbicacionCercana';
 
 export const PREPARANDO = 'Preparando el listado de líneas y paradas…';
 export const ERROR_INDICE = 'No pudimos descargar las líneas y paradas';
 export const FUERA_DE_CABA =
   'No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires.';
-export const PERMISO_TEXTO =
-  'Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono.';
+/** El texto del bloque de permiso es el de `features/ubicacion` (`PERMISO_MESSAGE`). */
+export const SIN_POSICION =
+  'No pudimos saber dónde estás. Revisá que la ubicación del teléfono esté activada.';
 export const CERCANAS_INICIAL = 10;
 export const CERCANAS_MAX = 30;
 
@@ -207,106 +207,100 @@ function Cercanas({
 }) {
   const router = useRouter();
   const { colors } = useTheme();
-  const ubicacion = useUbicacionCercana();
+  // Una lectura de la posición, sin `watch` (F4-colectivos-4): `features/ubicacion`.
+  const ubicacion = useUbicacion({ watch: false });
   const [limite, setLimite] = useState(CERCANAS_INICIAL);
-  const punto = ubicacion.punto;
+  const posicion = ubicacion.position;
   const cercanas = useMemo(
-    () => (punto === null ? [] : paradasCercanas(indice.paradas, punto, CERCANAS_MAX)),
-    [indice.paradas, punto],
+    () =>
+      posicion === null
+        ? []
+        : paradasCercanas(indice.paradas, { lat: posicion.lat, lon: posicion.lon }, CERCANAS_MAX),
+    [indice.paradas, posicion],
   );
+  const punto = posicion === null ? null : { lat: posicion.lat, lon: posicion.lon };
 
   let contenido;
-  switch (ubicacion.status) {
-    case 'checking':
-    case 'locating':
-      contenido = (
-        <SkeletonGroup accessibilityLabel="Buscando paradas cerca tuyo…" testID="cercanas-skeleton">
-          <View style={{ gap: 8 }}>
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} height={64} radius={16} />
-            ))}
-          </View>
-        </SkeletonGroup>
-      );
-      break;
-    case 'prompt':
-    case 'blocked':
-    case 'unavailable':
-      contenido = (
-        <View style={{ gap: 12 }} testID="permiso-ubicacion">
-          <View style={{ flexDirection: 'row', gap: 12 }}>
-            <Icon name="sinUbicacion" size={24} color={colors.text.secondary} />
-            <Text variant="text.md" style={{ flex: 1 }}>
-              {ubicacion.status === 'unavailable'
-                ? 'No pudimos saber dónde estás. Revisá que la ubicación del teléfono esté activada.'
-                : PERMISO_TEXTO}
-            </Text>
-          </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {ubicacion.status === 'blocked' ? (
-              <Button
-                label="Abrir configuración"
-                size="md"
-                onPress={() => void ubicacion.openSettings()}
-              />
-            ) : (
-              <Button
-                label={ubicacion.status === 'unavailable' ? 'Volver a intentar' : 'Activar'}
-                size="md"
-                icon={<Icon name="paradasCercanas" size={20} color={colors.role.primary.on} />}
-                onPress={() => void ubicacion.request()}
-              />
-            )}
-            <Button
-              label="Buscar a mano"
-              size="md"
-              variant="secondary"
-              outline
-              onPress={onBuscarAMano}
-            />
-          </View>
+  if (
+    !ubicacion.checked ||
+    (ubicacion.permission === 'granted' && punto === null && !ubicacion.positionUnavailable)
+  ) {
+    contenido = (
+      <SkeletonGroup accessibilityLabel="Buscando paradas cerca tuyo…" testID="cercanas-skeleton">
+        <View style={{ gap: 8 }}>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={64} radius={16} />
+          ))}
         </View>
-      );
-      break;
-    case 'located':
-      if (punto === null || !isInsideCaba(punto)) {
-        contenido = <EmptyState testID="fuera-de-caba" message={FUERA_DE_CABA} />;
-      } else if (cercanas.length === 0) {
-        contenido = (
-          <EmptyState
-            testID="sin-cercanas"
-            message="No encontramos paradas cerca. Probá buscando una calle."
+      </SkeletonGroup>
+    );
+  } else if (ubicacion.permission !== 'granted') {
+    contenido = (
+      <PermisoUbicacionBloque
+        testID="permiso-ubicacion"
+        permission={ubicacion.permission}
+        onRequest={() => void ubicacion.request()}
+        onOpenSettings={() => void ubicacion.openSettings()}
+        onManual={onBuscarAMano}
+      />
+    );
+  } else if (punto === null) {
+    contenido = (
+      <View style={{ gap: 12 }} testID="sin-posicion">
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Icon name="sinUbicacion" size={24} color={colors.text.secondary} />
+          <Text variant="text.md" style={{ flex: 1 }}>
+            {SIN_POSICION}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <Button label="Volver a intentar" size="md" onPress={() => void ubicacion.refresh()} />
+          <Button
+            label="Buscar a mano"
+            size="md"
+            variant="secondary"
+            outline
+            onPress={onBuscarAMano}
           />
-        );
-      } else {
-        contenido = (
-          <>
-            <View style={{ gap: 8 }} accessibilityRole="list">
-              {cercanas.slice(0, limite).map(({ parada, metros }) => (
-                <ParadaFila
-                  key={parada.id}
-                  parada={parada}
-                  distancia={formatDistancia(metros)}
-                  onPress={() => {
-                    router.push({ pathname: '/colectivos/parada/[id]', params: { id: parada.id } });
-                  }}
-                />
-              ))}
-            </View>
-            {cercanas.length > limite ? (
-              <Button
-                label="Ver más"
-                variant="link"
-                size="md"
-                onPress={() => {
-                  setLimite(CERCANAS_MAX);
-                }}
-              />
-            ) : null}
-          </>
-        );
-      }
-      break;
+        </View>
+      </View>
+    );
+  } else if (!isInsideCaba(punto.lat, punto.lon)) {
+    contenido = <EmptyState testID="fuera-de-caba" message={FUERA_DE_CABA} />;
+  } else if (cercanas.length === 0) {
+    contenido = (
+      <EmptyState
+        testID="sin-cercanas"
+        message="No encontramos paradas cerca. Probá buscando una calle."
+      />
+    );
+  } else {
+    contenido = (
+      <>
+        <View style={{ gap: 8 }} accessibilityRole="list">
+          {cercanas.slice(0, limite).map(({ parada, metros }) => (
+            <ParadaFila
+              key={parada.id}
+              parada={parada}
+              distancia={formatDistancia(metros)}
+              onPress={() => {
+                router.push({ pathname: '/colectivos/parada/[id]', params: { id: parada.id } });
+              }}
+            />
+          ))}
+        </View>
+        {cercanas.length > limite ? (
+          <Button
+            label="Ver más"
+            variant="link"
+            size="md"
+            onPress={() => {
+              setLimite(CERCANAS_MAX);
+            }}
+          />
+        ) : null}
+      </>
+    );
   }
 
   return (
