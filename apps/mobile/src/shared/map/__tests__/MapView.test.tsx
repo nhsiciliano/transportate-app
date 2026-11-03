@@ -168,4 +168,51 @@ describe('MapView', () => {
     await renderMap(<MapView accessibilityLabel={LABEL} />);
     expect(screen.getByTestId('map-view-north-up')).toHaveStyle({ width: 48, height: 48 });
   });
+
+  describe('location (permiso que maneja la pantalla)', () => {
+    it('sin permiso igual muestra el botón y al tocarlo lo pide; con permiso, centra', async () => {
+      const request = jest.fn(() => {
+        locationMock.setPermission('granted');
+        return Promise.resolve(true);
+      });
+      await renderMap(
+        <MapView accessibilityLabel={LABEL} location={{ granted: false, request }} />,
+      );
+      await fireEvent.press(screen.getByRole('button', { name: 'Centrar en mi ubicación' }));
+      await waitFor(() => {
+        expect(mapLibreMock.camera.flyTo).toHaveBeenCalled();
+      });
+      expect(request).toHaveBeenCalledTimes(1);
+    });
+
+    it('si la persona no da el permiso, la cámara no se mueve', async () => {
+      const request = jest.fn(() => Promise.resolve(false));
+      await renderMap(
+        <MapView accessibilityLabel={LABEL} location={{ granted: false, request }} />,
+      );
+      await fireEvent.press(screen.getByTestId('map-view-center-user'));
+      await settle();
+      expect(request).toHaveBeenCalled();
+      expect(mapLibreMock.camera.flyTo).not.toHaveBeenCalled();
+      expect(mapLibreMock.camera.jumpTo).not.toHaveBeenCalled();
+    });
+  });
+
+  it('centerOn mueve la cámara sin cambiar el zoom (y salta con Reducir movimiento)', async () => {
+    const ref = createRef<MapViewHandle>();
+    await renderMap(<MapView accessibilityLabel={LABEL} ref={ref} />);
+    await settle();
+    await act(() => {
+      ref.current?.centerOn([-58.4, -34.61]);
+    });
+    expect(mapLibreMock.camera.easeTo).toHaveBeenCalledWith({
+      center: [-58.4, -34.61],
+      duration: CAMERA_ANIMATION_MS,
+    });
+  });
+
+  it('bottomOffset sube los controles por encima de un panel', async () => {
+    await renderMap(<MapView accessibilityLabel={LABEL} bottomOffset={200} />);
+    expect(screen.getByTestId('map-view-controls')).toHaveStyle({ bottom: 16 + 200 });
+  });
 });

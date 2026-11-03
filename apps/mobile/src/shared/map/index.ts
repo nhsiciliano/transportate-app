@@ -1,10 +1,21 @@
 // Mapa compartido (ADR-0002). API y decisiones en README.md.
+export {
+  BottomPanel,
+  nearestIndex,
+  PANEL_ANIMATION_MS,
+  PANEL_HANDLE_HEIGHT,
+  PANEL_LABELS,
+  panelHeights,
+  type BottomPanelProps,
+  type PanelIndex,
+} from './BottomPanel';
 export { boundsOf, pointCollection, pressedProperty } from './geojson';
 export {
   CAMERA_ANIMATION_MS,
   EDGE_GESTURE_GUTTER,
   MapView,
   USER_ZOOM,
+  type MapLocationControl,
   type MapViewHandle,
   type MapViewProps,
 } from './MapView';

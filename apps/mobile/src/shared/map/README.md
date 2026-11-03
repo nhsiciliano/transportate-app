@@ -2,13 +2,13 @@
 
 Piezas comunes de los mapas: el mapa de la red de subte (4.3, `features/subtes/MapaRedScreen.tsx`) y, después, el de colectivos (4.6). Las dependencias nativas están en `apps/mobile/README.md`, "Dependencias nativas de la Fase 4".
 
-| Archivo                 | Qué exporta                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `MapView.tsx`           | `MapView`, `MapViewHandle`, `CAMERA_ANIMATION_MS`, `USER_ZOOM`, `EDGE_GESTURE_GUTTER`              |
-| `styles.ts`             | `MAP_STYLE_URLS`, `mapStyleFor`, `MAP_ATTRIBUTION`, `MAP_FONT`, `CABA_BOUNDS`                      |
-| `geojson.ts`            | `boundsOf`, `pointCollection`, `pressedProperty`                                                   |
-| `staticData.ts` | `useStaticGeoJson`, `geoJsonVersion`, `StaticGeoJsonQuery`: los `.geojson` del paquete (los JSON con contrato van por `useStaticArchivo` de `shared/static`) |
-| `useLocationGranted.ts` | `useLocationGranted()`: consulta el permiso de ubicación, nunca lo pide                            |
+| Archivo                 | Qué exporta                                                                                                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `MapView.tsx`           | `MapView`, `MapViewHandle`, `CAMERA_ANIMATION_MS`, `USER_ZOOM`, `EDGE_GESTURE_GUTTER`                                                                        |
+| `styles.ts`             | `MAP_STYLE_URLS`, `mapStyleFor`, `MAP_ATTRIBUTION`, `MAP_FONT`, `CABA_BOUNDS`                                                                                |
+| `geojson.ts`            | `boundsOf`, `pointCollection`, `pressedProperty`                                                                                                             |
+| `staticData.ts`         | `useStaticGeoJson`, `geoJsonVersion`, `StaticGeoJsonQuery`: los `.geojson` del paquete (los JSON con contrato van por `useStaticArchivo` de `shared/static`) |
+| `useLocationGranted.ts` | `useLocationGranted()`: consulta el permiso de ubicación, nunca lo pide                                                                                      |
 
 ## `MapView`
 
@@ -74,14 +74,14 @@ Ruta `/subtes/mapa` (header "Mapa de la red"), que monta `features/subtes/MapaRe
 - **Interacción:** tocar una estación lleva a `/subtes/estacion/[id]` y tocar un trazo, a `/subtes/[linea]`. Las fuentes tienen `hitbox` de 22 pt por lado (44 pt en total). Si un mismo toque cae sobre una estación y su línea, gana la estación y se navega una sola vez: los avisos de las dos fuentes se juntan durante `PRESS_SETTLE_MS` = 60 ms.
 - **Estados y copy:**
 
-| Estado                           | Qué se ve                                                                                                                                       |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Carga sin caché                  | Skeleton de pantalla completa, con "Cargando el mapa de la red…" para el lector de pantalla                                                     |
-| Error sin datos                  | `ErrorState` con `error.userMessage()`. "Volver a intentar" aparece solo si `retryable` (un GeoJSON fuera de contrato no se reintenta)          |
-| Sin conexión y sin nada guardado | `EmptyState` "Sin conexión": "El mapa de la red se carga cuando vuelvas a tener conexión. Mientras tanto, la lista de Subtes sigue disponible." |
-| Manifiesto sin `subte-red.geojson` | `ErrorState` "Esta información no está disponible por ahora.", sin reintento |
-| Sin conexión con caché           | El mapa con los datos persistidos en MMKV, sin requests. El `OfflineBanner` es global                                                           |
-| Red vacía                        | `EmptyState`: "Todavía no tenemos el mapa de la red. Mientras tanto, la lista de Subtes tiene todas las líneas y estaciones."                   |
+| Estado                             | Qué se ve                                                                                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Carga sin caché                    | Skeleton de pantalla completa, con "Cargando el mapa de la red…" para el lector de pantalla                                                     |
+| Error sin datos                    | `ErrorState` con `error.userMessage()`. "Volver a intentar" aparece solo si `retryable` (un GeoJSON fuera de contrato no se reintenta)          |
+| Sin conexión y sin nada guardado   | `EmptyState` "Sin conexión": "El mapa de la red se carga cuando vuelvas a tener conexión. Mientras tanto, la lista de Subtes sigue disponible." |
+| Manifiesto sin `subte-red.geojson` | `ErrorState` "Esta información no está disponible por ahora.", sin reintento                                                                    |
+| Sin conexión con caché             | El mapa con los datos persistidos en MMKV, sin requests. El `OfflineBanner` es global                                                           |
+| Red vacía                          | `EmptyState`: "Todavía no tenemos el mapa de la red. Mientras tanto, la lista de Subtes tiene todas las líneas y estaciones."                   |
 
 - **Suposiciones nuevas:**
   - **F4-mapa-1.** El mapa no lleva `FreshnessLabel` ni pull to refresh. Es estático versionado: no tiene `sourceTimestamp` y se renueva con el manifiesto (TTL 300 s).
