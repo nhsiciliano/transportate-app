@@ -40,7 +40,8 @@ describe('useStaticArchivo', () => {
     const { result } = await renderHook(() => useStaticArchivo('subte-lineas.json'), {
       wrapper: h.Wrapper,
     });
-    expect(result.current.isPending).toBe(true);
+    // Sin afirmar el `isPending` inicial: con el `fetch` mockeado la respuesta puede llegar antes
+    // de la primera lectura (dependía del orden de los tests).
     await waitFor(() => {
       expect(result.current.data?.lineas).toHaveLength(8);
     });

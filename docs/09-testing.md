@@ -153,9 +153,9 @@ cd apps/mobile && npx jest --ci test/integracion.test.tsx   # un archivo
 cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; borrá coverage/ después)
 ```
 
-### Qué cubren (mobile: 511 tests en 51 archivos, 2026-11-03, tras la primera ola de la Fase 4)
+### Qué cubren (mobile: 561 tests en 55 archivos, 2026-11-03, tras la reconciliación F4-MID-D)
 
-Totales por paquete en esa fecha: **mobile 511 tests en 51 suites**, **proxy 86 + 1 skipped en 11 archivos** y **contracts 74 + 2 skipped en 3 archivos**.
+Totales por paquete en esa fecha: **mobile 561 tests en 55 suites** (`jest --ci` completo en una corrida, unos 28 s; también en verde con `--randomize` en tres corridas con semillas distintas), **proxy 86 + 1 skipped en 11 archivos** y **contracts 76 en 3 archivos**.
 
 | Archivo | Cubre |
 |---|---|
@@ -172,6 +172,10 @@ Totales por paquete en esa fecha: **mobile 511 tests en 51 suites**, **proxy 86 
 | `src/features/ubicacion/__tests__/*` | `usePermisoUbicacion` / `useUbicacion` con el mock de ubicación (permiso, `request` solo en contexto, posición en memoria, `watch` que se suelta al desmontar y en segundo plano), `isInsideCaba`, `distanceMeters` y `PermisoUbicacionBloque` |
 | `src/features/favoritos/__tests__/*` | Pantalla Favoritos (lista, vacío, edición, quitar con Deshacer, alias de 30 caracteres, búsqueda, acciones de accesibilidad), colores de subte y huérfanos con el estático mockeado, datos vivos (ok, carga, error, solo filas visibles), `FreshnessLabel` global y pull to refresh |
 | `src/features/subtes/__tests__/*`, `test/subtes/*` | Modelo de la red, pantallas de Subtes, línea y estación, y `useStaticArchivo` |
+| `test/inicio.test.tsx` | Inicio: 7 filas fijas, Alert destacada (una, varias, las 7), skeleton, `ErrorState` dentro del bloque con favoritos visibles, Alert de actualización fallida, sin favoritos, 5 + "Ver todos (N)" |
+| `src/features/colectivos/__tests__/model.test.ts` | Índice de colectivos, búsqueda con ranking, paradas cercanas con filtro por rectángulo (grilla de 7.027 paradas) |
+| `test/colectivos/*` | `LargeFileManager` y `useStaticArchivoGrande` (progreso, MMKV por archivo, versión nueva, errores, `.geojson`); raíz de Colectivos (índice descargando, error, búsqueda, cercanas con y sin permiso, fuera de CABA, recientes), parada con y sin arribos, favorito de parada huérfano |
+| `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx` | Dato vivo por tipo (datos, carga, error, viejo) y huérfano con el criterio único |
 | `src/shared/ui/__tests__/Snackbar.test.tsx` | `Snackbar` y `SnackbarProvider` con timers falsos (5 s / 8 s, acción, reemplazo) |
 | `src/shared/map/__tests__/*`, `test/map/*` | `MapView` compartido y mapa de la red de subte contra el mock de MapLibre |
 | `test/clear-query-cache.test.ts` | `clearPersistedQueryCache` borra solo la caché de consultas |
@@ -179,6 +183,8 @@ Totales por paquete en esa fecha: **mobile 511 tests en 51 suites**, **proxy 86 
 | `src/shared/ui/__tests__/*` | Componentes: Alert, Button, FreshnessLabel, SearchInput, StatusChip, vitrina en los dos esquemas, y (`Estados.test.tsx`) Chip, SegmentedControl, ErrorState, EmptyState, LineBadge, OfflineBanner y Skeleton |
 
 **Cobertura** (`jest --coverage`, informativa y sin umbral; medida el 2026-11-02, antes de la Fase 4): **93,2 % statements, 88,2 % branches, 86,9 % funciones, 94,8 % líneas**.
+
+**Tests dependientes del timing (corregidos en F4-MID-D):** dos tests afirmaban `isPending`/`loading` en la primera lectura con un `fetch` mockeado que responde enseguida, y fallaban según el orden de las suites (`--randomize`). Ahora la carga se prueba con una respuesta que nunca llega (`() => undefined` en el harness de `test/subtes/fixtures.tsx`). Los umbrales de tiempo (cercanas sobre 7.027 paradas) son holgados a propósito.
 
 **Hallazgo: timeouts bajo carga.** Con la máquina cargada (varios agentes compilando, load average de 25 a 70) `pnpm test` desde la raíz corre los tres paquetes en paralelo y fallan por tiempo algunos tests que miden asíncronos (en el proxy, `health` y `edge-cached`; en la app, `integracion`, `navegacion` y las pantallas que montan el router real). Sueltos y **por paquete pasan**. Cuando la raíz da timeouts: `cd apps/mobile && pnpm test`, después `apps/proxy` y `packages/contracts`, y anotarlo en el reporte. Los tests que montan el router real llevan `jest.setTimeout(30_000)`.
 
