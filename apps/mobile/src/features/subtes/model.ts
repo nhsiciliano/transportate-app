@@ -323,3 +323,16 @@ export function agruparArribos(
     arribos: lista,
   }));
 }
+
+/**
+ * Recalcula `enSegundos` con `horaEstimada` contra `now` (el dato puede venir de la caché) y
+ * descarta los que pasaron hace más de 30 s, igual que el proxy. Lo usan Inicio y Favoritos.
+ */
+export function arribosVigentes(arribos: readonly ArriboSubteV1[], now: number): ArriboSubteV1[] {
+  return arribos
+    .map((a) => {
+      const t = Date.parse(a.horaEstimada);
+      return { ...a, enSegundos: Number.isNaN(t) ? a.enSegundos : Math.round((t - now) / 1000) };
+    })
+    .filter((a) => a.enSegundos >= -LLEGANDO_SEGUNDOS);
+}
