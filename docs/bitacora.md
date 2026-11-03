@@ -232,12 +232,13 @@ _Iniciada el 2026-11-03._ Coordinación con Orca (Run `run_6bc551486d73`), misma
 | Colectivos sin mapa: índice grande por archivo en MMKV (`useStaticArchivoGrande`, descarga XHR con progreso, una versión por archivo, también `.geojson`), raíz con "Preparando el listado…" y barra, búsqueda local con ranking, paradas cercanas (bbox + haversine, permiso en contexto, fuera de CABA), líneas recientes, parada con arribos solo si existen, progreso en `IndiceRow`; suposiciones `F4-colectivos-1…7` | 4.5, 4.7 | mid-dev | merge de `nhsiciliano/Mid-Dev` · [`../apps/mobile/src/features/colectivos/README.md`](../apps/mobile/src/features/colectivos/README.md), [`07-app.md`](07-app.md) |
 | `headerLargeTitleEnabled` en Subtes (opción vigente), Alert única "El servicio de la Ciudad no responde" en Favoritos cuando todas las filas visibles fallan con error reintentable, guía de prueba manual en dispositivo (`11-prueba-manual.md`); suposición `F4-favoritos-13` | 4.11, 4.12 | low-dev | merge de `nhsiciliano/Low-Dev` · [`11-prueba-manual.md`](11-prueba-manual.md) |
 | Reconciliación: Colectivos usa `features/ubicacion` (`useUbicacion({ watch: false })`, `checked`/`positionUnavailable` nuevos), un solo criterio de huérfano en `useFavoritoLiveData` para los cuatro tipos; suite completa de la app en una corrida (561 tests en 55 suites, también con `--randomize`); `07-app.md` §20 "Estado al cierre de la Fase 4", `09-testing.md` y `03-arquitectura.md` §6 al día | 4.12 | mid-dev | merge de `nhsiciliano/Mid-Dev` · [`07-app.md`](07-app.md) |
+| Limpieza tras la reconciliación: prop `orphan` muerta e `isOrphanColectivo` eliminados, READMEs de `ajustes`, `favoritos` y `ubicacion` y comentarios viejos al día | 4.12 | low-dev | merge de `nhsiciliano/Low-Dev` |
 
 ### En curso
 
 - mid-dev: sin tarea.
 - high-dev: 4.6 línea de colectivos con mapa en tiempo real + arrastre de 4.9 en Favoritos.
-- low-dev: limpieza menor tras la reconciliación (prop `orphan` muerta, `isOrphanColectivo`, READMEs y TODOs viejos).
+- low-dev: sin tarea (queda el cierre documental de la fase cuando entre 4.6).
 
 ### Hallazgos que cambian el plan
 
