@@ -27,7 +27,7 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 | F4-favoritos-5 | El `SnackbarProvider` se monta dentro de la pantalla (igual que Ajustes, F4-ajustes-1): el "Deshacer" vale mientras la persona siga en Favoritos.                                                                                        |
 | F4-favoritos-6 | En edición, tocar el texto de la fila también abre el alias (brief §3) además del botón "Cambiar nombre". Fuera de edición no hay long press ni menú contextual (queda para después).                                                    |
 | F4-favoritos-7 | **Resuelta para subte.** Un favorito huérfano se detecta contra el estático ya cargado (ver abajo). Los colectivos quedan sin detectar hasta 4.5, cuando exista el índice de colectivos en la app. |
-| F4-favoritos-8 | No hay `RefreshControl` ni `FreshnessLabel` global: sin datos vivos no tienen nada que refrescar. Mid-dev los agrega junto con los hooks.                                                                                                |
+| F4-favoritos-8 | **Resuelta (F4-LOW-C).** Hay `FreshnessLabel` global y pull to refresh. |
 
 ## Colores de subte y favorito huérfano (tarea F4-LOW-C)
 
@@ -47,6 +47,7 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 | F4-favoritos-9 | El `refId` de una línea de subte es la clave de la app (`A`…`H`, `PM`) y el de una estación, su `id` del estático (`FavoriteToggle` los guarda así). Cualquier otro valor es huérfano. |
 | F4-favoritos-10 | Un huérfano de subte no abre el detalle (no existe) y se quita con un botón en la fila, con el mismo aviso "Quitaste «…». Deshacer" que en edición. Se espera a tener el estático cargado para marcarlo: con error de red no se marca nada. |
 | F4-favoritos-11 | `FavoritosScreen` importa `useRedSubte` de `@/features/subtes/hooks` (no del índice de la feature) para no crear un ciclo: Subtes ya importa `FavoriteToggle` de acá. |
+| F4-favoritos-12 | Solo piden datos las filas visibles. Hasta que la lista informe cuáles se ven, se consideran visibles las primeras 10 (`INITIAL_VISIBLE`). La etiqueta de frescura toma la más vieja de las visibles; sin datos vivos no se muestra. El dato estático de la parada (sus líneas) no se repite como dato vivo. |
 
 ## Lógica
 
@@ -58,6 +59,7 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 | `repository.ts`         | Interfaz `FavoritosRepository` + `MmkvFavoritosRepository(store)` sobre un `KeyValueStore`, con la clave `transportate.favoritos.v1`          |
 | `migrations.ts`         | Migraciones `schemaVersion` N → N + 1. Hoy están vacías, porque la v1 es la primera versión                                                   |
 | `FavoritosScreen.tsx` | La pantalla (lista, vacío, búsqueda, edición, quitar con Deshacer y sheet de alias) |
+| `FavoritoItem.tsx` | Una fila con su dato vivo conectado (`useFavoritoLiveData`) y el aviso de su `sourceTimestamp` para la frescura global |
 | `FavoritoRow.tsx` | La fila, con los slots `liveData` y `dragHandle` y las acciones de accesibilidad "Mover arriba/abajo" |
 | `AliasSheet.tsx` | `Modal` con el campo de alias (30 caracteres, contador) |
 | `EditMode.tsx` | `EditModeProvider`, `useEditMode()` y `EditModeButton` (el "Editar"/"Listo" del header) |
@@ -98,9 +100,9 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 
 ## Qué falta (otras tareas)
 
-- **Datos vivos (mid-dev):** pasar `liveData` (y `liveDataLabel` para el lector) a `FavoritoRow` desde `FavoritosScreen`. Cada tipo tiene su dato: `StatusChip` en la línea de subte, próximo arribo en la estación, "N en servicio" en la línea de colectivo y las líneas que paran en la parada. También el `FreshnessLabel`, el pull to refresh, la Alert única del servicio y el favorito huérfano.
-- **Arrastre (high-dev, `4.9-drag`):** reemplazar el `FlatList` de `FavoritosScreen` y pasar `dragHandle` a `FavoritoRow`. El reorden se persiste con `repository.reorder(idsEnOrden)`. Las acciones "Mover arriba/abajo" ya existen y tienen que seguir funcionando.
-- **Color del subte (4.2):** `LineBadge kind: 'subte'` con los colores del estático (`TODO(4.2)` en `FavoritoRow.tsx`).
+- **Arrastre (high-dev, `4.9-drag`):** reemplazar el `FlatList` de `FavoritosScreen` y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder(idsEnOrden)`. Las acciones "Mover arriba/abajo" ya existen y tienen que seguir funcionando.
+- **Colectivos (4.5):** completar `isOrphanColectivo` en `subte.ts` con el índice de colectivos y mostrar las líneas de la parada.
+- **Alert única del servicio** ("El servicio de la Ciudad no responde"): hoy cada fila muestra "Sin información".
 
 ## Datos vivos (tarea 4.4)
 
@@ -123,7 +125,9 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 - **Solo lo visible:** con `enabled: false` no se pide nada. La lista de Favoritos pasa `enabled` según la visibilidad de la fila (o monta solo lo visible con `FlatList`).
 - **Accesibilidad:** `FavoritoLiveData` se oculta al lector, porque la fila arma su etiqueta con `spoken`. Para no calcular dos veces, la fila puede llamar al hook y pasarle el resultado con `live={…}`.
 
-**Cómo se conecta en `FavoritoRow`** (slot `liveData?: ReactNode`):
+**Conectado (F4-LOW-C):** `FavoritoItem` hace esto por fila, con `enabled` según la visibilidad (`onViewableItemsChanged`; hasta que la lista informe, las primeras 10). `FavoritosScreen` suma el `FreshnessLabel` con el dato más viejo de las filas visibles y el pull to refresh con `invalidateRealtime`. El dato estático de la parada no se repite en la fila.
+
+**Así se conecta en `FavoritoRow`** (slot `liveData?: ReactNode`):
 
 ```tsx
 const live = useFavoritoLiveData(favorito, { enabled: visible });
