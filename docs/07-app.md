@@ -345,21 +345,26 @@ Agregado en la tarea F4-HIGH-C (arrastre, 4.9):
 
 ## 17. Inicio
 
-`src/features/inicio` ([README](../apps/mobile/src/features/inicio/README.md): brief operativo, estados y suposiciones `F4-inicio-1…6`), tareas 4.1, 4.4, 4.11 y 4.12. Ruta fina: `(tabs)/inicio/index.tsx` monta `InicioScreen`.
+`src/features/inicio` ([README](../apps/mobile/src/features/inicio/README.md): brief operativo, estados, pares de contraste y suposiciones `F4-inicio-1…6` y `F5-inicio-1…8`). Tareas 4.1, 4.4, 4.11 y 4.12; recompuesta en la Fase 5 (F5-HIGH-A) como **piloto de la dirección «Señalética de terminal»** (contrato en `apps/mobile/.impeccable/surfaces/src-features-inicio-inicioscreen-tsx.md`). Ruta fina: `(tabs)/inicio/index.tsx` monta `InicioScreen`.
 
-- **Header:** large title en iOS (`headerLargeTitleEnabled`) y engranaje "Ajustes" de 44×44 (`inicio/_layout.tsx`).
-- **Alert destacada:** `Alert` `system` danger solo si hay líneas interrumpidas.
-  - Con una, título "Línea B interrumpida", el `resumen` del estado y "Ver la línea".
-  - Con varias, "N líneas con problemas" y "Ver el subte".
-  - Con las 7, "El subte no está funcionando".
-- **Estado del subte:** 7 filas fijas (A–H y Premetro, S28), sacadas de `useLineasConEstado()` de `features/subtes`. Cada una abre `/subtes/[linea]`, con `FreshnessLabel` debajo.
-  - Skeleton en la primera carga.
-  - `ErrorState` dentro del bloque sin datos: los favoritos siguen visibles.
-  - Alert en línea con datos y actualización fallida.
-- **Favoritos:** los primeros 5, cada uno con ícono de tipo, alias o nombre y dato vivo. Cada favorito abre su detalle en su tab (S3); "Ver todos (N)" abre `/favoritos`. Sin favoritos, `EmptyState` + "Explorar subtes".
-- **Datos vivos de favoritos** (`features/favoritos/useFavoritoLiveData.ts`, [README](../apps/mobile/src/features/favoritos/README.md#datos-vivos-tarea-44)): estado de línea, próximo arribo por sentido, vehículos en servicio o el subtítulo guardado. Reutilizan las queries de cada feature, sin endpoints ni polling nuevos. Los usa también la pantalla de Favoritos (slot `liveData` de `FavoritoRow`).
+- **Qué aporta la dirección:** solo tipografía (Fira Sans, §5), paleta Obelisco v2 sin cambios, densidad y un movimiento firma. Tabs nativas, large title, gesto de volver y controles del sistema quedan como estaban.
+- **Header:** large title en iOS (`headerLargeTitleEnabled`) y engranaje "Ajustes" de 44×44 (`inicio/_layout.tsx`). Fondo de la pantalla: `bg.elevated` (`#edf4ff`) en claro, `bg.base` en oscuro (`ScreenScroll` acepta `backgroundColor` y `gap`; Inicio usa 12 entre bloques).
+- **Alert destacada:** `Alert` `system` danger solo si hay líneas interrumpidas (igual que en la Fase 4). Con demoras no hay Alert: lo dice la tira.
+- **Tira «Subte ahora»:** tarjeta `bg.card` con outline de 1 px `border.subtle` y radio 6. Etiqueta, las 7 `LineBadge` de 28 en orden fijo y una línea de estado (`resumenSubte`): «B con demoras · <resumen>», «B y D con demoras», «B interrumpida · …» (danger) o «Todas las líneas funcionan con normalidad». Toda la tira es un botón que abre `/subtes`.
+  - Primera carga: skeleton con la silueta de la tira.
+  - Error sin datos: `ErrorState` compacto dentro de la tira, con reintento.
+  - Error con datos: Alert en línea "No pudimos actualizar…" debajo de la tira.
+- **Bandas de favoritos** (`SignBand` de `shared/ui`): los primeros 5 en el orden guardado, separados 8 pt.
+  - **Líder** (`lead`, 148 pt, `role.secondary.base`): el favorito **más cercano** si el permiso de ubicación **ya está concedido** (`useUbicacion({ watch: false })`, sin pedirlo, S32; posición de estaciones del estático de subte y de paradas de `paradas.json`; las líneas no compiten). Sin permiso o sin posición: el primero. Las demás son `next` (72 pt, `role.primary.base`).
+  - Mensaje: alias o nombre con su contexto («Línea B · Medrano hacia Leandro N. Alem», «Línea 152 · Ramal A», «Parada …»).
+  - Valor (`primary` de `useFavoritoLiveData`): primer arribo («4 min», «Llegando»; en la líder, a 56 pt con «Próximo»), «N en servicio», el estado de la línea de subte, las líneas de una parada, «Sin información» o «Ya no figura».
+  - Estado: cuadrado ámbar «Con demoras» o rojo «Interrumpida» si la estación es de una línea con problemas; «hace 6 min» si el dato está viejo.
+  - Tocar abre el detalle en su tab (S3).
+- **Fila meta:** `FreshnessLabel` con el dato más viejo de lo visible (bandas y tira) y «Ver todos los favoritos (N)» → `/favoritos`. Sin favoritos: `EmptyState` + "Explorar subtes" y la frescura de la tira.
+- **Movimiento firma:** cuando cambia el favorito líder o su valor, el contenido de la banda líder cruza en fundido de 200 ms (Reanimated); con Reducir movimiento, corte seco. Un refresco sin cambio de valor no anima; del skeleton al primer valor tampoco.
+- **Datos vivos de favoritos** (`features/favoritos/useFavoritoLiveData.ts`, [README](../apps/mobile/src/features/favoritos/README.md#datos-vivos-tarea-44)): estado de línea, próximo arribo por sentido, vehículos en servicio o el subtítulo guardado. Suma `primary`, `primaryIsArribo` y `sentido` para las bandas; `text`/`spoken` siguen siendo los de Favoritos. Reutilizan las queries de cada feature, sin endpoints ni polling nuevos.
 - **Pull to refresh:** `invalidateRealtime`, que refresca el estado del subte y los datos vivos activos.
-- **Tests:** `test/inicio.test.tsx` y `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx`.
+- **Tests:** `test/inicio.test.tsx`, `src/features/inicio/__tests__/modelo.test.ts`, `src/shared/ui/__tests__/SignBand.test.tsx` y `src/features/favoritos/__tests__/FavoritoLiveData.test.tsx`.
 
 ## 18. Mapas
 

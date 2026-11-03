@@ -28,20 +28,29 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 | **Dato viejo (frescura)** | Ajustes → "Actualizar cada" → 15 s, y dejá el proxy apagado unos minutos | La etiqueta pasa de "Actualizado hace 12 s" a "⚠ Dato de hace N min" en color de advertencia |
 | **Tema** | Ajustes → Tema: Sistema / Claro / Oscuro. Y en el iPhone, Ajustes → Pantalla → Oscuro | Cambia al instante; con "Sistema" sigue al teléfono |
 | **Texto grande** | iPhone: Ajustes → Accesibilidad → Pantalla y tamaño de texto → Texto más grande → al máximo | Nada se trunca ni se superpone; las filas crecen en alto |
-| **Reducir movimiento** | iPhone: Ajustes → Accesibilidad → Movimiento → Reducir movimiento | Sin pulsos de skeleton ni animación de cámara en el mapa; el `Snackbar` aparece sin fundido |
+| **Reducir movimiento** | iPhone: Ajustes → Accesibilidad → Movimiento → Reducir movimiento | Sin pulsos de skeleton ni animación de cámara en el mapa; el `Snackbar` aparece sin fundido; la banda grande de Inicio cambia sin fundido |
 | **VoiceOver** | Triple clic al botón lateral (si lo configuraste) o Ajustes → Accesibilidad → VoiceOver | Ver los recorridos de la sección 8 |
 
 > Volvé a encender el proxy y la conexión después de cada prueba de error: "Reintentar" y el pull to refresh tienen que recuperar solos.
 
 ## 1. Inicio
 
-- [ ] **Large title:** "Inicio" grande arriba, que se achica al scrollear. El botón de engranaje "Ajustes" se ve y se toca fácil.
-- [ ] **Estado del subte:** 7 filas (A, B, C, D, E, H, Premetro) con su color y su estado (Normal / Con demoras / Interrumpida). Tocar una abre la línea en la tab Subtes.
-- [ ] **Alert destacada** si hay una línea interrumpida o con demoras (a veces no hay: depende del día).
-- [ ] **Favoritos:** hasta 5, con su dato vivo, y "Ver todos (N)" si hay más.
+Desde la Fase 5, Inicio es el **piloto de la dirección «Señalética de terminal»**: fondo celeste muy claro, tipografía Fira Sans en toda la app y bandas de señal azules para los favoritos. Compará con el boceto `apps/mobile/.impeccable/mocks/decision/senal-terminal.html`.
+
+- [ ] **Large title:** "Inicio" grande arriba, que se achica al scrollear. El botón de engranaje "Ajustes" se ve y se toca fácil. Las tabs y el gesto de volver son los nativos de siempre.
+- [ ] **Tipografía:** títulos y textos de toda la app en Fira Sans (más estrecha y técnica que la anterior), sin textos en la fuente del sistema salvo los controles nativos.
+- [ ] **Tira «Subte ahora»:** tarjeta blanca con los 7 discos (A, B, C, D, E, H, Premetro) y una línea de estado. Con todo normal: "Todas las líneas funcionan con normalidad". Con demoras: "B con demoras · …" en ámbar. Tocar la tira abre Subtes.
+- [ ] **Alert destacada** solo si hay una línea **interrumpida** (con demoras no hay Alert: lo dice la tira). Depende del día.
+- [ ] **Bandas de favoritos:** hasta 5. La primera es grande (azul, 148 pt) con el minuto a escala monumental y «Próximo» si es un arribo; las demás son navy, más bajas. La flecha queda pegada al borde derecho (abajo en la grande, al medio en las chicas). Tocar una abre su detalle.
+- [ ] **Líder por cercanía:** con el permiso de ubicación **ya concedido** (desde Colectivos o Ajustes), guardá dos estaciones o paradas lejanas entre sí; la banda grande es la más cercana a vos, aunque no sea la primera de la lista. Sin permiso, la grande es la primera. **Inicio nunca pide el permiso.**
+- [ ] **Fundido:** cuando cambia el minuto de la banda grande (o el favorito más cercano), su contenido cruza en un fundido corto. Un refresco que no cambia el valor no se mueve. Con **Reducir movimiento**, cambio seco.
+- [ ] **Estados de una banda:** con la línea de la estación con demoras, cuadrado ámbar + "Con demoras"; con dato viejo, "hace 6 min" al lado del valor; con el proxy apagado y sin caché, "Sin información".
+- [ ] **Fila meta:** "Actualizado hace 12 s" a la izquierda y "Ver todos los favoritos (N)" a la derecha (abre Favoritos).
+- [ ] **Texto grande (Dynamic Type al máximo):** las bandas crecen en alto; el nombre puede cortarse con "…", pero el minuto y el estado nunca se cortan (el minuto grande se achica un poco si no entra).
+- [ ] **Modo oscuro:** las bandas pasan a celeste claro con texto oscuro y el cuadrado del pictograma oscuro; todo se lee bien al sol (subí el brillo).
 - [ ] **Pull to refresh** (arrastrar hacia abajo): el indicador nativo, y los datos se actualizan.
 - [ ] **Sin conexión / proxy apagado:** el contenido se queda; ver la tabla de estados. **📱 Banner offline sin hueco:** con modo avión, el banner ocupa el margen superior y el header de la pantalla no deja un espacio vacío extra debajo ni se duplica el margen de la barra de estado.
-- [ ] **Sin favoritos:** el bloque de favoritos explica cómo agregarlos.
+- [ ] **Sin favoritos:** el bloque explica cómo agregarlos ("Explorar subtes").
 
 ## 2. Subtes
 
@@ -151,7 +160,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 
 ## 8. VoiceOver (2 o 3 recorridos clave)
 
-- [ ] **Recorrido A, Inicio → línea:** una fila de línea se lee como una unidad ("Línea B, Normal…"), un toque doble abre el detalle, y el engranaje se anuncia como botón "Ajustes".
+- [ ] **Recorrido A, Inicio:** el orden es Alert (si hay) → tira ("Subte ahora. Todas las líneas funcionan con normalidad.", botón) → bandas → frescura → "Ver todos los favoritos". Cada banda se lee de una vez ("Estación Medrano, Línea B, Hacia Leandro N. Alem en 4 minutos, con demoras") y un toque doble abre el detalle. El engranaje se anuncia como botón "Ajustes".
 - [ ] **Recorrido B, Favoritos:** cada fila se lee como "Casa. Estación Medrano, Línea B. Hacia Leandro N. Alem en 2 minutos."; en edición, deslizá hacia arriba/abajo con un dedo para ver las acciones **"Mover arriba"** y **"Mover abajo"**; "Quitar" y "Cambiar nombre" se anuncian con el nombre de la fila.
 - [ ] **Recorrido C, aviso con Deshacer:** al quitar un favorito, VoiceOver anuncia el aviso y se puede llegar a "Deshacer" antes de que se cierre (8 s).
 - [ ] Opcional: el mapa de la red y la hoja de la línea (ver sección 3).
