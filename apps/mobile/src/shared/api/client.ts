@@ -10,6 +10,7 @@ import {
   ArribosParadaResponseV1,
   ARCHIVOS_ESTATICOS_V1,
   ErrorV1,
+  GEOJSON_ESTATICOS_V1,
   EstadoLineasResponseV1,
   HealthV1,
   LineasColectivoResponseV1,
@@ -76,6 +77,7 @@ export interface FeedResult<T> extends ApiResult<T> {
 }
 
 export type ArchivoEstatico = keyof typeof ARCHIVOS_ESTATICOS_V1;
+export type ArchivoGeoJson = keyof typeof GEOJSON_ESTATICOS_V1;
 
 export interface ApiClient {
   health(options?: RequestOptions): Promise<ApiResult<z.infer<typeof HealthV1>>>;
@@ -92,12 +94,21 @@ export interface ApiClient {
   ): Promise<FeedResult<PosicionesLineaV1>>;
   arribosParada(paradaId: string, options?: RequestOptions): Promise<FeedResult<ArribosParadaV1>>;
   manifest(options?: RequestOptions): Promise<ApiResult<ManifestV1>>;
-  /** Archivo JSON del paquete estático, validado con su esquema (los `.geojson` llegan en la Fase 4). */
+  /** Archivo JSON del paquete estático, validado con su esquema. */
   staticFile<K extends ArchivoEstatico>(
     version: string,
     archivo: K,
     options?: RequestOptions,
   ): Promise<ApiResult<z.infer<(typeof ARCHIVOS_ESTATICOS_V1)[K]>>>;
+  /**
+   * `.geojson` del paquete estático, validado con `GEOJSON_ESTATICOS_V1` (la red de subte con su
+   * esquema propio; el resto, como `FeatureCollection` mínima). Misma ruta que `staticFile`.
+   */
+  staticGeoJson<K extends ArchivoGeoJson>(
+    version: string,
+    archivo: K,
+    options?: RequestOptions,
+  ): Promise<ApiResult<z.infer<(typeof GEOJSON_ESTATICOS_V1)[K]>>>;
 }
 
 interface CachedBody {
@@ -309,6 +320,16 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         schema,
         o,
       ) as Promise<ApiResult<z.infer<(typeof ARCHIVOS_ESTATICOS_V1)[K]>>>;
+    },
+    staticGeoJson: <K extends ArchivoGeoJson>(version: string, archivo: K, o?: RequestOptions) => {
+      const schema: z.ZodType = GEOJSON_ESTATICOS_V1[archivo];
+      // Igual que `staticFile`: el esquema es el de `K`, TS no lo sigue por el índice genérico.
+      return plain(
+        '/v1/static/:version/:archivo',
+        `/v1/static/${id(version)}/${id(archivo)}`,
+        schema,
+        o,
+      ) as Promise<ApiResult<z.infer<(typeof GEOJSON_ESTATICOS_V1)[K]>>>;
     },
   };
 }
