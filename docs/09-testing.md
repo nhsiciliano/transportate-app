@@ -110,7 +110,8 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
 
 - **jest-expo 58.0.13 + Jest 30.5.2 + @testing-library/react-native 14.1.0.**
   - En RNTL 14 la API es **asíncrona**: `await render(…)`, `await renderHook(…)`, `await act(…)` y `await userEvent.setup().press(…)`.
-  - Matchers: `toBeOnTheScreen`, `toHaveTextContent`, `toHaveStyle`, `toBeSelected`, `toBeDisabled`, `toBeBusy`.
+  - Matchers integrados: `toBeOnTheScreen`, `toHaveTextContent`, `toHaveStyle`, `toBeSelected`, `toBeDisabled`, `toBeBusy`, `toBeExpanded` y `toBeCollapsed`.
+  - `fireEvent` y `unmount` también son asíncronos: sin `await`, el `act` queda solapado y los tests siguientes fallan con "overlapping act() calls".
 - **Rutas:** `renderRouter` de `expo-router/testing-library` con un sistema de archivos en memoria (layouts y pantallas reales) y el matcher `toHavePathname`.
 - **`jest.config.js`:**
   - `transformIgnorePatterns` de la doc de Expo para pnpm (incluye `.pnpm`), más `standard-navigation` (ESM) y `@material-symbols/*`.
@@ -125,6 +126,25 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
   - El camino de éxito se prueba mockeando `useFonts`.
 - **Hápticos y splash:** se mockean con `jest.mock` (`expo-haptics`, `expo-splash-screen`) donde el test verifica la llamada.
 
+### Mocks nativos y helpers (primera ola de la Fase 4)
+
+Los registra `jest.setup.ts`; `test/mocks/setup-after-env.ts` (`setupFilesAfterEnv`) vuelve los que tienen estado a cero antes de cada test.
+
+| Pieza | Qué hace |
+|---|---|
+| `test/mocks/maplibre.tsx` | `@maplibre/maplibre-react-native` v11 no publica mock. Cada componente (`Map`, `Camera`, `GeoJSONSource`, `Layer`, `UserLocation`) es un `View` con `testID` y **todas** sus props; los refs imperativos son `jest.fn` (`mapLibreMock.camera` / `.map`) |
+| `test/mocks/expo-location.ts` | `expo-location` con estado: `locationMock.setPermission('granted' \| 'denied' \| 'undetermined', { canAskAgain })`, `setRequestAnswer`, `setPosition`, `emitPosition` (a cada `watchPositionAsync`), `activeWatchers`. Los métodos de segundo plano y geofencing tiran: un test falla si la app los pidiera |
+| Reanimated 4 y Worklets | `jest.setup.ts` hace `setUpTests()` de Reanimated y usa el mock de `react-native-worklets`. `test/mocks/resolver.js` compone el resolver de Reanimated con el de `jest-expo` (con pnpm la carpeta de Reanimated contiene el nombre de Worklets y el resolver los confundía) |
+| Gesture Handler | `jest.setup.ts` carga su `jestSetup.js` oficial |
+| `test/mocks/native-deps.test.tsx` | Humo de todo lo anterior y de `app.config.ts` (ubicación solo "mientras se usa") |
+| `test/helpers/ajustes.tsx` | `renderWithApp(ui, { fetch, favoritos, online })`: tema, `QueryClient`, cliente del proxy, intervalo y favoritos sobre un `MemoryKeyValueStore`. Lo usan Ajustes y la navegación de Inicio |
+| `test/subtes/fixtures.tsx` | Estático mínimo de las 7 líneas, respuestas del proxy (`estado`, `alertas`, `arribos`, `posiciones`), `createHarness(routes)` con todos los providers y `renderSubtes(url)`. Lo reutilizan Favoritos, Inicio y los datos vivos |
+| `test/map/{fixtures,harness}.ts*` | Lo mismo para las pantallas con mapa |
+
+**Patrón del cliente mockeado por ruta:** `createFetch(routes)` recibe `{ '/v1/subtes/estado': () => jsonResponse(estado()) }` y responde según el `pathname`. Una ruta que devuelve `undefined` queda pendiente (estado de carga) y una que no está declarada da 404 `not_found`. El `QueryClient` de los tests usa `retry: false` y `gcTime: Infinity` para no dejar timers. Para armar errores: `jsonResponse(errorBody('upstream_unavailable'), 503)`. Nada toca la red.
+
+**Pantallas con permisos o diálogos:** `jest.spyOn(Alert, 'alert')` para los diálogos nativos, `jest.spyOn(Linking, 'openURL' | 'openSettings')` para los enlaces. Ojo con `mockClear()` al espiar `Linking.openSettings`: el mock de React Native conserva las llamadas entre tests.
+
 ### Cómo correr
 
 ```sh
@@ -133,7 +153,9 @@ cd apps/mobile && npx jest --ci test/integracion.test.tsx   # un archivo
 cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; borrá coverage/ después)
 ```
 
-### Qué cubren (278 tests en 25 archivos, 2026-11-02)
+### Qué cubren (mobile: 511 tests en 51 archivos, 2026-11-03, tras la primera ola de la Fase 4)
+
+Totales por paquete en esa fecha: **mobile 511 tests en 51 suites**, **proxy 86 + 1 skipped en 11 archivos** y **contracts 74 + 2 skipped en 3 archivos**.
 
 | Archivo | Cubre |
 |---|---|
@@ -146,10 +168,21 @@ cd apps/mobile && npx jest --ci --coverage          # cobertura (informativa; bo
 | `test/favoritos.test.tsx` | Repositorio: alta y duplicados, alias (trunca a 30), reorden, borrado + restore, `clear`, persistencia entre instancias, JSON corrupto, migración ficticia 0 → 1, `useFavoritos` |
 | `test/preferences.test.tsx` | Stores de tema e intervalo: defaults, persistencia, validación, suscripción, `usePreference` |
 | `test/integracion.test.tsx` | La app arranca con `ThemeProvider` + `FavoritosProvider` y tabs nativas en Inicio; cambio de tema → `useTheme().scheme` + persistencia; favoritos de punta a punta; `FreshnessLabel` viejo en warning oscuro; `OfflineBanner` |
+| `src/features/ajustes/__tests__/*` | Ajustes (tema e intervalo persisten, fila del índice en datos/carga/error/sin conexión, limpiar datos, borrar favoritos con diálogo y Deshacer, fila Ubicación según el permiso), Acerca de (versión, enlaces, 150–250 palabras) y Licencias |
+| `src/features/ubicacion/__tests__/*` | `usePermisoUbicacion` / `useUbicacion` con el mock de ubicación (permiso, `request` solo en contexto, posición en memoria, `watch` que se suelta al desmontar y en segundo plano), `isInsideCaba`, `distanceMeters` y `PermisoUbicacionBloque` |
+| `src/features/favoritos/__tests__/*` | Pantalla Favoritos (lista, vacío, edición, quitar con Deshacer, alias de 30 caracteres, búsqueda, acciones de accesibilidad), colores de subte y huérfanos con el estático mockeado, datos vivos (ok, carga, error, solo filas visibles), `FreshnessLabel` global y pull to refresh |
+| `src/features/subtes/__tests__/*`, `test/subtes/*` | Modelo de la red, pantallas de Subtes, línea y estación, y `useStaticArchivo` |
+| `src/shared/ui/__tests__/Snackbar.test.tsx` | `Snackbar` y `SnackbarProvider` con timers falsos (5 s / 8 s, acción, reemplazo) |
+| `src/shared/map/__tests__/*`, `test/map/*` | `MapView` compartido y mapa de la red de subte contra el mock de MapLibre |
+| `test/clear-query-cache.test.ts` | `clearPersistedQueryCache` borra solo la caché de consultas |
 | `src/shared/theme/__tests__/*` | Contrastes de DESIGN.md §2 en claro y oscuro; `ThemeProvider` |
 | `src/shared/ui/__tests__/*` | Componentes: Alert, Button, FreshnessLabel, SearchInput, StatusChip, vitrina en los dos esquemas, y (`Estados.test.tsx`) Chip, SegmentedControl, ErrorState, EmptyState, LineBadge, OfflineBanner y Skeleton |
 
-**Cobertura** (`jest --coverage`, informativa y sin umbral, 2026-11-02): **93,2 % statements, 88,2 % branches, 86,9 % funciones, 94,8 % líneas**.
+**Cobertura** (`jest --coverage`, informativa y sin umbral; medida el 2026-11-02, antes de la Fase 4): **93,2 % statements, 88,2 % branches, 86,9 % funciones, 94,8 % líneas**.
+
+**Hallazgo: timeouts bajo carga.** Con la máquina cargada (varios agentes compilando, load average de 25 a 70) `pnpm test` desde la raíz corre los tres paquetes en paralelo y fallan por tiempo algunos tests que miden asíncronos (en el proxy, `health` y `edge-cached`; en la app, `integracion`, `navegacion` y las pantallas que montan el router real). Sueltos y **por paquete pasan**. Cuando la raíz da timeouts: `cd apps/mobile && pnpm test`, después `apps/proxy` y `packages/contracts`, y anotarlo en el reporte. Los tests que montan el router real llevan `jest.setTimeout(30_000)`.
+
+**Después de traer cambios de `packages/contracts`:** el `dist` del paquete lo genera `prepare` (`tsc -p tsconfig.build.json`) y `pnpm install` no lo regenera si nada cambió en el lockfile. Si aparecen suites que fallan sin ningún test en rojo (`Cannot find module` / esquemas que no existen), corré `pnpm exec tsc -p tsconfig.build.json` en `packages/contracts`.
 
 **Pendiente:**
 - **Dev build en dispositivo o simulador:** nada de la app se corrió todavía en un dev client. Falta confirmar MMKV con Nitro, NetInfo, el 304 con `NSURLCache` en iOS y `NativeTabs` (Fase 4, primer build).

@@ -14,6 +14,7 @@ import { Button, LineBadge, Text } from '@/shared/ui';
 
 import { accessibleLabel, displayName, lineLabel, secondaryText, TIPO_ICON } from './describe';
 import type { FavoritoV1 } from './model';
+import { orphanMessage, type SubteBadge } from './subte';
 
 export const MOVE_UP = 'moveUp';
 export const MOVE_DOWN = 'moveDown';
@@ -29,20 +30,42 @@ export interface FavoritoRowProps {
   /** Primera/última fila: no ofrece la acción que no se puede hacer. */
   isFirst: boolean;
   isLast: boolean;
+  /** Color de la insignia de subte (del estático). Sin él, insignia neutra. */
+  subteBadge?: SubteBadge | undefined;
+  /** El destino ya no existe en los datos oficiales: la fila avisa y se puede quitar. */
+  orphan?: boolean | undefined;
   /** Dato vivo (StatusChip, próximo arribo, "18 en servicio"). Lo conecta la tarea de datos. */
   liveData?: ReactNode;
   /** Lo que el lector agrega al final de la fila ("Hacia Alem en 2 minutos"). */
-  liveDataLabel?: string;
+  liveDataLabel?: string | undefined;
   /** Handle de arrastre en edición. Lo agrega high-dev (4.9-drag). */
   dragHandle?: ReactNode;
   testID?: string;
 }
 
-function LeadingBadge({ favorito }: { favorito: FavoritoV1 }) {
+function LeadingBadge({
+  favorito,
+  badge,
+}: {
+  favorito: FavoritoV1;
+  badge: SubteBadge | undefined;
+}) {
+  // Con el estático cargado, la línea y la estación de subte llevan el color oficial de la línea.
+  if (badge) {
+    return (
+      <LineBadge
+        kind="subte"
+        label={badge.label}
+        color={badge.color}
+        textColor={badge.textColor}
+        size="md"
+        accessibilityLabel={`Línea ${badge.label}`}
+      />
+    );
+  }
   const isLine = favorito.tipo === 'linea_subte' || favorito.tipo === 'linea_colectivo';
   if (!isLine) return <Icon name={TIPO_ICON[favorito.tipo]} size={24} />;
-  // TODO(4.2): en las líneas de subte, `kind: 'subte'` con `route_color` / `route_text_color`
-  // del estático (F4-favoritos-2). Hasta que exista `shared/static`, insignia neutra.
+  // Sin el estático (cargando o con error), insignia neutra.
   return <LineBadge kind="colectivo" label={lineLabel(favorito)} size="md" />;
 }
 
@@ -56,6 +79,8 @@ export function FavoritoRow({
   onMoveDown,
   isFirst,
   isLast,
+  subteBadge,
+  orphan = false,
   liveData,
   liveDataLabel,
   dragHandle,
@@ -64,13 +89,14 @@ export function FavoritoRow({
   const { space, colors, component } = useTheme();
   const name = displayName(favorito);
   const secondary = secondaryText(favorito);
-  const label = accessibleLabel(favorito, liveDataLabel);
+  const message = orphan ? orphanMessage(favorito) : undefined;
+  const label = accessibleLabel(favorito, message ?? liveDataLabel);
   const minHeight = component.hitSlop + space[3];
 
   const texts = (
     <>
       <View style={styles.lead} importantForAccessibility="no-hide-descendants">
-        <LeadingBadge favorito={favorito} />
+        <LeadingBadge favorito={favorito} badge={subteBadge} />
       </View>
       <View style={styles.texts}>
         <Text variant="text.md" numberOfLines={1}>
@@ -81,10 +107,48 @@ export function FavoritoRow({
             {secondary}
           </Text>
         ) : null}
+        {message ? (
+          <View style={[styles.orphan, { gap: space[1] }]}>
+            <Icon name="alerta" size={16} color={colors.role.warning.text} />
+            <Text variant="text.sm" color={colors.role.warning.text} style={styles.grow}>
+              {message}
+            </Text>
+          </View>
+        ) : null}
       </View>
       {liveData ? <View style={styles.live}>{liveData}</View> : null}
     </>
   );
+
+  // Huérfano fuera de edición: no hay detalle al que ir, así que la fila solo avisa y se quita.
+  if (orphan && !editing) {
+    return (
+      <View
+        testID={testID}
+        accessible
+        accessibilityLabel={label}
+        style={{
+          minHeight,
+          backgroundColor: colors.bg.card,
+          paddingVertical: space[2],
+          paddingHorizontal: space[3],
+          gap: space[2],
+        }}
+      >
+        <View style={[styles.row, { gap: space[3] }]}>{texts}</View>
+        <View style={[styles.row, styles.buttons, { gap: space[2] }]}>
+          <Button
+            label="Quitar"
+            accessibilityLabel={`Quitar ${name}`}
+            variant="danger"
+            outline
+            size="sm"
+            onPress={onRemove}
+          />
+        </View>
+      </View>
+    );
+  }
 
   if (!editing) {
     return (
@@ -166,6 +230,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   grow: { flex: 1 },
   buttons: { flexWrap: 'wrap' },
+  orphan: { flexDirection: 'row', alignItems: 'center' },
   lead: { minWidth: 32, alignItems: 'center' },
   texts: { flex: 1, gap: 2 },
   live: { alignItems: 'flex-end', flexShrink: 0 },

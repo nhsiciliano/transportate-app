@@ -51,7 +51,7 @@ export interface RowProps {
   value?: string;
   icon?: IconName;
   /** Ícono al final: flecha de navegación o enlace externo. */
-  trailing?: 'chevron' | 'externo';
+  trailing?: 'chevron' | 'externo' | undefined;
   titleTone?: TextTone;
   onPress?: () => void;
   disabled?: boolean;

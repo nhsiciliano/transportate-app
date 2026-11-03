@@ -2,20 +2,37 @@
 // guardado, pintada síncrona desde MMKV. Sin datos vivos ni arrastre todavía: ver los slots
 // `liveData` y `dragHandle` de `FavoritoRow` y el README de la feature.
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
+import { useRedSubte, usePullToRefresh } from '@/features/subtes/hooks';
+import { invalidateRealtime } from '@/shared/api';
+import { useRefreshInterval } from '@/shared/query';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
-import { Button, EmptyState, SearchInput, SnackbarProvider, Text, useSnackbar } from '@/shared/ui';
+import {
+  Button,
+  EmptyState,
+  FreshnessLabel,
+  SearchInput,
+  SnackbarProvider,
+  Text,
+  useSnackbar,
+} from '@/shared/ui';
 
 import { AliasSheet } from './AliasSheet';
 import { displayName, hrefFor } from './describe';
 import { useEditMode } from './EditMode';
-import { FavoritoRow } from './FavoritoRow';
+import { FavoritoItem } from './FavoritoItem';
 import { useFavoritos } from './FavoritosProvider';
 import type { FavoritoV1 } from './model';
 import { filterFavoritos, SEARCH_THRESHOLD } from './search';
+import { resolveFavorito } from './subte';
+
+/** Hasta que la lista informe qué filas se ven, se consideran visibles las primeras. */
+export const INITIAL_VISIBLE = 10;
+const VIEWABILITY = { itemVisiblePercentThreshold: 1 } as const;
 
 export const EMPTY_TITLE = 'Todavía no guardaste favoritos.';
 export const EMPTY_MESSAGE = 'Tocá la estrella en una línea, parada o estación para tenerla acá.';
@@ -34,6 +51,36 @@ function FavoritosContent() {
   const snackbar = useSnackbar();
   const { favoritos, repository } = useFavoritos();
   const { editing, setEditing } = useEditMode();
+  // El color de las insignias de subte y los huérfanos salen del estático (F4-favoritos-9).
+  const { red } = useRedSubte();
+  const queryClient = useQueryClient();
+  const { seconds } = useRefreshInterval();
+  // Pull to refresh: vuelve a pedir los datos en vivo (los estáticos no se tocan).
+  const { refreshing, onRefresh } = usePullToRefresh([() => invalidateRealtime(queryClient)]);
+  // Filas en pantalla (null = todavía no se sabe) y el dato más viejo de las que se ven.
+  const [viewable, setViewable] = useState<ReadonlySet<string> | null>(null);
+  const [stamps, setStamps] = useState<Readonly<Record<string, string>>>({});
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: readonly { key: string }[] }) => {
+      setViewable(new Set(viewableItems.map((v) => v.key)));
+    },
+    [],
+  );
+  const onTimestamp = useCallback((id: string, ts: string | null) => {
+    setStamps((prev) => {
+      if (ts === null) {
+        if (!(id in prev)) return prev;
+        return Object.fromEntries(Object.entries(prev).filter(([key]) => key !== id));
+      }
+      return prev[id] === ts ? prev : { ...prev, [id]: ts };
+    });
+  }, []);
+  // La más vieja de las visibles (brief §3.4): si una fila está atrasada, la etiqueta lo dice.
+  const oldest = useMemo(() => {
+    const values = Object.values(stamps);
+    if (values.length === 0) return null;
+    return values.reduce((a, b) => (Date.parse(a) <= Date.parse(b) ? a : b));
+  }, [stamps]);
   const [query, setQuery] = useState('');
   const [renaming, setRenaming] = useState<FavoritoV1 | null>(null);
 
@@ -107,6 +154,7 @@ function FavoritosContent() {
     <View style={[styles.flex, { backgroundColor: colors.bg.base }]}>
       {/* 4.9-drag: high-dev reemplaza este FlatList por la lista con arrastre. */}
       <FlatList
+        testID="favoritos-lista"
         data={visible}
         keyExtractor={(item) => item.id}
         contentInsetAdjustmentBehavior="automatic"
@@ -114,16 +162,22 @@ function FavoritosContent() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: space[3], gap: space[2] }}
         ListHeaderComponent={
-          showSearch ? (
-            <SearchInput
-              value={query}
-              onChangeText={setQuery}
-              label="Buscar en favoritos"
-              placeholder="Buscar en favoritos"
-              icon={<Icon name="buscar" size={16} />}
-              clearIcon={<Icon name="limpiarBusqueda" size={20} />}
-              style={{ marginBottom: space[2] }}
-            />
+          showSearch || oldest !== null ? (
+            <View style={{ gap: space[2], marginBottom: space[2] }}>
+              {showSearch ? (
+                <SearchInput
+                  value={query}
+                  onChangeText={setQuery}
+                  label="Buscar en favoritos"
+                  placeholder="Buscar en favoritos"
+                  icon={<Icon name="buscar" size={16} />}
+                  clearIcon={<Icon name="limpiarBusqueda" size={20} />}
+                />
+              ) : null}
+              {oldest !== null ? (
+                <FreshnessLabel sourceTimestamp={oldest} intervalSeconds={seconds} />
+              ) : null}
+            </View>
           ) : undefined
         }
         ListEmptyComponent={
@@ -131,29 +185,39 @@ function FavoritosContent() {
             {`No encontramos favoritos con «${query.trim()}».`}
           </Text>
         }
-        renderItem={({ item, index }) => (
-          <FavoritoRow
-            favorito={item}
-            editing={editing}
-            isFirst={!canMove || index === 0}
-            isLast={!canMove || index === visible.length - 1}
-            onOpen={() => {
-              router.push(hrefFor(item));
-            }}
-            onRename={() => {
-              setRenaming(item);
-            }}
-            onRemove={() => {
-              remove(item);
-            }}
-            onMoveUp={() => {
-              move(item, -1);
-            }}
-            onMoveDown={() => {
-              move(item, 1);
-            }}
-          />
-        )}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        viewabilityConfig={VIEWABILITY}
+        onViewableItemsChanged={onViewableItemsChanged}
+        renderItem={({ item, index }) => {
+          const resolved = resolveFavorito(item, red);
+          return (
+            <FavoritoItem
+              favorito={item}
+              visible={viewable === null ? index < INITIAL_VISIBLE : viewable.has(item.id)}
+              onTimestamp={onTimestamp}
+              subteBadge={resolved.badge}
+              orphan={resolved.orphan}
+              editing={editing}
+              isFirst={!canMove || index === 0}
+              isLast={!canMove || index === visible.length - 1}
+              onOpen={() => {
+                router.push(hrefFor(item));
+              }}
+              onRename={() => {
+                setRenaming(item);
+              }}
+              onRemove={() => {
+                remove(item);
+              }}
+              onMoveUp={() => {
+                move(item, -1);
+              }}
+              onMoveDown={() => {
+                move(item, 1);
+              }}
+            />
+          );
+        }}
       />
       <AliasSheet
         favorito={renaming}

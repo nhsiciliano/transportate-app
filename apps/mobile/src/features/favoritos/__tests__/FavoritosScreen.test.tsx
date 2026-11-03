@@ -5,13 +5,12 @@ import { AccessibilityInfo } from 'react-native';
 import {
   EditModeButton,
   EditModeProvider,
-  FavoritosProvider,
   FavoritosScreen,
   MmkvFavoritosRepository,
   type NuevoFavorito,
 } from '@/features/favoritos';
-import { MemoryKeyValueStore } from '@/shared/storage/kv';
-import { createMemoryPreferenceStore, ThemeProvider } from '@/shared/theme';
+
+import { createHarness, defaultRoutes } from '../../../../test/subtes/fixtures';
 
 import { MOVE_DOWN, MOVE_UP } from '../FavoritoRow';
 
@@ -22,36 +21,36 @@ jest.mock('expo-router', () => ({
 
 const casa: NuevoFavorito = {
   tipo: 'estacion_subte',
-  refId: '1001',
+  refId: '2002',
   nombre: 'Medrano',
   subtitulo: 'Línea B',
   alias: 'Casa',
 };
-const lineaA: NuevoFavorito = { tipo: 'linea_subte', refId: 'LineaA', nombre: 'Línea A' };
+const lineaA: NuevoFavorito = { tipo: 'linea_subte', refId: 'A', nombre: 'Línea A' };
 const parada: NuevoFavorito = {
   tipo: 'parada_colectivo',
-  refId: '2002',
+  refId: '9002',
   nombre: 'Av. Rivadavia y Acoyte',
   subtitulo: 'Líneas 1, 25, 132',
 };
 const colectivo: NuevoFavorito = { tipo: 'linea_colectivo', refId: '60', nombre: 'Línea 60' };
 
 function setup(items: readonly NuevoFavorito[] = []) {
-  const kv = new MemoryKeyValueStore();
-  const repo = new MmkvFavoritosRepository(kv, { now: () => new Date('2026-11-03T12:00:00Z') });
+  // Providers reales (tema, datos, estático, favoritos) y un proxy mockeado por ruta: el estático
+  // de subte (7 líneas) sale de los fixtures de `test/subtes`.
+  const harness = createHarness(defaultRoutes());
+  const repo = harness.repository;
   for (const item of items) repo.add(item);
   const renderUi = (ui: ReactElement = <FavoritosScreen />) =>
     render(
-      <ThemeProvider store={createMemoryPreferenceStore('light')}>
-        <FavoritosProvider repository={repo}>
-          <EditModeProvider>
-            <EditModeButton />
-            {ui}
-          </EditModeProvider>
-        </FavoritosProvider>
-      </ThemeProvider>,
+      <harness.Wrapper>
+        <EditModeProvider>
+          <EditModeButton />
+          {ui}
+        </EditModeProvider>
+      </harness.Wrapper>,
     );
-  return { repo, renderUi };
+  return { repo, renderUi, harness };
 }
 
 const ids = (repo: MmkvFavoritosRepository) => repo.list().map((f) => f.refId);
@@ -83,15 +82,15 @@ describe('Favoritos · lista', () => {
     const { renderUi } = setup([casa, parada, colectivo, lineaA]);
     await renderUi();
     expect(
-      screen.getByRole('button', { name: 'Casa. Estación Medrano, Línea B.' }),
+      screen.getByRole('button', { name: /^Casa\. Estación Medrano, Línea B\./ }),
     ).toBeOnTheScreen();
     expect(
       screen.getByRole('button', {
         name: 'Parada Av. Rivadavia y Acoyte, Líneas 1, 25, 132.',
       }),
     ).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Línea 60 de colectivo.' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Línea A de subte.' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea 60 de colectivo\./ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea A de subte\./ })).toBeOnTheScreen();
   });
 
   it('tocar una fila va al detalle de su tipo', async () => {
@@ -102,17 +101,17 @@ describe('Favoritos · lista', () => {
     await user.press(screen.getByRole('button', { name: /^Casa\./ }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/subtes/estacion/[id]',
-      params: { id: '1001' },
+      params: { id: '2002' },
     });
     await user.press(screen.getByRole('button', { name: /^Línea A/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/subtes/[linea]',
-      params: { linea: 'LineaA' },
+      params: { linea: 'A' },
     });
     await user.press(screen.getByRole('button', { name: /^Parada/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/colectivos/parada/[id]',
-      params: { id: '2002' },
+      params: { id: '9002' },
     });
     await user.press(screen.getByRole('button', { name: /^Línea 60/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
@@ -148,7 +147,7 @@ describe('Favoritos · vacío', () => {
     await act(() => {
       repo.add(lineaA);
     });
-    expect(screen.getByRole('button', { name: 'Línea A de subte.' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea A de subte\./ })).toBeOnTheScreen();
     expect(screen.queryByText('Todavía no guardaste favoritos.')).toBeNull();
   });
 });
@@ -175,11 +174,11 @@ describe('Favoritos · edición', () => {
     await user.press(screen.getByRole('button', { name: 'Editar' }));
 
     await user.press(screen.getByRole('button', { name: 'Quitar Línea A' }));
-    expect(ids(repo)).toEqual(['1001', '2002']);
+    expect(ids(repo)).toEqual(['2002', '9002']);
     expect(screen.getByText('Quitaste «Línea A».')).toBeOnTheScreen();
 
     await user.press(screen.getByRole('button', { name: 'Deshacer' }));
-    expect(ids(repo)).toEqual(['1001', 'LineaA', '2002']);
+    expect(ids(repo)).toEqual(['2002', 'A', '9002']);
   });
 
   it('el aviso nombra el alias cuando hay', async () => {
@@ -206,12 +205,12 @@ describe('Favoritos · edición', () => {
     expect(last.props.accessibilityActions).toEqual([{ name: MOVE_UP, label: 'Mover arriba' }]);
 
     await fireEvent(first, 'accessibilityAction', { nativeEvent: { actionName: MOVE_DOWN } });
-    expect(ids(repo)).toEqual(['LineaA', '1001', '2002']);
+    expect(ids(repo)).toEqual(['A', '2002', '9002']);
 
     await fireEvent(screen.getByRole('button', { name: /^Parada/ }), 'accessibilityAction', {
       nativeEvent: { actionName: MOVE_UP },
     });
-    expect(ids(repo)).toEqual(['LineaA', '2002', '1001']);
+    expect(ids(repo)).toEqual(['A', '9002', '2002']);
   });
 });
 

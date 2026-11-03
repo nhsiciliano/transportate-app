@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Alert as NativeAlert, ScrollView, View } from 'react-native';
 
 import { useFavoritos } from '@/features/favoritos';
+import { usePermisoUbicacion, type PermisoUbicacion } from '@/features/ubicacion';
 import { useManifest } from '@/shared/api';
 import { useIsOnline, useRefreshInterval } from '@/shared/query';
 import { getDefaultKeyValueStore, type KeyValueStore } from '@/shared/storage/kv';
@@ -24,6 +25,16 @@ import { Row, Section } from './SettingsList';
 export const CLEAR_DONE_MESSAGE = 'Listo, limpiamos los datos guardados';
 export const FAVORITOS_EMPTY_MESSAGE = 'No tenés favoritos guardados';
 export const FAVORITOS_REMOVED_MESSAGE = 'Borraste tus favoritos.';
+
+export const UBICACION_COPY: Record<PermisoUbicacion, { value: string; hint?: string }> = {
+  granted: { value: 'Permitida mientras usás la app' },
+  denied: { value: 'No permitida', hint: 'Podés buscar paradas a mano' },
+  blocked: { value: 'No permitida', hint: 'Podés buscar paradas a mano' },
+  undetermined: {
+    value: 'Todavía no la pediste',
+    hint: 'Te la pedimos cuando busques paradas cerca tuyo',
+  },
+};
 
 export interface AjustesScreenProps {
   /** Dónde está la caché persistida (default: MMKV de la app). Se inyecta en los tests. */
@@ -48,6 +59,7 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
   const refreshInterval = useRefreshInterval();
   const manifest = useManifest();
   const online = useIsOnline();
+  const ubicacion = usePermisoUbicacion();
 
   const handleClearData = () => {
     // Primero la memoria y después el disco: si no, el persister escribiría de nuevo lo viejo.
@@ -81,6 +93,12 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
       ],
     );
   };
+
+  // F4-ubicacion-6: sin preguntar (o negado pero preguntable) la fila pide el permiso, porque
+  // la persona lo tocó a propósito; si no, lleva a la configuración del teléfono.
+  const canRequestUbicacion =
+    ubicacion.permission === 'undetermined' || ubicacion.permission === 'denied';
+  const ubicacionCopy = UBICACION_COPY[ubicacion.permission];
 
   const favoritosText =
     favoritos.length === 0
@@ -151,7 +169,25 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
         </View>
       </Section>
 
-      {/* TODO 4.7: fila Ubicación (estado del permiso + enlace a la configuración del sistema). */}
+      <Section title="Privacidad">
+        <Row
+          title="Ubicación"
+          icon="sinUbicacion"
+          value={ubicacionCopy.value}
+          trailing={canRequestUbicacion ? undefined : 'externo'}
+          accessibilityLabel={`Ubicación, ${ubicacionCopy.value}${ubicacionCopy.hint ? `. ${ubicacionCopy.hint}` : ''}. ${canRequestUbicacion ? 'Tocá para pedir el permiso' : 'Tocá para abrir la configuración'}`}
+          onPress={() => {
+            if (canRequestUbicacion) void ubicacion.request();
+            else void ubicacion.openSettings();
+          }}
+        >
+          {ubicacionCopy.hint ? (
+            <Text variant="text.sm" tone="secondary">
+              {ubicacionCopy.hint}
+            </Text>
+          ) : null}
+        </Row>
+      </Section>
 
       <Section title="Información">
         <Row

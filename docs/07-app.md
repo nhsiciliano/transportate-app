@@ -290,12 +290,38 @@ Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `Favor
 | Búsqueda (S15) | `SearchInput` con más de 15 favoritos; filtra alias, nombre y subtítulo sin tildes |
 | Vacío | Estrella, "Todavía no guardaste favoritos." y los botones "Ver subtes" y "Buscar colectivo" |
 
+Agregado en la tarea F4-LOW-C:
+
+| Pieza | Qué hace |
+| --- | --- |
+| Colores de subte | La línea y la estación de subte usan `LineBadge kind="subte"` con `color` y `colorTexto` del estático (`useRedSubte()`, `subte.ts › resolveFavorito`). Sin el estático cargado, insignia neutra |
+| Favorito huérfano | Si el `refId` de una línea o estación de subte no existe en el estático cargado: "Esta estación ya no figura en los datos oficiales" (o "línea"), sin navegar y con "Quitar" siempre visible. Para colectivos hay un gancho (`isOrphanColectivo`) que se completa en 4.5 |
+| Datos vivos | `FavoritoItem` llama a `useFavoritoLiveData` por fila y le pasa `liveData` y `liveDataLabel` (lo que lee el lector) a `FavoritoRow`. Solo piden datos las filas visibles (`onViewableItemsChanged`; hasta que la lista informe, las primeras 10). El dato estático de la parada no se repite |
+| Frescura | `FreshnessLabel` arriba de la lista, con el `sourceTimestamp` más viejo de las filas visibles y el intervalo de `useRefreshInterval()`. Sin datos vivos no se muestra |
+| Pull to refresh | `RefreshControl` con `usePullToRefresh` e `invalidateRealtime` (estado, arribos y posiciones; los estáticos no se tocan) |
+
 **Lo que queda:**
 
-- **mid-dev (datos vivos):** pasar `liveData`/`liveDataLabel` a cada `FavoritoRow`, y sumar `FreshnessLabel`, pull to refresh, estados de carga/error por tipo y el favorito huérfano.
-- **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle`. El reorden se persiste con `repository.reorder`.
-- **4.2:** el color del `LineBadge` de subte sale del estático (hoy es una insignia neutra).
+- **high-dev (arrastre):** reemplazar el `FlatList` (`// 4.9-drag`) y pasar `dragHandle` a `FavoritoRow` (a través de `FavoritoItem`). El reorden se persiste con `repository.reorder`; las acciones "Mover arriba/abajo" tienen que seguir andando.
+- **4.5:** huérfanos de colectivos y el dato de las paradas con el índice de colectivos.
+- **Pendiente de decisión:** la Alert única "El servicio de la Ciudad no responde" del brief (hoy cada fila muestra "Sin información").
 
+## 16b. Ubicación
+
+`src/features/ubicacion` ([README](../apps/mobile/src/features/ubicacion/README.md)), compartida por Colectivos (paradas cercanas, 4.7), el mapa ("centrar en mí") y Ajustes. **La ubicación nunca sale del teléfono**: vive solo en la memoria del hook, no se guarda en MMKV ni en la caché de consultas y no se manda al proxy ([`05-privacidad.md`](05-privacidad.md) §3).
+
+| Pieza | Qué hace |
+| --- | --- |
+| `usePermisoUbicacion()` | Solo el permiso: `permission` (`undetermined` / `granted` / `denied` / `blocked`), `canAskAgain`, `request()`, `refresh()`, `openSettings()`. Lee el permiso al montar **sin** abrir el diálogo y lo vuelve a leer cuando la app vuelve a primer plano |
+| `useUbicacion({ watch })` | Permiso + `position: { lat, lon, accuracy, timestamp } \| null`. Con permiso lee la posición y, si `watch` (default), se suscribe con `Accuracy.Balanced` (cada 10 s o 25 m). El `watch` se suelta al desmontar y en segundo plano |
+| `request()` | **Solo desde una acción de la persona** (S32): "Paradas cercanas", "centrar en mí" o la fila de Ajustes. Nunca al montar |
+| `isInsideCaba(lat, lon)` | Rectángulo lat −34,71 a −34,52 y lon −58,54 a −58,33 (el bbox con el que se relevó la Ciudad, `01b-gtfs-alternativos.md`). Para "Ubicación fuera de CABA" |
+| `distanceMeters(a, b)` | Haversine, en metros |
+| `PermisoUbicacionBloque` | "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." + "Activar" (o "Abrir configuración" si el sistema ya no deja preguntar) + "Buscar a mano" |
+
+**Ajustes:** la sección Privacidad tiene la fila **Ubicación** con el estado real ("Permitida mientras usás la app" / "No permitida" + "Podés buscar paradas a mano" / "Todavía no la pediste"). Tocarla pide el permiso si todavía se puede preguntar y, si no, abre la configuración del teléfono.
+
+**Permisos nativos:** el plugin de `expo-location` en `app.config.ts` declara solo "mientras se usa". Los tests cambian el estado con `locationMock` (ver [`09-testing.md`](09-testing.md) §8).
 
 ## 17. Inicio
 
