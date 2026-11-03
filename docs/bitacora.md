@@ -227,11 +227,12 @@ _Iniciada el 2026-11-03._ Coordinación con Orca (Run `run_6bc551486d73`), misma
 | Subtes completa: raíz (7 líneas, búsqueda de estaciones, "Ver mapa"), línea (alertas completas, diagrama de estaciones), estación (arribos por sentido, S30); `shared/static` con `useStaticArchivo` (versión por manifiesto y última versión conocida en MMKV); `FavoriteToggle` reutilizable; `OfflineBanner` global; suposiciones `F4-subtes-1…7` | 4.2, 4.11, 4.12 | mid-dev | merge de `nhsiciliano/Mid-Dev` · [`../apps/mobile/src/features/subtes/README.md`](../apps/mobile/src/features/subtes/README.md), [`07-app.md`](07-app.md) §14–15 |
 | Favoritos base: lista síncrona desde MMKV, modo edición (alias con contador, quitar con Deshacer, Mover arriba/abajo accesible), búsqueda con más de 15, vacío; slots `liveData` y `dragHandle` para mid-dev y high-dev; suposiciones `F4-favoritos-1…8` | 4.9 (base) | low-dev | merge de `nhsiciliano/Low-Dev` · [`07-app.md`](07-app.md) §16 |
 | Inicio de producción: large title, Alert destacada (1, varias o las 7 líneas interrumpidas), 7 filas fijas con skeleton y ErrorState dentro del bloque, 5 favoritos con "Ver todos (N)", pull to refresh; `useFavoritoLiveData`/`FavoritoLiveData` por tipo reutilizando las queries de cada feature; suposiciones `F4-inicio-1…6` | 4.4 | mid-dev | merge de `nhsiciliano/Mid-Dev` · [`../apps/mobile/src/features/inicio/README.md`](../apps/mobile/src/features/inicio/README.md), [`07-app.md`](07-app.md) §17 |
+| `shared/map` (MapView sobre MapLibre 11 con estilo positron/dark según el tema, atribución, controles de 48 pt, Reducir movimiento, franja para el gesto de volver) y mapa de la red de subte en `/subtes/mapa` (trazos con colores GTFS y contorno del tema, estaciones, navegación); `GestureHandlerRootView` en el layout raíz; esquema GeoJSON mínimo en `@transportate/contracts` y `client.staticGeoJson`; N2 resuelta; suposiciones `F4-mapa-1…7` | 4.3 | high-dev | merge de `nhsiciliano/High-Dev` · [`../apps/mobile/src/shared/map/README.md`](../apps/mobile/src/shared/map/README.md), [`07-app.md`](07-app.md) |
 
 ### En curso
 
 - mid-dev: 4.5 + 4.7 Colectivos sin mapa (índice estático grande con progreso, búsqueda local, paradas cercanas, detalle de parada).
-- high-dev: 4.3 mapa de la red de subte sobre `shared/map` + `GestureHandlerRootView`; después 4.6 (mapa de línea de colectivos) y el arrastre de 4.9.
+- high-dev: 4.6 línea de colectivos con mapa en tiempo real + arrastre de 4.9 en Favoritos.
 - low-dev: `features/ubicacion`, fila Ubicación en Ajustes, colores de subte, huérfanos y datos vivos conectados en Favoritos, `09-testing.md`.
 
 ### Hallazgos que cambian el plan
