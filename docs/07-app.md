@@ -270,7 +270,13 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
 
 ## 15. Subtes
 
-`src/features/subtes` ([README](../apps/mobile/src/features/subtes/README.md): brief operativo, estados y suposiciones `F4-subtes-1…7`), tareas 4.1, 4.2, 4.11 y 4.12.
+`src/features/subtes` ([README](../apps/mobile/src/features/subtes/README.md): brief operativo, estados, contraste y suposiciones `F4-subtes-1…7` y `F5-subtes-1…7`), tareas 4.1, 4.2, 4.11 y 4.12; recompuesta en la Fase 5 (F5-HIGH-B) con la dirección «Señalética de terminal».
+
+- **Forma F5 (contrato en `.impeccable/surfaces/src-features-subtes-subtesscreen-tsx.md`):**
+  - **Raíz:** las 7 líneas en una sola placa (`Board`) con disco de 32, «Línea B», cabeceras, resumen de la alerta como nota y el estado a la derecha (`Board.Status`: cuadrado ámbar/rojo solo con texto); `FreshnessLabel` y una placa «Mapa de la red» (reemplaza al botón «Ver mapa»). Resultados de búsqueda en placa.
+  - **Línea:** banda `SignBand` `lead` fija con el estado (fundido al cambiar), estrella en `headerRight`, alertas como `Alert` y estaciones en placa con el trazo del color de la línea (`separatorInset` para que siga continuo).
+  - **Estación:** título nativo con el nombre, estrella en `headerRight`, fila de contexto con la línea (abre la línea), una banda `lead` fija por sentido con el próximo arribo a 56 pt y «Después 7 y 12 min»; sin trenes o con dato > 10 min, escala texto. `SignBand.Skeleton` por sentido en la carga.
+  - Fondo `bg.elevated` en claro (`useFondo()` de `components.tsx`); `FilaTocable`/`Seccion` siguen exportados para Colectivos.
 
 - **Rutas finas:** `subtes/index.tsx`, `[linea].tsx` y `estacion/[id].tsx` montan `SubtesScreen`, `LineaScreen` y `EstacionScreen`. El título del header lo pone cada pantalla con `Stack.Screen options`; la raíz usa large title.
 - **Modelo (`model.ts`, funciones puras):** `buildRed` une los dos archivos del estático en 7 líneas (`LineaKey` = `A`…`H` o `PM`) y 108 estaciones. Premetro es una sola fila con los dos ramales (S8): estado más severo y alertas unidas de `PM-C` y `PM-S`. También: búsqueda sin tildes, agrupación de arribos por sentido y formato "Llegando" / "2 min".
@@ -292,6 +298,8 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
 ## 16. Favoritos (pantalla)
 
 Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `FavoritosScreen` de [`src/features/favoritos/`](../apps/mobile/src/features/favoritos/README.md), que tiene el brief operativo, los estados con su copy y las suposiciones `F4-favoritos-n`.
+
+**Fase 5 (F5-HIGH-B, «Señalética de terminal»):** cada favorito es una `SignBand` `next` con el mismo contenido que en Inicio (`features/favoritos/banda.ts`: `mensajeDeFavorito`, `modeloBanda`; Inicio los importa de ahí). Toda la banda abre el detalle; el huérfano no navega (sin flecha, cuadrado rojo «Ya no figura», «Quitar» siempre). En edición la banda conserva su forma: manija «Reordenar» a la izquierda (`leading`), «Quitar» en lugar de la flecha (`trailing`) y el texto abre el alias (con «Mover arriba/abajo» como acciones del lector); al entrar y salir, fundido de 200 ms (corte seco con Reducir movimiento). Las estaciones llevan el estado de su línea (el estado del subte se pide solo si hay estaciones guardadas). Fondo `bg.elevated` en claro. Las tablas de abajo describen la Fase 4; lo que cambió de forma está en el README de la feature (`F5-favoritos-1…7`).
 
 | Pieza | Qué hace |
 | --- | --- |

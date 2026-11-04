@@ -10,7 +10,15 @@ import {
   type NuevoFavorito,
 } from '@/features/favoritos';
 
-import { createHarness, defaultRoutes } from '../../../../test/subtes/fixtures';
+import { light } from '@/shared/theme';
+
+import {
+  arribos,
+  createHarness,
+  defaultRoutes,
+  estado,
+  jsonResponse,
+} from '../../../../test/subtes/fixtures';
 
 import { MOVE_DOWN, MOVE_UP } from '../FavoritoRow';
 
@@ -68,29 +76,42 @@ describe('Favoritos · lista', () => {
     const { renderUi } = setup([casa, lineaA, parada]);
     await renderUi();
 
-    const rows = screen.getAllByRole('button', { name: /\.$/ });
-    expect(rows).toHaveLength(3);
-    expect(screen.getByText('Casa')).toBeOnTheScreen();
-    // Con alias, el nombre oficial va debajo; sin alias, el nombre es el principal.
-    expect(screen.getByText('Medrano · Línea B')).toBeOnTheScreen();
-    expect(screen.getByText('Línea A')).toBeOnTheScreen();
-    expect(screen.getByText('Av. Rivadavia y Acoyte')).toBeOnTheScreen();
-    expect(screen.getByText('Líneas 1, 25, 132')).toBeOnTheScreen();
+    // Una banda `next` por favorito, todas al mismo rango y en el orden guardado.
+    const bandas = screen.getAllByTestId(/^favorito-[a-z_]+:[^-]+$/);
+    expect(bandas.map((b) => b.props.testID as string)).toEqual([
+      'favorito-estacion_subte:2002',
+      'favorito-linea_subte:A',
+      'favorito-parada_colectivo:9002',
+    ]);
+    for (const b of bandas)
+      expect(b).toHaveStyle({ minHeight: 72, backgroundColor: light.role.primary.base });
+    // El mensaje es el alias si hay; si no, el nombre con su contexto (como en Inicio).
+    expect(screen.getByText('Casa', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getByText('Línea A', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(
+      screen.getByText('Parada Av. Rivadavia y Acoyte', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    // La parada muestra sus líneas como valor (estático).
+    expect(
+      screen.getByText('Líneas 1, 25, 132', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    // Todas abren algo: flecha al borde en cada banda.
+    expect(screen.getAllByTestId(/-flecha$/, { includeHiddenElements: true })).toHaveLength(3);
   });
 
   it('cada fila se lee como una unidad: alias, tipo y nombre', async () => {
     const { renderUi } = setup([casa, parada, colectivo, lineaA]);
     await renderUi();
     expect(
-      screen.getByRole('button', { name: /^Casa\. Estación Medrano, Línea B\./ }),
+      screen.getByRole('button', { name: /^Casa\. Estación Medrano, Línea B, / }),
     ).toBeOnTheScreen();
     expect(
       screen.getByRole('button', {
-        name: 'Parada Av. Rivadavia y Acoyte, Líneas 1, 25, 132.',
+        name: 'Parada Av. Rivadavia y Acoyte, Líneas 1, 25, 132',
       }),
     ).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: /^Línea 60 de colectivo\./ })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: /^Línea A de subte\./ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Colectivo Línea 60, / })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea A, / })).toBeOnTheScreen();
   });
 
   it('tocar una fila va al detalle de su tipo', async () => {
@@ -113,7 +134,7 @@ describe('Favoritos · lista', () => {
       pathname: '/colectivos/parada/[id]',
       params: { id: '9002' },
     });
-    await user.press(screen.getByRole('button', { name: /^Línea 60/ }));
+    await user.press(screen.getByRole('button', { name: /^Colectivo Línea 60/ }));
     expect(mockPush).toHaveBeenLastCalledWith({
       pathname: '/colectivos/[linea]',
       params: { linea: '60' },
@@ -147,7 +168,7 @@ describe('Favoritos · vacío', () => {
     await act(() => {
       repo.add(lineaA);
     });
-    expect(screen.getByRole('button', { name: /^Línea A de subte\./ })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Línea A, / })).toBeOnTheScreen();
     expect(screen.queryByText('Todavía no guardaste favoritos.')).toBeNull();
   });
 });
@@ -160,11 +181,22 @@ describe('Favoritos · edición', () => {
     expect(screen.queryByRole('button', { name: 'Quitar Casa' })).toBeNull();
 
     await user.press(screen.getByRole('button', { name: 'Editar' }));
+    // La banda conserva su forma: manija a la izquierda, «Quitar» en lugar de la flecha y el texto
+    // abre el alias (con el ícono `editar` junto al mensaje).
     expect(screen.getByRole('button', { name: 'Quitar Casa' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Cambiar nombre de Casa' })).toBeOnTheScreen();
+    expect(screen.getAllByRole('button', { name: 'Reordenar' })).toHaveLength(2);
+    const texto = screen.getByRole('button', { name: /^Casa\./ });
+    expect(texto.props.accessibilityHint).toBe('Cambiar nombre');
+    expect(
+      screen.getAllByTestId('signband-icono-mensaje', { includeHiddenElements: true }),
+    ).toHaveLength(2);
+    expect(screen.queryAllByTestId(/-flecha$/, { includeHiddenElements: true })).toHaveLength(0);
+    // La banda ya no es un botón como conjunto: cada control es su propio elemento.
+    expect(screen.getByTestId('favorito-estacion_subte:2002').props.accessible).toBeFalsy();
 
     await user.press(screen.getByRole('button', { name: 'Listo' }));
     expect(screen.queryByRole('button', { name: 'Quitar Casa' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Reordenar' })).toBeNull();
   });
 
   it('quitar es inmediato, avisa con Deshacer y lo devuelve a la misma posición', async () => {
@@ -214,10 +246,70 @@ describe('Favoritos · edición', () => {
   });
 });
 
+describe('Favoritos · fundido de la edición', () => {
+  it('al entrar en edición el contenido cruza en fundido; con Reducir movimiento, corte seco', async () => {
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    const user = userEvent.setup();
+    const { renderUi } = setup([lineaA]);
+    await renderUi();
+    await screen.findByText('Normal', { includeHiddenElements: true });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await user.press(screen.getByRole('button', { name: 'Editar' }));
+    expect(
+      screen.getByTestId('favorito-linea_subte:A-saliente', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+  });
+
+  it('con Reducir movimiento no hay contenido saliente', async () => {
+    const user = userEvent.setup();
+    const { renderUi } = setup([lineaA]);
+    await renderUi();
+    await screen.findByText('Normal', { includeHiddenElements: true });
+    await user.press(screen.getByRole('button', { name: 'Editar' }));
+    expect(
+      screen.queryByTestId('favorito-linea_subte:A-saliente', { includeHiddenElements: true }),
+    ).toBeNull();
+  });
+});
+
+describe('Favoritos · estado de la línea', () => {
+  it('una estación de una línea con demoras lleva el cuadrado ámbar «Con demoras»', async () => {
+    const harness = createHarness({
+      ...defaultRoutes(),
+      '/v1/subtes/estado': () => jsonResponse(estado({ B: { estado: 'demorada' } })),
+      '/v1/subtes/estaciones/2002/arribos': () =>
+        jsonResponse(
+          arribos('2002', [
+            { linea: 'B', estacion: 'Medrano', destino: 'Leandro N. Alem', enSegundos: 240 },
+          ]),
+        ),
+    });
+    harness.repository.add(casa);
+    await render(
+      <harness.Wrapper>
+        <EditModeProvider>
+          <FavoritosScreen />
+        </EditModeProvider>
+      </harness.Wrapper>,
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'Casa. Estación Medrano, Línea B, Hacia Leandro N. Alem en 4 minutos, con demoras',
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByTestId('signband-estado-cuadrado', { includeHiddenElements: true }),
+    ).toHaveStyle({ backgroundColor: light.role.warning.base });
+  });
+});
+
 describe('Favoritos · alias', () => {
   const open = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.press(screen.getByRole('button', { name: 'Editar' }));
-    await user.press(screen.getByRole('button', { name: 'Cambiar nombre de Línea A' }));
+    // Tocar el texto de la banda abre el alias.
+    await user.press(screen.getByRole('button', { name: /^Línea A, / }));
   };
 
   it('guarda el alias y lo muestra', async () => {
@@ -232,8 +324,8 @@ describe('Favoritos · alias', () => {
     await user.press(screen.getByRole('button', { name: 'Guardar' }));
 
     expect(repo.list()[0]?.alias).toBe('Al trabajo');
-    expect(screen.getByText('Al trabajo')).toBeOnTheScreen();
-    expect(screen.getByText('Línea A')).toBeOnTheScreen();
+    expect(screen.getByText('Al trabajo', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Al trabajo\. Línea A, / })).toBeOnTheScreen();
     expect(screen.queryByLabelText('Nombre para Línea A')).toBeNull();
   });
 
@@ -259,12 +351,12 @@ describe('Favoritos · alias', () => {
     await renderUi();
     await user.press(screen.getByRole('button', { name: 'Editar' }));
 
-    await user.press(screen.getByRole('button', { name: 'Cambiar nombre de Casa' }));
+    await user.press(screen.getByRole('button', { name: /^Casa\./ }));
     await fireEvent.changeText(screen.getByLabelText('Nombre para Casa'), 'Otra cosa');
     await user.press(screen.getByRole('button', { name: 'Cancelar' }));
     expect(repo.list()[0]?.alias).toBe('Casa');
 
-    await user.press(screen.getByRole('button', { name: 'Cambiar nombre de Casa' }));
+    await user.press(screen.getByRole('button', { name: /^Casa\./ }));
     await fireEvent.changeText(screen.getByLabelText('Nombre para Casa'), '   ');
     await user.press(screen.getByRole('button', { name: 'Guardar' }));
     expect(repo.list()[0]?.alias).toBeUndefined();
@@ -298,13 +390,15 @@ describe('Favoritos · búsqueda', () => {
     await renderUi();
 
     await user.type(screen.getByLabelText('Buscar en favoritos'), 'NANDU');
-    expect(screen.getByText('Plaza Ñandú')).toBeOnTheScreen();
-    expect(screen.queryByText('Parada 0')).toBeNull();
+    expect(
+      screen.getByText('Parada Plaza Ñandú', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Parada Parada 0', { includeHiddenElements: true })).toBeNull();
 
     await user.clear(screen.getByLabelText('Buscar en favoritos'));
     await user.type(screen.getByLabelText('Buscar en favoritos'), 'trabajo');
-    expect(screen.getByText('Trabajo')).toBeOnTheScreen();
-    expect(screen.queryByText('Plaza Ñandú')).toBeNull();
+    expect(screen.getByText('Trabajo', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.queryByText('Parada Plaza Ñandú', { includeHiddenElements: true })).toBeNull();
 
     await user.clear(screen.getByLabelText('Buscar en favoritos'));
     await user.type(screen.getByLabelText('Buscar en favoritos'), 'zzz');

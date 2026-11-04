@@ -84,7 +84,7 @@ describe('Favoritos · servicio caído', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: 'Casa. Estación Medrano, Línea B. Sin información.',
+        name: 'Casa. Estación Medrano, Línea B, Sin información',
       }),
     ).toBeOnTheScreen();
     expect(await screen.findByText('Normal', { includeHiddenElements: true })).toBeOnTheScreen();
@@ -94,15 +94,15 @@ describe('Favoritos · servicio caído', () => {
   it('un error que no es del servicio (404: la línea ya no existe) no dispara la Alert', async () => {
     const { renderUi } = setup([casa, colectivo], { [ARRIBOS]: notFound, [POSICIONES]: notFound });
     await renderUi();
-    await screen.findByRole('button', { name: /^Casa\..*Sin información\.$/ });
+    await screen.findByRole('button', { name: /^Casa\..*Sin información$/ });
     expect(screen.queryByText(SERVICE_DOWN_MESSAGE)).toBeNull();
   });
 
   it('una fila en error reintentable y otra en error de contenido (404) → sin Alert', async () => {
     const { renderUi } = setup([casa, colectivo], { [ARRIBOS]: down, [POSICIONES]: notFound });
     await renderUi();
-    await screen.findByRole('button', { name: /^Línea 60 de colectivo\. Sin información\.$/ });
-    await screen.findByRole('button', { name: /^Casa\..*Sin información\.$/ });
+    await screen.findByRole('button', { name: /^Colectivo Línea 60, Sin información$/ });
+    await screen.findByRole('button', { name: /^Casa\..*Sin información$/ });
     expect(screen.queryByText(SERVICE_DOWN_MESSAGE)).toBeNull();
   });
 

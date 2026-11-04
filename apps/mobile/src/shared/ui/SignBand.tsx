@@ -14,7 +14,15 @@
 // - Movimiento firma: si cambia `transitionKey` (otro favorito u otro valor), el contenido cruza
 //   en fundido de 200 ms; con «Reducir movimiento», corte seco. El fondo de la banda no se mueve.
 import { useEffect, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type AccessibilityActionEvent,
+  type AccessibilityActionInfo,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -79,6 +87,9 @@ export interface SignBandProps {
   onPressContent?: (() => void) | undefined;
   /** Pista del lector para `onPressContent` («Cambiar nombre»). */
   contentAccessibilityHint?: string | undefined;
+  /** Acciones del lector sobre el texto (p. ej. «Mover arriba» / «Mover abajo» en Favoritos). */
+  contentAccessibilityActions?: readonly AccessibilityActionInfo[] | undefined;
+  onContentAccessibilityAction?: ((event: AccessibilityActionEvent) => void) | undefined;
   /** Ícono chico (16) en el color de la banda junto al mensaje (p. ej. `editar`). */
   messageIcon?: IconName | undefined;
   style?: StyleProp<ViewStyle>;
@@ -166,6 +177,8 @@ export function SignBand({
   trailing,
   onPressContent,
   contentAccessibilityHint,
+  contentAccessibilityActions,
+  onContentAccessibilityAction,
   messageIcon,
   style,
   testID,
@@ -266,6 +279,13 @@ export function SignBand({
       )}
     </>
   );
+  const actions =
+    contentAccessibilityActions === undefined || contentAccessibilityActions.length === 0
+      ? {}
+      : {
+          accessibilityActions: [...contentAccessibilityActions],
+          onAccessibilityAction: onContentAccessibilityAction,
+        };
   // El texto como elemento propio (solo cuando la banda no se agrupa): botón si abre el alias.
   const contentArea = grouped ? (
     <View style={styles.contentArea}>{layers}</View>
@@ -277,6 +297,7 @@ export function SignBand({
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
       accessibilityHint={contentAccessibilityHint}
+      {...actions}
       style={styles.contentArea}
     >
       {layers}
@@ -286,6 +307,7 @@ export function SignBand({
       testID={testID === undefined ? undefined : `${testID}-contenido`}
       accessible
       accessibilityLabel={a11yLabel}
+      {...actions}
       style={styles.contentArea}
     >
       {layers}

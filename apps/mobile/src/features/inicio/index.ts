@@ -4,10 +4,11 @@ export {
   FAVORITOS_EN_INICIO,
   hrefDeFavorito,
   InicioScreen,
-  mensajeDeFavorito,
-  modeloBanda,
   resumenSubte,
   SIN_FAVORITOS,
   SUBTE_NORMAL,
   type ResumenSubte,
 } from './InicioScreen';
+
+// Movidas a `features/favoritos` (fuente de verdad del favorito); se re-exportan por compatibilidad.
+export { mensajeDeFavorito, modeloBanda } from '@/features/favoritos';

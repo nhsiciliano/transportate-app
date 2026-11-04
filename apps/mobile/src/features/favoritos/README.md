@@ -1,6 +1,50 @@
 # features/favoritos
 
-## Brief operativo de la pantalla (tarea 4.9)
+## Brief operativo F5 («Señalética de terminal», F5-HIGH-B)
+
+Contrato de dirección: [`.impeccable/surfaces/src-features-favoritos-favoritosscreen-tsx.md`](../../../.impeccable/surfaces/src-features-favoritos-favoritosscreen-tsx.md) (hereda el mundo de Inicio). Favoritos es **el tablero completo**: todas las bandas al mismo rango (`next`, navy), en el orden que fijó la persona; la decisión más cercana se señala solo en Inicio. Header, large title, «Editar/Listo», sheet del alias, arrastre, hápticos y persistencia no cambian.
+
+- **Banda por favorito** (`FavoritoRow` → `SignBand` `next`, `favorito-<id>`): el **mismo contenido que en Inicio**, que ahora vive acá (`banda.ts`: `mensajeDeFavorito`, `descripcionDeFavorito`, `modeloBanda`, `TIPO_LECTOR`; `TIPO_ICON` de `describe.ts`). Inicio los importa de `features/favoritos`. Pictograma del tipo en el cuadrado, mensaje (alias o nombre con contexto), valor vivo (`primary` de `useFavoritoLiveData`: «4 min», «2 en servicio», «Normal», las líneas de la parada), cuadrado ámbar/rojo con el estado de la línea en las **estaciones** de subte (el estado del subte se pide solo si hay alguna estación guardada) y «hace 6 min» si el dato está viejo. Toda la banda abre el detalle (flecha al borde). Etiqueta: «Casa. Estación Medrano, Línea B, Hacia Leandro N. Alem en 4 minutos, con demoras».
+- **Carga:** valor `null` (skeleton dentro de la banda). **Error:** «Sin información». **Huérfano:** banda sin `onPress` ni flecha, valor «Sin datos oficiales», cuadrado rojo «Ya no figura» y «Quitar» (44×44) siempre visible; el lector lee «… Esta estación ya no figura en los datos oficiales».
+- **Edición:** la banda conserva su forma. `leading` = la manija «Reordenar» (44×44, ícono `reordenar` en el `on` de la banda; es el `dragHandle` de `react-native-reorderable-list`, solo sin filtro), `trailing` = «Quitar» (`borrar`, 44×44, en `on`) en lugar de la flecha, y el texto es un botón que abre el alias (pista «Cambiar nombre», ícono `editar` de 16 junto al mensaje) con las acciones del lector «Mover arriba» / «Mover abajo». La banda deja de ser un botón como conjunto: manija, texto y «Quitar» son elementos separados. Se quitó el botón «Cambiar nombre de …» de la Fase 4.
+- **Movimiento firma:** al entrar y salir de la edición el contenido de las bandas cruza en fundido de 200 ms (`transitionKey` = modo); corte seco con Reducir movimiento. Quitar: al instante, `Snackbar` «Quitaste «Casa».» + Deshacer, como antes.
+- **Lista:** gap 8 entre bandas, fondo `bg.elevated` en claro / `bg.base` en oscuro (también el vacío), `FreshnessLabel` arriba con el dato más viejo visible, `SearchInput` con más de 15, `EmptyState` y Alert única «El servicio de la Ciudad no responde» como antes.
+- **`AliasSheet`:** sin cambios de estructura (la tipografía ya es Fira Sans por el tema).
+
+| Estado          | Banda                                                                          |
+| --------------- | ------------------------------------------------------------------------------ |
+| Carga           | Mensaje ya visible (MMKV); valor en skeleton del color de la banda             |
+| Vacío           | `EmptyState` «Todavía no guardaste favoritos.» + «Ver subtes» / «Buscar colectivo» |
+| Error           | «Sin información»; si fallan todas por un error reintentable, Alert única      |
+| Dato viejo      | El valor igual + «hace 6 min»; `FreshnessLabel` en warning                     |
+| Sin conexión    | `OfflineBanner` global; todas las bandas visibles y tocables                   |
+| Huérfano        | Sin flecha, «Sin datos oficiales», cuadrado rojo «Ya no figura», «Quitar»       |
+| Sin permiso     | — (Favoritos no usa ubicación)                                                 |
+
+### Contraste (F5)
+
+Banda `next` (pares de `features/inicio/README.md`): texto `on` 13,07:1 (claro, `#ffffff` / `#1d3343`) y 11,09:1 (oscuro, `#08202f` / `#a4d9ff`); estado al 85 % 9,86:1 / 7,69:1. Nuevos en esta tarea, calculados con `ratio` de `tools/contraste/contraste.py`:
+
+| Esquema | Par                                                          | Primer plano | Fondo     | Ratio   | Mínimo | Cumple |
+| ------- | ------------------------------------------------------------ | ------------ | --------- | ------- | ------ | :----: |
+| claro   | manija «Reordenar», «Quitar» e ícono `editar` (`on`) / banda | `#ffffff`    | `#1d3343` | 13,07:1 | 3      |   ✅   |
+| oscuro  | ídem                                                         | `#08202f`    | `#a4d9ff` | 11,09:1 | 3      |   ✅   |
+| claro   | borde del cuadrado rojo del huérfano (`on`) / banda          | `#ffffff`    | `#1d3343` | 13,07:1 | 3      |   ✅   |
+| oscuro  | ídem                                                         | `#08202f`    | `#a4d9ff` | 11,09:1 | 3      |   ✅   |
+| claro   | `FreshnessLabel` (`text.secondary`) / fondo `bg.elevated`    | `#4a5766`    | `#edf4ff` | 6,67:1  | 4,5    |   ✅   |
+
+### Suposiciones nuevas (Fase 5)
+
+1. **F5-favoritos-1** — `mensajeDeFavorito` y `modeloBanda` pasan a `features/favoritos/banda.ts` (fuente de verdad del favorito); `features/inicio` los re-exporta por compatibilidad.
+2. **F5-favoritos-2** — La banda lleva el pictograma del tipo (como Inicio), no el disco con el color GTFS de la línea (F4-favoritos-9 queda sin uso en la pantalla; `resolveFavorito` sigue decidiendo huérfanos de subte).
+3. **F5-favoritos-3** — Huérfano: el valor es «Sin datos oficiales» y el estado rojo «Ya no figura», para no repetir el mismo texto dos veces; el mensaje completo lo lee el lector.
+4. **F5-favoritos-4** — En edición se quita el botón «Cambiar nombre de …»: el alias se abre tocando el texto de la banda (botón con pista «Cambiar nombre»), como pide el contrato.
+5. **F5-favoritos-5** — La etiqueta del lector sigue el formato de Inicio («Casa. Estación Medrano, Línea B, Hacia … en 4 minutos»), en lugar de «… Línea B. Hacia … .» de la Fase 4. En las paradas no se repiten las líneas (subtítulo y dato estático coinciden).
+6. **F5-favoritos-6** — El fundido de edición solo cruza el contenido de la banda; la manija y «Quitar» aparecen con la opacidad del contenido entrante y se van en seco al salir.
+7. **F5-favoritos-7** — `SignBand` suma `contentAccessibilityActions`/`onContentAccessibilityAction` (shared/ui) para las acciones «Mover arriba/abajo» sobre el texto.
+
+## Brief operativo de la pantalla (tarea 4.9, historial)
+
 
 Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05-favoritos.md) (S14–S16, S19, S33). Esta primera parte no tiene datos vivos ni arrastre: los slots están listos para mid-dev (datos) y high-dev (arrastre).
 

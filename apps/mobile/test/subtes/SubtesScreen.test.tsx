@@ -2,6 +2,8 @@
 import { act, userEvent } from '@testing-library/react-native';
 import { screen } from 'expo-router/testing-library';
 
+import { light } from '@/shared/theme';
+
 import {
   defaultRoutes,
   errorBody,
@@ -32,7 +34,7 @@ describe('Subtes (raíz)', () => {
           }),
         ),
     });
-    const filas = await screen.findAllByTestId(/^linea-/);
+    const filas = await screen.findAllByTestId(/^linea-[A-Z]+$/);
     expect(filas.map((f) => f.props.testID as string)).toEqual([
       'linea-A',
       'linea-B',
@@ -46,7 +48,23 @@ describe('Subtes (raíz)', () => {
     expect(
       screen.getByText('Intendente Saguier – General Savio / Centro Cívico'),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Servicio con demoras por obras')).toBeOnTheScreen();
+    expect(screen.getByText('Servicio con demoras por obras')).toHaveStyle({
+      color: light.role.warning.text,
+    });
+    // Estado a la derecha de cada fila: cuadrado ámbar/rojo solo con texto al lado.
+    expect(screen.getByTestId('linea-C-estado')).toHaveTextContent('Con demoras');
+    expect(screen.getByTestId('linea-PM-estado')).toHaveTextContent('Interrumpida');
+    expect(screen.getByTestId('linea-A-estado')).toHaveTextContent('Normal');
+    expect(screen.getAllByTestId('board-estado-cuadrado')).toHaveLength(2);
+    // Una sola placa con las 7 filas y la flecha en cada una (todas abren su línea).
+    expect(screen.getByTestId('subtes-lineas')).toHaveStyle({
+      backgroundColor: light.bg.card,
+      borderRadius: 6,
+    });
+    expect(
+      screen.getAllByTestId(/^linea-[A-Z]+-flecha$/, { includeHiddenElements: true }),
+    ).toHaveLength(7);
+    expect(screen.getAllByText(/^Línea [A-H]$|^Premetro$/).length).toBeGreaterThanOrEqual(7);
     // La fila se lee como una unidad: línea, estado, cabeceras y alerta.
     expect(
       screen.getByRole('button', {
@@ -118,6 +136,7 @@ describe('Subtes (raíz)', () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText('Buscá una estación'), 'CONSTITUCION');
     expect(screen.queryByTestId('linea-A')).toBeNull();
+    expect(screen.getByTestId('subtes-resultados')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Constitución, Línea C' }));
     expect(screen).toHavePathname('/subtes/estacion/3002');
   });
@@ -131,11 +150,12 @@ describe('Subtes (raíz)', () => {
     ).toBeOnTheScreen();
   });
 
-  it('"Ver mapa" abre /subtes/mapa y una fila abre su línea', async () => {
+  it('la placa «Mapa de la red» abre /subtes/mapa', async () => {
     await renderSubtes('/subtes');
     await screen.findAllByText('Normal');
     const user = userEvent.setup();
-    await user.press(screen.getByRole('button', { name: 'Ver mapa' }));
+    expect(screen.queryByRole('button', { name: 'Ver mapa' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Mapa de la red' }));
     expect(screen).toHavePathname('/subtes/mapa');
   });
 

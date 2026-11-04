@@ -42,12 +42,24 @@ describe('Línea', () => {
           ]),
         ),
     });
-    expect(await screen.findByText('Leandro N. Alem – Juan Manuel de Rosas')).toBeOnTheScreen();
+    // Banda fija arriba: la línea con su estado (sin flecha: ya estás ahí).
+    expect(
+      await screen.findByText('Línea B · Leandro N. Alem – Juan Manuel de Rosas', {
+        includeHiddenElements: true,
+      }),
+    ).toBeOnTheScreen();
     expect(await screen.findByText('Estaciones cerradas')).toBeOnTheScreen();
     // Nunca truncada, con la hora de Buenos Aires.
     expect(screen.getByText(`${descripcion}\nDesde las 14:05`)).toBeOnTheScreen();
     expect(screen.queryByText('Otra línea')).toBeNull();
-    expect(screen.getByText('Con demoras')).toBeOnTheScreen();
+    const banda = screen.getByTestId('linea-banda');
+    expect(banda.props.accessibilityRole).toBeUndefined();
+    expect(banda.props.accessibilityLabel).toBe(
+      'Línea B, Leandro N. Alem – Juan Manuel de Rosas. Estado: con demoras. 1 alerta',
+    );
+    expect(screen.getByText('Con demoras', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getByText('1 alerta', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.queryByTestId('linea-banda-flecha', { includeHiddenElements: true })).toBeNull();
     expect(screen.getByRole('button', { name: 'Medrano, con novedades' })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Leandro N. Alem' })).toBeOnTheScreen();
   });
@@ -68,14 +80,18 @@ describe('Línea', () => {
   it('sin alertas: "Sin novedades informadas" y estaciones en orden de recorrido', async () => {
     await renderSubtes('/subtes/A');
     expect(await screen.findByText('Sin novedades informadas')).toBeOnTheScreen();
-    const estaciones = screen.getAllByTestId(/^estacion-/).map((e) => e.props.testID as string);
+    const estaciones = screen.getAllByTestId(/^estacion-\d+$/).map((e) => e.props.testID as string);
     expect(estaciones).toEqual(['estacion-1001', 'estacion-1002', 'estacion-1059']);
   });
 
   it('Premetro: una sola línea con los dos ramales', async () => {
     await renderSubtes('/subtes/PM');
+    // El ramal se nombra como subtítulo de la primera estación de cada uno.
     expect(await screen.findByText('Ramal Centro Cívico')).toBeOnTheScreen();
-    const estaciones = screen.getAllByTestId(/^estacion-/).map((e) => e.props.testID as string);
+    expect(
+      screen.getByRole('button', { name: 'Centro Cívico, Ramal Centro Cívico' }),
+    ).toBeOnTheScreen();
+    const estaciones = screen.getAllByTestId(/^estacion-\d+$/).map((e) => e.props.testID as string);
     expect(estaciones).toEqual([
       'estacion-7001',
       'estacion-7002',
@@ -121,8 +137,15 @@ describe('Estación', () => {
       ...defaultRoutes(),
       '/v1/subtes/estaciones/2002/arribos': () => undefined,
     });
-    expect(await screen.findByRole('header', { name: 'Medrano' })).toBeOnTheScreen();
+    // Contexto bajo el header nativo: la línea con su recorrido, que abre la línea.
+    const contexto = await screen.findByRole('button', {
+      name: 'Línea B · Leandro N. Alem – Juan Manuel de Rosas',
+    });
+    expect(contexto.props.accessibilityHint).toBe('Abre la línea');
+    // Una silueta de banda por sentido.
     expect(screen.getByTestId('arribos-skeleton')).toBeOnTheScreen();
+    await userEvent.setup().press(contexto);
+    expect(screen).toHavePathname('/subtes/B');
   });
 
   it('agrupa los arribos por sentido, hasta 3, con "Llegando"', async () => {
@@ -143,8 +166,20 @@ describe('Estación', () => {
       'Hacia Leandro N. Alem: próximo llegando, siguientes en 7 minutos y en 15 minutos.',
     );
     expect(alem).toBeOnTheScreen();
-    expect(screen.getByText('Llegando')).toBeOnTheScreen();
-    expect(screen.queryByText('25 min')).toBeNull();
+    // Banda fija (sin flecha ni botón): «Próximo», el minuto monumental y los siguientes.
+    expect(alem.props.accessibilityRole).toBeUndefined();
+    expect(
+      screen.queryByTestId('bloque-Leandro N. Alem-flecha', { includeHiddenElements: true }),
+    ).toBeNull();
+    expect(screen.getByText('Llegando', { includeHiddenElements: true })).toHaveStyle({
+      fontSize: 56,
+    });
+    expect(
+      screen.getByText('Después 7 y 15 min', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Único informado', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getAllByText('Próximo', { includeHiddenElements: true })).toHaveLength(2);
+    expect(screen.queryByText('25 min', { includeHiddenElements: true })).toBeNull();
     expect(
       screen.getByLabelText('Hacia Juan Manuel de Rosas: próximo en 3 minutos.'),
     ).toBeOnTheScreen();
@@ -157,10 +192,11 @@ describe('Estación', () => {
       '/v1/subtes/estaciones/1059/arribos': () =>
         jsonResponse(arribos('1059', [], { stale: true, sourceTimestamp: isoAgo(8 * 24 * 3600) })),
     });
+    // Dato de días: más de 10 min, así que la banda dice la antigüedad (S30).
     expect(
-      await screen.findByText('No hay próximos trenes informados para esta estación.'),
+      await screen.findByText('Dato de hace 8 días', { includeHiddenElements: true }),
     ).toBeOnTheScreen();
-    expect(screen.getByText(/Dato de hace 8 días/)).toBeOnTheScreen();
+    expect(screen.getByText(/⚠ Dato de hace 8 días/)).toBeOnTheScreen();
   });
 
   it('con dato de más de 10 min, los tiempos se reemplazan por la antigüedad', async () => {
@@ -175,10 +211,37 @@ describe('Estación', () => {
           ),
         ),
     });
-    expect(await screen.findByTestId('arribos-viejos')).toHaveTextContent('Dato de hace 12 min');
-    expect(screen.queryByText('2 min')).toBeNull();
+    const banda = await screen.findByLabelText(
+      'Hacia Plaza de Mayo: dato de hace 12 min. Puede no reflejar la situación actual.',
+    );
+    expect(banda).toBeOnTheScreen();
+    expect(screen.getByText('Dato de hace 12 min', { includeHiddenElements: true })).toHaveStyle({
+      fontSize: 28,
+    });
+    expect(screen.queryByText('2 min', { includeHiddenElements: true })).toBeNull();
     // Terminal: solo el sentido que sale.
-    expect(screen.queryByText('Hacia San Pedrito')).toBeNull();
+    expect(screen.queryByText('Hacia San Pedrito', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('un sentido sin arribos: «Sin trenes informados» en escala texto', async () => {
+    await renderSubtes('/subtes/estacion/2002', {
+      ...defaultRoutes(),
+      '/v1/subtes/estaciones/2002/arribos': () =>
+        jsonResponse(
+          arribos('2002', [
+            { linea: 'B', estacion: 'Medrano', destino: 'Leandro N. Alem', enSegundos: 240 },
+          ]),
+        ),
+    });
+    expect(
+      await screen.findByLabelText('Hacia Juan Manuel de Rosas: sin trenes informados.'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Sin trenes informados', { includeHiddenElements: true })).toHaveStyle({
+      fontSize: 28,
+    });
+    expect(screen.getByText('4 min', { includeHiddenElements: true })).toHaveStyle({
+      fontSize: 56,
+    });
   });
 
   it('feed no disponible (404): mensaje informativo sin reintento', async () => {
@@ -208,7 +271,7 @@ describe('Estación', () => {
     expect(await screen.findByText('Servicio no disponible')).toBeOnTheScreen();
     falla = false;
     await userEvent.setup().press(screen.getByRole('button', { name: 'Volver a intentar' }));
-    expect(await screen.findByText('2 min')).toBeOnTheScreen();
+    expect(await screen.findByText('2 min', { includeHiddenElements: true })).toBeOnTheScreen();
   });
 
   it('línea interrumpida: alerta arriba que lleva a la línea; estación a favoritos', async () => {

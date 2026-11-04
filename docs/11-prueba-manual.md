@@ -57,22 +57,24 @@ Desde la Fase 5, Inicio es el **piloto de la dirección «Señalética de termin
 ### Raíz
 
 - [ ] **📱 Large title** "Subtes" grande en iOS, que se achica al scrollear (usa `headerLargeTitleEnabled`).
-- [ ] Siete líneas en orden fijo, con color oficial, cabeceras ("Plaza de Mayo – San Pedrito") y estado con ícono y texto (no solo color).
+- [ ] **📱 Placa de tablero:** las siete líneas en **una sola placa blanca** (radio chico, borde fino, sin sombra) sobre fondo celeste muy claro, en orden fijo. Cada fila: disco de la línea, «Línea B» y debajo las cabeceras ("Plaza de Mayo – San Pedrito"); a la derecha el estado («Normal» en gris; «Con demoras» con cuadradito ámbar; «Interrumpida» con cuadradito rojo) y la flecha pegada al borde. Si hay alerta, una tercera línea con su resumen en el color del estado.
 - [ ] **Buscador de estaciones:** escribí "med" → aparece Medrano; con tildes y sin tildes da lo mismo. Algo que no existe ("zzz"): "No encontramos «zzz». Probá con otro nombre de estación."
-- [ ] **Ver mapa** lleva al mapa de la red (sección 2.4).
+- [ ] **Mapa de la red:** abajo de la frescura, una placa de una fila con el pictograma de mapa y flecha; abre el mapa (sección 2.4). Ya no hay botón «Ver mapa» arriba.
+- [ ] **Texto grande (Dynamic Type al máximo):** las filas crecen en alto; el estado de la derecha nunca se corta.
 - [ ] Proxy apagado y sin caché (reiniciá la app con el proxy apagado): se listan igual las 7 líneas con "Sin información" y un `ErrorState` con "Volver a intentar".
 
 ### Línea
 
-- [ ] Insignia grande, estado, estrella de favorito (44×44).
+- [ ] **📱 Banda de la línea:** arriba, una banda azul grande **sin flecha** con el pictograma del subte, «Línea B · Leandro N. Alem – Juan Manuel de Rosas» y el estado como valor; con demoras, cuadradito ámbar y «N alertas». La **estrella va en el header** (arriba a la derecha), no en el contenido.
 - [ ] **Alertas** completas (una por alerta) o "Sin novedades informadas". El texto va **una sola vez**, en negrita con el ícono; debajo solo la descripción si agrega algo y el período ("Desde las 14:05"). GCBA suele mandar título y descripción iguales: no tiene que repetirse.
-- [ ] Diagrama de estaciones; tocar una estación abre su detalle.
+- [ ] **📱 Estaciones en placa** con el trazo vertical del color de la línea **continuo** de punta a punta (los separadores arrancan después del trazo); cada fila con flecha abre la estación; las afectadas por una alerta dicen «Con novedades» en ámbar.
 - [ ] **Premetro:** una sola línea con sus dos ramales ("Ramal Centro Cívico").
 
 ### Estación
 
-- [ ] Nombre, línea y estrella. Bloques "Hacia <cabecera>" con hasta 3 arribos ("Llegando", "2 min").
-- [ ] **Arribos congelados:** si el upstream sigue con el dato viejo de octubre, se ve "Dato de hace N días" atenuado en lugar de tiempos (esto es lo esperado, no un error).
+- [ ] **📱 Header:** título nativo con el nombre de la estación (sin la letra) y la estrella arriba a la derecha. Debajo, una fila con el disco de la línea y «Línea B · Leandro N. Alem – Juan Manuel de Rosas»; tocarla abre la línea.
+- [ ] **📱 Bandas por sentido:** una banda azul grande por sentido, **sin flecha**: «Hacia Leandro N. Alem», «Próximo», el minuto enorme («4 min», «Llegando») y debajo «Después 7 y 12 min» (o «Único informado»). Un sentido sin trenes dice «Sin trenes informados». Cuando cambia el próximo tren, la banda cambia con un fundido corto (seco con Reducir movimiento).
+- [ ] **Arribos congelados:** si el upstream sigue con el dato viejo de octubre, cada banda dice «Dato de hace N días» y «Puede no reflejar la situación actual» en lugar de tiempos (esto es lo esperado, no un error).
 - [ ] **📱 Estrella:** tocar guarda en favoritos con un háptico de éxito suave; tocar de nuevo la quita con un háptico de selección. VoiceOver anuncia "Guardado en favoritos" / "Quitado de favoritos".
 
 ### 2.4 Mapa de la red
@@ -125,14 +127,16 @@ Desde la Fase 5, Inicio es el **piloto de la dirección «Señalética de termin
 - [ ] **📱 Large title** "Favoritos" grande, que se achica al scrollear; "Editar"/"Listo" a la derecha. Nada queda debajo del header: ni la primera fila ni el estado vacío.
 - [ ] **Vacío:** estrella, "Todavía no guardaste favoritos.", "Tocá la estrella en una línea, parada o estación para tenerla acá." y los botones "Ver subtes" y "Buscar colectivo", que cambian de tab.
 - [ ] **Agregar:** desde una línea y una estación de subte (y una línea/parada de colectivo) con la estrella. Volvé a Favoritos: aparecen en el orden en que los guardaste, de forma inmediata (sin skeleton de estructura).
-- [ ] **Filas:** la línea y la estación de subte con **el color de su línea**; alias o nombre oficial, y debajo el nombre oficial si hay alias; a la derecha el dato vivo (estado, próximo arribo, "N en servicio").
-- [ ] **Tocar una fila** abre el detalle en su tab correspondiente.
+- [ ] **📱 Bandas:** cada favorito es una banda navy como las chicas de Inicio (mismo contenido): pictograma del tipo en el cuadrado, alias o nombre con su contexto («Línea B · Medrano», «Línea 152 · Ramal A», «Parada …») y el valor vivo grande («4 min», «2 en servicio», «Normal», las líneas de la parada). Una estación de una línea con demoras lleva el cuadradito ámbar «Con demoras»; un dato viejo, «hace 6 min». Separadas 8 pt sobre fondo celeste claro.
+- [ ] **Tocar una banda** abre el detalle en su tab correspondiente (flecha al borde).
 - [ ] **Frescura:** arriba de la lista, "Actualizado hace N s" con el dato más viejo de las filas que se ven. Pull to refresh actualiza.
-- [ ] **Editar → Cambiar nombre:** sheet con contador "12/30"; no deja pasar de 30 (probá con emojis); "Guardar" lo muestra en la fila; campo vacío quita el alias; "Cancelar" no cambia nada.
+- [ ] **📱 Edición en la misma banda:** «Editar» → las bandas cambian con un fundido corto (seco con Reducir movimiento) y conservan su forma: a la izquierda la manija «Reordenar», a la derecha el tacho «Quitar» en lugar de la flecha y un lapicito junto al nombre. «Listo» vuelve igual.
+- [ ] **Editar → tocar el nombre:** abre el sheet del alias con contador "12/30"; no deja pasar de 30 (probá con emojis); "Guardar" lo muestra en la banda; campo vacío quita el alias; "Cancelar" no cambia nada.
 - [ ] **Editar → Quitar:** sale al instante, sin diálogo, y aparece "Quitaste «Casa»." con **Deshacer**. 📱 El aviso tiene que verse **por encima de la tab bar nativa**, sin taparse. Deshacer lo devuelve a su lugar.
 - [ ] **📱 Arrastre para reordenar:** en modo edición cada fila tiene una manija "Reordenar" de 44 × 44 a la izquierda; apoyá el dedo y arrastrá. La fila se eleva con un háptico al levantar y otro al soltar, y el orden queda guardado al cerrar y reabrir la app. Con Reducir movimiento no hay animación de reacomodo. Con un texto escrito en la búsqueda (más de 15 favoritos) el arrastre se desactiva a propósito.
 - [ ] **Búsqueda:** con más de 15 favoritos aparece el campo; filtra por alias y nombre sin tildes.
-- [ ] **Favorito huérfano:** no es fácil de forzar; si ves "Esta estación ya no figura en los datos oficiales", la fila no navega y tiene "Quitar".
+- [ ] **Favorito huérfano:** no es fácil de forzar; si ves una banda con «Sin datos oficiales» y el cuadradito rojo «Ya no figura», no tiene flecha, no navega y tiene «Quitar» siempre visible.
+- [ ] **VoiceOver en edición:** la manija, el nombre (botón con la pista «Cambiar nombre» y las acciones «Mover arriba/abajo») y «Quitar» se leen por separado.
 - [ ] **Servicio caído:** con **todos** los favoritos en vivo fallando (apagá `wrangler dev` y esperá un refresco) aparece **una sola** Alert "El servicio de la Ciudad no responde" con "Reintentar" y cada fila dice "Sin información". Si solo falla un tipo (por ejemplo, colectivos), no hay Alert: solo esas filas dicen "Sin información".
 - [ ] **Sin conexión:** todos los favoritos siguen visibles y tocables (están en el teléfono).
 
@@ -168,7 +172,7 @@ Desde la Fase 5, Ajustes, Acerca de y Licencias siguen la dirección «Señalét
 ## 8. VoiceOver (2 o 3 recorridos clave)
 
 - [ ] **Recorrido A, Inicio:** el orden es Alert (si hay) → tira ("Subte ahora. Todas las líneas funcionan con normalidad.", botón) → bandas → frescura → "Ver todos los favoritos". Cada banda se lee de una vez ("Estación Medrano, Línea B, Hacia Leandro N. Alem en 4 minutos, con demoras") y un toque doble abre el detalle. El engranaje se anuncia como botón "Ajustes".
-- [ ] **Recorrido B, Favoritos:** cada fila se lee como "Casa. Estación Medrano, Línea B. Hacia Leandro N. Alem en 2 minutos."; en edición, deslizá hacia arriba/abajo con un dedo para ver las acciones **"Mover arriba"** y **"Mover abajo"**; "Quitar" y "Cambiar nombre" se anuncian con el nombre de la fila.
+- [ ] **Recorrido B, Favoritos:** cada banda se lee como "Casa. Estación Medrano, Línea B, Hacia Leandro N. Alem en 2 minutos"; en edición, sobre el nombre deslizá hacia arriba/abajo con un dedo para ver las acciones **"Mover arriba"** y **"Mover abajo"**; "Quitar" se anuncia con el nombre de la banda y el nombre tiene la pista "Cambiar nombre".
 - [ ] **Recorrido C, aviso con Deshacer:** al quitar un favorito, VoiceOver anuncia el aviso y se puede llegar a "Deshacer" antes de que se cierre (8 s).
 - [ ] Opcional: el mapa de la red y la hoja de la línea (ver sección 3).
 

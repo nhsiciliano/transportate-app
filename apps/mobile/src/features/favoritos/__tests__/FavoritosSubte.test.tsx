@@ -18,8 +18,6 @@ jest.mock('expo-router', () => ({
 }));
 
 const lineaA: NuevoFavorito = { tipo: 'linea_subte', refId: 'A', nombre: 'Línea A' };
-const lineaC: NuevoFavorito = { tipo: 'linea_subte', refId: 'C', nombre: 'Línea C' };
-const premetro: NuevoFavorito = { tipo: 'linea_subte', refId: 'PM', nombre: 'Premetro' };
 const medrano: NuevoFavorito = {
   tipo: 'estacion_subte',
   refId: '2002',
@@ -67,50 +65,35 @@ function staticLoading(): Routes {
   return { ...defaultRoutes(), '/v1/static/manifest': () => undefined };
 }
 
-/** La insignia va dentro de la fila (oculta al lector, que lee la fila entera): se busca igual. */
-function badge(label: string, optional = false) {
-  const opts = { includeHiddenElements: true };
-  return optional ? screen.queryByLabelText(label, opts) : screen.getByLabelText(label, opts);
-}
-
 afterEach(() => {
   mockPush.mockClear();
 });
 
-describe('Favoritos · colores de subte', () => {
-  it('la línea y la estación llevan el color oficial de su línea', async () => {
-    const { renderUi } = setup([lineaA, lineaC, premetro, medrano]);
+describe('Favoritos · pictograma por tipo', () => {
+  // Desde la Fase 5 la banda lleva el pictograma del tipo (como Inicio), no el disco de la línea:
+  // el color de la línea ya no es un canal de la banda (F5-favoritos-2).
+  it('cada banda lleva el pictograma de su tipo en el cuadrado', async () => {
+    const { renderUi } = setup([lineaA, medrano]);
     await renderUi();
-
-    await waitFor(() => {
-      expect(badge('Línea A')).toHaveStyle({ backgroundColor: '#A5C8FF' });
+    const cuadrados = await screen.findAllByTestId('signband-pictograma', {
+      includeHiddenElements: true,
     });
-    expect(badge('Línea C')).toHaveStyle({ backgroundColor: '#0000FF' });
-    expect(badge('Línea PM')).toHaveStyle({ backgroundColor: '#FFBD33' });
-    // La estación Medrano muestra la insignia de la línea B (roja, texto negro).
-    expect(badge('Línea B')).toHaveStyle({ backgroundColor: '#FF0000' });
-    // El texto de la insignia es el `route_text_color` del estático.
-    expect(screen.getByText('C', { includeHiddenElements: true })).toHaveStyle({
-      color: '#FFFFFF',
-    });
-    expect(screen.getByText('B', { includeHiddenElements: true })).toHaveStyle({
-      color: '#000000',
-    });
+    expect(cuadrados).toHaveLength(2);
+    // Línea y estación de subte comparten el glifo `subway` (mapa curado: `subtes`/`estacion`).
+    expect(screen.getAllByTestId('svg:subway-fill', { includeHiddenElements: true })).toHaveLength(
+      2,
+    );
   });
 
-  it('mientras el estático carga la insignia es neutra y la fila ya funciona', async () => {
+  it('mientras el estático carga la banda ya funciona', async () => {
     const user = userEvent.setup();
     const { renderUi } = setup([lineaA, medrano], staticLoading());
     await renderUi();
-
-    expect(badge('Línea A')).not.toHaveStyle({ backgroundColor: '#A5C8FF' });
-    // La estación todavía no sabe de qué línea es: conserva su ícono (sin insignia).
-    expect(badge('Línea B', true)).toBeNull();
-    await user.press(screen.getByRole('button', { name: /^Línea A de subte/ }));
+    await user.press(screen.getByRole('button', { name: /^Línea A, / }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/subtes/[linea]', params: { linea: 'A' } });
   });
 
-  it('con el estático caído sigue neutra y no marca ningún huérfano', async () => {
+  it('con el estático caído no marca ningún huérfano', async () => {
     const { renderUi, harness } = setup([lineaA, lineaFantasma, estacionFantasma], staticDown());
     await renderUi();
     await waitFor(() => {
@@ -119,9 +102,7 @@ describe('Favoritos · colores de subte', () => {
     await waitFor(() => {
       expect(harness.queryClient.isFetching()).toBe(0);
     });
-
-    expect(badge('Línea A')).not.toHaveStyle({ backgroundColor: '#A5C8FF' });
-    expect(screen.queryByText(/ya no figura/)).toBeNull();
+    expect(screen.queryByText('Ya no figura', { includeHiddenElements: true })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Quitar/ })).toBeNull();
   });
 });
@@ -131,15 +112,23 @@ describe('Favoritos · huérfanos', () => {
     const { renderUi } = setup([lineaA, lineaFantasma, estacionFantasma]);
     await renderUi();
 
+    // Banda sin flecha, cuadrado rojo «Ya no figura» y «Quitar» siempre visible.
     expect(
-      await screen.findByText('Esta línea ya no figura en los datos oficiales'),
+      await screen.findByLabelText(/^Línea Z, Esta línea ya no figura en los datos oficiales$/),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Esta estación ya no figura en los datos oficiales')).toBeOnTheScreen();
-    // Conservan lo que la persona guardó: el alias y el nombre.
-    expect(screen.getByText('Mi estación')).toBeOnTheScreen();
-    expect(screen.getByText('Estación vieja')).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText(/Esta estación ya no figura en los datos oficiales$/),
+    ).toBeOnTheScreen();
+    // Conservan lo que la persona guardó: el alias es el mensaje.
+    expect(screen.getByText('Mi estación', { includeHiddenElements: true })).toBeOnTheScreen();
     // La línea que sí existe no avisa nada.
-    expect(screen.getAllByText(/ya no figura/)).toHaveLength(2);
+    expect(screen.getAllByText('Ya no figura', { includeHiddenElements: true })).toHaveLength(2);
+    expect(
+      screen.getAllByText('Sin datos oficiales', { includeHiddenElements: true }),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByTestId('signband-estado-cuadrado', { includeHiddenElements: true }),
+    ).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Quitar Línea Z' })).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Quitar Línea A' })).toBeNull();
   });
@@ -147,10 +136,9 @@ describe('Favoritos · huérfanos', () => {
   it('se lee como una unidad con el aviso', async () => {
     const { renderUi } = setup([estacionFantasma]);
     await renderUi();
-    await screen.findByText('Esta estación ya no figura en los datos oficiales');
     expect(
-      screen.getByLabelText(
-        'Mi estación. Estación Estación vieja. Esta estación ya no figura en los datos oficiales.',
+      await screen.findByLabelText(
+        'Mi estación. Estación Estación vieja, Esta estación ya no figura en los datos oficiales',
       ),
     ).toBeOnTheScreen();
   });
@@ -159,8 +147,10 @@ describe('Favoritos · huérfanos', () => {
     const user = userEvent.setup();
     const { renderUi } = setup([lineaFantasma]);
     await renderUi();
-    await user.press(await screen.findByText('Línea Z'));
+    await user.press(await screen.findByText('Línea Z', { includeHiddenElements: true }));
     expect(mockPush).not.toHaveBeenCalled();
+    // Sin destino no hay flecha.
+    expect(screen.queryAllByTestId(/-flecha$/, { includeHiddenElements: true })).toHaveLength(0);
   });
 
   it('"Quitar" lo saca al instante y "Deshacer" lo devuelve', async () => {
@@ -179,7 +169,7 @@ describe('Favoritos · huérfanos', () => {
   it('en edición el huérfano conserva "Cambiar nombre" y "Quitar"', async () => {
     const { renderUi } = setup([estacionFantasma]);
     await renderUi();
-    await screen.findByText('Esta estación ya no figura en los datos oficiales');
+    await screen.findByText('Ya no figura', { includeHiddenElements: true });
     // El botón Editar vive en el header (fuera de la pantalla): se prende el modo a mano.
     // Acá alcanza con comprobar que fuera de edición el botón "Quitar" está.
     expect(screen.getByRole('button', { name: 'Quitar Mi estación' })).toBeOnTheScreen();
@@ -189,20 +179,17 @@ describe('Favoritos · huérfanos', () => {
     const { renderUi, harness } = setup([colectivo, parada, lineaA]);
     await renderUi();
     await waitFor(() => {
-      expect(badge('Línea A')).toHaveStyle({ backgroundColor: '#A5C8FF' });
-    });
-    await waitFor(() => {
       expect(harness.queryClient.isFetching()).toBe(0);
     });
-    expect(screen.queryByText(/ya no figura/)).toBeNull();
-    expect(screen.getByRole('button', { name: /^Línea 60 de colectivo\./ })).toBeOnTheScreen();
+    expect(screen.queryByText('Ya no figura', { includeHiddenElements: true })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Colectivo Línea 60, / })).toBeOnTheScreen();
   });
 
   it('una parada que ya no está en el índice es huérfana (mismo criterio que subte)', async () => {
     const { renderUi } = setup([{ ...parada, refId: 'p-que-ya-no-existe' }]);
     await renderUi();
     expect(
-      await screen.findByText('Esta parada ya no figura en los datos oficiales'),
+      await screen.findByLabelText(/Esta parada ya no figura en los datos oficiales$/),
     ).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: /^Quitar / })).toBeOnTheScreen();
   });

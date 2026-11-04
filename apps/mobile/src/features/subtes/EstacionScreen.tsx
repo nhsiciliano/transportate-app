@@ -1,25 +1,30 @@
-// Detalle de estación (brief 03-subtes §3): encabezado, alerta resumida de la línea y próximos
-// arribos por sentido. `forecastGTFS` está congelado en el upstream (docs/06-proxy.md §5): lo
-// normal hoy es lista vacía con dato viejo, y la pantalla tiene que verse bien igual.
+// Detalle de estación con la dirección «Señalética de terminal» (Fase 5): el cartel de andén.
+// Título nativo con el nombre y la estrella en el header; una fila de contexto con la línea
+// (toca → línea); la alerta resumida de la línea; una banda fija por sentido con el próximo
+// arribo a escala monumental, y la frescura al pie. `forecastGTFS` está congelado en el upstream
+// (docs/06-proxy.md §5): lo normal hoy es «Sin trenes informados» con dato viejo, y la pantalla
+// tiene que verse bien igual.
 import type { ArriboSubteV1 } from '@transportate/contracts';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { FavoriteToggle } from '@/features/favoritos';
 import { useArribosEstacion } from '@/shared/api';
 import { useRefreshInterval } from '@/shared/query';
+import { useTheme } from '@/shared/theme';
 import {
   EmptyState,
   ErrorState,
   formatAge,
   FreshnessLabel,
-  Skeleton,
+  LineBadge,
+  SignBand,
   SkeletonGroup,
   Text,
 } from '@/shared/ui';
 
-import { AvisoAlert, LineaBadge, RefreshErrorAlert, ScreenScroll, Seccion } from './components';
+import { AvisoAlert, RefreshErrorAlert, ScreenScroll, useFondo } from './components';
 import { useLineaDetalle, usePullToRefresh, useRedSubte } from './hooks';
 import {
   agruparArribos,
@@ -27,9 +32,13 @@ import {
   formatArribo,
   LLEGANDO_SEGUNDOS,
   type BloqueArribos,
+  type LineaSubte,
 } from './model';
 
-export const SIN_ARRIBOS = 'No hay próximos trenes informados para esta estación.';
+/** Valor de la banda de un sentido sin arribos. */
+export const SIN_TRENES = 'Sin trenes informados';
+/** Estado de la banda con dato de más de 10 min (S30). */
+export const PUEDE_NO_REFLEJAR = 'Puede no reflejar la situación actual';
 export const ARRIBOS_NO_DISPONIBLES = 'Los próximos arribos no están disponibles por ahora';
 
 /** Reloj que avanza cada `ms` mientras la pantalla está montada (recalcula los "2 min"). */
@@ -48,6 +57,7 @@ function useNow(ms: number): number {
 
 export function EstacionScreen({ id }: { id: string | undefined }) {
   const router = useRouter();
+  const fondo = useFondo();
   const { seconds } = useRefreshInterval();
   const red = useRedSubte();
   const estacion = id === undefined ? undefined : red.red?.estacionPorId.get(id);
@@ -60,8 +70,10 @@ export function EstacionScreen({ id }: { id: string | undefined }) {
     () => alertas.refetch(),
   ]);
 
-  const title =
-    estacion === undefined ? 'Estación' : `${estacion.nombre}${linea ? ` (${linea.badge})` : ''}`;
+  const title = estacion === undefined ? 'Estación' : estacion.nombre;
+  const abrirLinea = (l: LineaSubte) => () => {
+    router.push({ pathname: '/subtes/[linea]', params: { linea: l.key } });
+  };
 
   let body;
   if (red.isLoadingError) {
@@ -75,7 +87,7 @@ export function EstacionScreen({ id }: { id: string | undefined }) {
       />
     );
   } else if (red.red === undefined) {
-    body = <ArribosSkeleton encabezado />;
+    body = <ArribosSkeleton sentidos={2} />;
   } else if (estacion === undefined || linea === undefined) {
     body = (
       <EmptyState
@@ -84,35 +96,21 @@ export function EstacionScreen({ id }: { id: string | undefined }) {
       />
     );
   } else {
-    const bloques = arribos.data
-      ? agruparArribos(
-          estacion.id,
-          linea,
-          vigentes(arribos.data.arribos, now),
-          red.red.estacionPorId,
-        )
-      : [];
+    const bloques = agruparArribos(
+      estacion.id,
+      linea,
+      arribos.data ? vigentes(arribos.data.arribos, now) : [],
+      red.red.estacionPorId,
+    );
     const ts = arribos.sourceTimestamp === null ? NaN : Date.parse(arribos.sourceTimestamp);
     const edad = Number.isNaN(ts) ? null : Math.max(0, (now - ts) / 1000);
-    const muyViejo = edad !== null && edad > ARRIBOS_VIEJOS_SEGUNDOS;
-    const sinArribos = bloques.every((b) => b.arribos.length === 0);
+    const viejo = edad !== null && edad > ARRIBOS_VIEJOS_SEGUNDOS ? formatAge(edad).short : null;
     const interrumpida = estadoLinea?.estado === 'interrumpida';
     const resumen = estadoLinea?.resumen;
 
     body = (
       <>
-        <View style={styles.encabezado}>
-          <LineaBadge linea={linea} size="lg" />
-          <Text variant="headline.lg" accessibilityRole="header" style={{ flex: 1 }}>
-            {estacion.nombre}
-          </Text>
-          <FavoriteToggle
-            tipo="estacion_subte"
-            refId={estacion.id}
-            nombre={estacion.nombre}
-            subtitulo={linea.nombre}
-          />
-        </View>
+        <Contexto linea={linea} onPress={abrirLinea(linea)} />
 
         {resumen !== undefined && resumen !== '' ? (
           <AvisoAlert
@@ -120,21 +118,15 @@ export function EstacionScreen({ id }: { id: string | undefined }) {
             variant={interrumpida ? 'system' : 'standard'}
             title={linea.nombre}
             message={resumen}
-            action={{
-              label: 'Ver la línea',
-              onPress: () => {
-                router.push({ pathname: '/subtes/[linea]', params: { linea: linea.key } });
-              },
-            }}
+            action={{ label: 'Ver la línea', onPress: abrirLinea(linea) }}
             testID="alerta-linea"
           />
         ) : null}
 
         {arribos.isRefreshError ? <RefreshErrorAlert onRetry={onRefresh} /> : null}
 
-        <Seccion>Próximos trenes</Seccion>
         {arribos.isPending ? (
-          <ArribosSkeleton />
+          <ArribosSkeleton sentidos={bloques.length} />
         ) : arribos.isLoadingError ? (
           arribos.error?.retryable === false ? (
             <ErrorState
@@ -149,14 +141,8 @@ export function EstacionScreen({ id }: { id: string | undefined }) {
               onRetry={() => void arribos.refetch()}
             />
           )
-        ) : sinArribos ? (
-          <EmptyState message={SIN_ARRIBOS} testID="sin-arribos" />
         ) : (
-          bloques
-            .filter((b) => b.arribos.length > 0)
-            .map((b) => (
-              <Bloque key={b.cabecera} bloque={b} viejo={muyViejo ? formatAge(edad).short : null} />
-            ))
+          bloques.map((b) => <BandaSentido key={b.cabecera} bloque={b} viejo={viejo} />)
         )}
         {arribos.data !== undefined ? (
           <FreshnessLabel sourceTimestamp={arribos.sourceTimestamp} intervalSeconds={seconds} />
@@ -167,11 +153,66 @@ export function EstacionScreen({ id }: { id: string | undefined }) {
 
   return (
     <>
-      <Stack.Screen options={{ title }} />
-      <ScreenScroll refreshing={refreshing} onRefresh={onRefresh} testID="estacion-screen">
+      <Stack.Screen
+        options={{
+          title,
+          ...(estacion === undefined || linea === undefined
+            ? {}
+            : {
+                headerRight: () => (
+                  <FavoriteToggle
+                    tipo="estacion_subte"
+                    refId={estacion.id}
+                    nombre={estacion.nombre}
+                    subtitulo={linea.nombre}
+                  />
+                ),
+              }),
+        }}
+      />
+      <ScreenScroll
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        testID="estacion-screen"
+        backgroundColor={fondo}
+        gap={12}
+      >
         {body}
       </ScreenScroll>
     </>
+  );
+}
+
+/** Fila de contexto bajo el header: disco de la línea y su recorrido; toca → la línea. */
+function Contexto({ linea, onPress }: { linea: LineaSubte; onPress: () => void }) {
+  const { colors, component } = useTheme();
+  const texto = `${linea.nombre} · ${linea.cabeceras}`;
+  return (
+    <Pressable
+      testID="estacion-contexto"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={texto}
+      accessibilityHint="Abre la línea"
+      style={({ pressed }) => [
+        styles.contexto,
+        { minHeight: component.hitSlop },
+        pressed ? { opacity: 0.6 } : null,
+      ]}
+    >
+      <LineBadge
+        kind="subte"
+        label={linea.badge}
+        color={linea.color}
+        textColor={linea.colorTexto}
+        size="md"
+        surface={colors.bg.elevated}
+        accessibilityLabel={linea.nombre}
+      />
+      <Text variant="text.md" tone="secondary" style={styles.contextoTexto}>
+        {texto}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -188,70 +229,93 @@ function vigentes(arribos: readonly ArriboSubteV1[], now: number): ArriboSubteV1
     .filter((a) => a.enSegundos >= -LLEGANDO_SEGUNDOS);
 }
 
-function Bloque({
+/** «Después 7 y 12 min» / «Después Llegando y 7 min». */
+export function despues(resto: readonly { short: string }[]): string {
+  if (resto.length === 0) return 'Único informado';
+  const enMin = resto.every((t) => t.short.endsWith(' min'));
+  const partes = resto.map((t) => (enMin ? t.short.replace(/ min$/, '') : t.short));
+  const lista =
+    partes.length === 1
+      ? (partes[0] ?? '')
+      : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1] ?? ''}`;
+  return `Después ${lista}${enMin ? ' min' : ''}`;
+}
+
+/**
+ * Una banda fija por sentido (sin flecha: ya estás en la estación). El próximo arribo a escala
+ * monumental con «Próximo»; los siguientes como estado. Con dato de más de 10 min (S30) los
+ * tiempos se reemplazan por la antigüedad. Cuando cambia el próximo arribo, la banda se vuelve a
+ * señalizar con el fundido de `SignBand`.
+ */
+function BandaSentido({
   bloque,
   viejo,
 }: {
   bloque: BloqueArribos;
-  /** "12 min" si el dato tiene más de 10 min (S30): los tiempos no se muestran. */
+  /** "12 min" si el dato tiene más de 10 min (S30). */
   viejo: string | null;
 }) {
   const tiempos = bloque.arribos.map((a) => formatArribo(a.enSegundos));
   const [primero, ...resto] = tiempos;
-  const spoken =
-    viejo !== null
-      ? `${bloque.titulo}: dato de hace ${viejo}.`
-      : `${bloque.titulo}: próximo ${primero?.spoken ?? ''}${
-          resto.length > 0 ? `, siguientes ${resto.map((t) => t.spoken).join(' y ')}` : ''
-        }.`;
+  const comun = {
+    testID: `bloque-${bloque.cabecera}`,
+    variant: 'lead' as const,
+    icon: 'estacion' as const,
+    message: bloque.titulo,
+  };
+  if (viejo !== null) {
+    return (
+      <SignBand
+        {...comun}
+        value={`Dato de hace ${viejo}`}
+        valueStyle="text"
+        status={{ text: PUEDE_NO_REFLEJAR, tone: 'muted' }}
+        transitionKey={`${bloque.cabecera}:viejo`}
+        accessibilityLabel={`${bloque.titulo}: dato de hace ${viejo}. ${PUEDE_NO_REFLEJAR}.`}
+      />
+    );
+  }
+  if (primero === undefined) {
+    return (
+      <SignBand
+        {...comun}
+        value={SIN_TRENES}
+        valueStyle="text"
+        transitionKey={`${bloque.cabecera}:-`}
+        accessibilityLabel={`${bloque.titulo}: ${SIN_TRENES.toLowerCase()}.`}
+      />
+    );
+  }
+  const spoken = `${bloque.titulo}: próximo ${primero.spoken}${
+    resto.length > 0 ? `, siguientes ${resto.map((t) => t.spoken).join(' y ')}` : ''
+  }.`;
   return (
-    <View
-      accessible
+    <SignBand
+      {...comun}
+      label="Próximo"
+      value={primero.short}
+      status={{ text: despues(resto), tone: 'muted' }}
+      transitionKey={`${bloque.cabecera}:${primero.short}`}
       accessibilityLabel={spoken}
-      style={styles.bloque}
-      testID={`bloque-${bloque.cabecera}`}
-    >
-      <Text variant="headline.sm" tone="secondary">
-        {bloque.titulo}
-      </Text>
-      {viejo !== null ? (
-        <Text variant="text.md" tone="tertiary" testID="arribos-viejos">
-          {`Dato de hace ${viejo}`}
-        </Text>
-      ) : (
-        <View style={styles.tiempos}>
-          {primero !== undefined ? <Text variant="heading.h4">{primero.short}</Text> : null}
-          {resto.map((t, i) => (
-            <Text key={i} variant="text.lg" tone="secondary">
-              {t.short}
-            </Text>
-          ))}
-        </View>
-      )}
-    </View>
+    />
   );
 }
 
-function ArribosSkeleton({ encabezado = false }: { encabezado?: boolean }) {
+function ArribosSkeleton({ sentidos }: { sentidos: number }) {
   return (
-    <SkeletonGroup accessibilityLabel="Cargando los próximos trenes…" testID="arribos-skeleton">
-      <View style={{ gap: 16 }}>
-        {encabezado ? <Skeleton height={44} width={220} /> : null}
-        {[0, 1].map((b) => (
-          <View key={b} style={{ gap: 8 }}>
-            <Skeleton height={20} width={180} />
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} height={24} width={i === 0 ? 96 : 64} />
-            ))}
-          </View>
-        ))}
-      </View>
+    <SkeletonGroup
+      accessibilityLabel="Cargando los próximos trenes…"
+      testID="arribos-skeleton"
+      style={{ gap: 12 }}
+    >
+      {Array.from({ length: Math.max(1, sentidos) }, (_, i) => (
+        <SignBand.Skeleton key={i} variant="lead" />
+      ))}
     </SkeletonGroup>
   );
 }
 
 const styles = StyleSheet.create({
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bloque: { gap: 4 },
-  tiempos: { flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 16 },
+  contexto: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  contextoTexto: { flex: 1, fontSize: 15, lineHeight: 20 },
 });

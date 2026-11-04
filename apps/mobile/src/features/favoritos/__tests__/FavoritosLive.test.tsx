@@ -68,20 +68,17 @@ describe('Favoritos · datos vivos', () => {
     const { renderUi } = setup([lineaB, casa], { ...defaultRoutes(), [ARRIBOS_ROUTE]: arribosOk });
     await renderUi();
 
-    expect(
-      await screen.findByText('→ Leandro N. Alem 2 min · → Juan Manuel de Rosas 5 min', {
-        includeHiddenElements: true,
-      }),
-    ).toBeOnTheScreen();
+    // La banda muestra el primer arribo como valor (24 pt en `next`) y la línea, su estado.
+    expect(await screen.findByText('2 min', { includeHiddenElements: true })).toHaveStyle({
+      fontSize: 24,
+    });
     expect(await screen.findByText('Normal', { includeHiddenElements: true })).toBeOnTheScreen();
     expect(
       screen.getByRole('button', {
-        name: 'Casa. Estación Medrano, Línea B. Hacia Leandro N. Alem en 2 minutos. Hacia Juan Manuel de Rosas en 5 minutos.',
+        name: 'Casa. Estación Medrano, Línea B, Hacia Leandro N. Alem en 2 minutos. Hacia Juan Manuel de Rosas en 5 minutos',
       }),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByRole('button', { name: 'Línea B de subte. Estado: normal.' }),
-    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Línea B, Estado: normal' })).toBeOnTheScreen();
   });
 
   it('en carga: la fila ya está y lee "Cargando" mientras llega el dato', async () => {
@@ -89,9 +86,9 @@ describe('Favoritos · datos vivos', () => {
     const { renderUi } = setup([casa], { ...defaultRoutes(), [ARRIBOS_ROUTE]: () => undefined });
     await renderUi();
     expect(
-      screen.getByRole('button', { name: 'Casa. Estación Medrano, Línea B. Cargando.' }),
+      screen.getByRole('button', { name: 'Casa. Estación Medrano, Línea B, cargando' }),
     ).toBeOnTheScreen();
-    expect(screen.getByText('Casa')).toBeOnTheScreen();
+    expect(screen.getByText('Casa', { includeHiddenElements: true })).toBeOnTheScreen();
   });
 
   it('con error: "Sin información" en la fila, sin romper nada', async () => {
@@ -103,7 +100,7 @@ describe('Favoritos · datos vivos', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: 'Casa. Estación Medrano, Línea B. Sin información.',
+        name: 'Casa. Estación Medrano, Línea B, Sin información',
       }),
     ).toBeOnTheScreen();
     expect(screen.getByText('Sin información', { includeHiddenElements: true })).toBeOnTheScreen();
@@ -119,7 +116,7 @@ describe('Favoritos · datos vivos', () => {
       1,
     );
     expect(
-      screen.getByRole('button', { name: 'Parada Av. Rivadavia y Acoyte, Líneas 1, 25, 132.' }),
+      screen.getByRole('button', { name: 'Parada Av. Rivadavia y Acoyte, Líneas 1, 25, 132' }),
     ).toBeOnTheScreen();
     await waitFor(() => {
       expect(harness.queryClient.isFetching()).toBe(0);
