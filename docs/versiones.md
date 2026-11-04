@@ -276,6 +276,22 @@ Reemplaza a Nunito y Open Sans (tarea 3.4; filas de arriba quedan como historial
 
 `licencias.json` se regeneró con `pnpm licencias` (30 paquetes).
 
+## Parches del SDK 58 (`npx expo install --fix`) — 2026-11-04
+
+El usuario corrió `npx expo install --fix` el 2026-11-04 (11:15, hora local) y el coordinador formalizó la suba ese mismo día: versiones **exactas** en `apps/mobile/package.json` (el comando escribe rangos `~`), lockfile regenerado y `npx expo install --check` en verde («Dependencies are up to date»). «Publicada» sale de `npm view <paquete>@<versión> time`; como todas tenían menos de 1 día al instalarse, se agregaron a `minimumReleaseAgeExclude` en `pnpm-workspace.yaml` (con sus dependencias transitivas nuevas: `@expo/cli` 58.1.19, `@expo/config` 58.0.11, `@expo/config-plugins` 58.0.12, `@expo/metro-config` 58.0.21, `expo-modules-core` 58.0.30, `babel-preset-expo` 58.0.24, etc.).
+
+| Paquete | Antes | Ahora | Publicada (UTC) | Notas |
+|---|---|---|---|---|
+| **`expo`** | 58.0.22 | **58.0.23** | 2026-11-03 17:06 | `bundledNativeModules.json` de esta versión es el que alinea las filas de abajo. |
+| **`expo-constants`** | 58.0.14 | **58.0.15** | 2026-11-03 16:33 | — |
+| **`expo-linking`** | 58.0.15 | **58.0.16** | 2026-11-03 16:51 | — |
+| **`expo-router`** | 58.0.29 | **58.0.30** | 2026-11-03 17:06 | — |
+| **`expo-splash-screen`** | 58.0.12 | **58.0.13** | 2026-11-03 16:34 | — |
+| **`react-native-safe-area-context`** | 5.10.1 | **5.11.1** | 2026-11-03 02:24 | El SDK pasó de `~5.10.1` a `~5.11.1` (la fila de la Fase 3 decía «no usar la 5.11.0»; ya no aplica). Módulo nativo: el dev build siguiente la incorpora. |
+| **`jest-expo`** | 58.0.13 | **58.0.14** | 2026-11-03 16:09 | **Cambio de comportamiento en los tests:** mockea el registro de assets de React Native (`src/private/assets/AssetRegistry.js`), así que los `.ttf` cargan en Jest y `useFonts` ya no falla. `test/fonts.test.tsx` cubre el error mockeando `useFonts` (jest-expo crea una instancia nueva del módulo nativo en cada `requireNativeModule`, así que no se puede hacer fallar el `loadAsync` de expo-font desde el test) y suma la carga real en verde; `test/layout.test.tsx` mockea `useAppFonts` para cubrir los dos caminos. |
+
+Sin cambios: `expo-dev-client` 58.0.18, `expo-font` 58.0.11, `react-native` 0.88.1, `react-native-screens` 4.30.1 (siguen siendo lo que pide el SDK 58.0.23).
+
 ## Pendiente de fijar
 
 Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al inicio de cada fase):

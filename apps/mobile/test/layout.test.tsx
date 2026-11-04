@@ -1,6 +1,7 @@
-// Layout raíz: el splash se oculta cuando las fuentes terminan de cargar, y también si fallan
-// (en Jest fallan: ver fonts.test.tsx), para no dejar la app colgada en el splash. Sin conexión,
-// el OfflineBanner global aparece una vez arriba del Stack.
+// Layout raíz: el splash se oculta cuando las fuentes terminan de cargar, y también si fallan,
+// para no dejar la app colgada en el splash. La carga real se prueba en fonts.test.tsx; acá
+// `useAppFonts` se mockea para fijar cada camino. Sin conexión, el OfflineBanner global aparece
+// una vez arriba del Stack.
 import { onlineManager } from '@tanstack/react-query';
 import { act } from '@testing-library/react-native';
 import { renderRouter, screen } from 'expo-router/testing-library';
@@ -8,12 +9,19 @@ import { hideAsync } from 'expo-splash-screen';
 
 import InicioScreen from '@/app/(tabs)/inicio/index';
 import RootLayout from '@/app/_layout';
+import type * as Fonts from '@/shared/fonts';
+import { useAppFonts } from '@/shared/fonts';
 import { OFFLINE_MESSAGE } from '@/shared/ui';
 
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
   hideAsync: jest.fn(() => Promise.resolve()),
 }));
+jest.mock('@/shared/fonts', () => {
+  const actual = jest.requireActual<typeof Fonts>('@/shared/fonts');
+  return { ...actual, useAppFonts: jest.fn(() => ({ loaded: true, error: null })) };
+});
+const useAppFontsMock = jest.mocked(useAppFonts);
 
 // El layout raíz monta el QueryProvider real con el cliente de la app: nada de red real.
 beforeEach(() => {
@@ -24,7 +32,22 @@ afterEach(() => {
 });
 
 describe('layout raíz', () => {
+  it('con las fuentes cargadas oculta el splash y muestra la app sin avisos', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await renderRouter(
+      { _layout: RootLayout, 'inicio/index': InicioScreen },
+      { initialUrl: '/inicio' },
+    );
+    expect(
+      await screen.findByText('Subte ahora', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(hideAsync).toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('[fonts]'), expect.anything());
+    warn.mockRestore();
+  });
+
   it('con error de fuentes oculta el splash y muestra la app con la fuente del sistema', async () => {
+    useAppFontsMock.mockReturnValue({ loaded: false, error: new Error('fuente rota') });
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     await renderRouter(
       { _layout: RootLayout, 'inicio/index': InicioScreen },
@@ -36,6 +59,7 @@ describe('layout raíz', () => {
     expect(hideAsync).toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('[fonts]'), expect.any(Error));
     warn.mockRestore();
+    useAppFontsMock.mockReturnValue({ loaded: true, error: null });
   });
 });
 

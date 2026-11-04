@@ -1,7 +1,9 @@
-// `useAppFonts`. jest-expo mockea el módulo nativo de expo-font (`ExpoFontLoader`), pero los
-// `.ttf` no quedan en el registro de assets de Jest y `loadAsync` rechaza ("Module … is missing
-// from the asset registry"). Eso sirve para probar el camino de error real; el de éxito se prueba
-// mockeando `useFonts` (verificamos qué mapa de fuentes recibe).
+// `useAppFonts`. jest-expo mockea el módulo nativo de expo-font (`ExpoFontLoader`) y, desde
+// jest-expo 58.0.14, también el registro de assets de React Native, así que los `.ttf` cargan en
+// Jest (antes `loadAsync` rechazaba con "Module … is missing from the asset registry" y eso
+// servía de camino de error real). Los dos caminos se prueban mockeando `useFonts`: jest-expo
+// crea una instancia nueva del módulo nativo en cada `requireNativeModule`, así que no se puede
+// hacer fallar el `loadAsync` que usa expo-font desde el test.
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type * as ExpoFont from 'expo-font';
 import { useFonts } from 'expo-font';
@@ -37,10 +39,17 @@ describe('fuentes', () => {
   });
 
   it('si la carga falla, devuelve el error (la app sigue con la fuente del sistema)', async () => {
+    const error = new Error('No se pudo registrar la fuente');
+    useFontsMock.mockReturnValueOnce([false, error]);
+    const { result } = await renderHook(() => useAppFonts());
+    expect(result.current).toEqual({ loaded: false, error });
+  });
+
+  it('con la carga real de Jest (assets mockeados por jest-expo) termina cargada y sin error', async () => {
     const { result } = await renderHook(() => useAppFonts());
     await waitFor(() => {
-      expect(result.current.error).toBeInstanceOf(Error);
+      expect(result.current.loaded).toBe(true);
     });
-    expect(result.current.loaded).toBe(false);
+    expect(result.current.error).toBeNull();
   });
 });

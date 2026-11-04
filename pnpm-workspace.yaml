@@ -21,6 +21,32 @@ minimumReleaseAgeExclude:
   - miniflare@5.20261101.0-beta
   - workerd@1.20261101.1
   - wrangler@4.156.1
+  # Parches del SDK 58 instalados el 2026-11-04 con `npx expo install --fix` (publicados el
+  # 2026-11-03 entre las 02:24 y las 17:06 UTC, menos de 1 día antes; ver `docs/versiones.md`,
+  # «Parches del SDK 58»). Entradas inofensivas una vez pasado el día: se pueden borrar.
+  - '@expo/cli@58.1.19'
+  - '@expo/config-plugins@58.0.12'
+  - '@expo/config@58.0.11'
+  - '@expo/env@2.5.4'
+  - '@expo/fingerprint@0.21.9'
+  - '@expo/inline-modules@0.2.9'
+  - '@expo/local-build-cache-provider@58.0.11'
+  - '@expo/log-box@58.0.15'
+  - '@expo/metro-config@58.0.21'
+  - '@expo/prebuild-config@58.0.19'
+  - '@expo/router-server@58.0.21'
+  - babel-preset-expo@58.0.24
+  - expo-asset@58.0.20
+  - expo-constants@58.0.15
+  - expo-modules-autolinking@58.0.17
+  - expo-modules-core@58.0.30
+  - expo-modules-jsi@58.0.22
+  - expo@58.0.23
+  - '@expo/metro-runtime@58.0.17'
+  - expo-linking@58.0.16
+  - expo-router@58.0.30
+  - expo-splash-screen@58.0.13
+  - jest-expo@58.0.14
 # `@types/jsdom` (lo trae jest-expo vía jest-environment-jsdom para apps/mobile) NO se iza a
 # `node_modules/.pnpm/node_modules`. Si se iza, `vitest/optional-types.d.ts` (que importa
 # 'jsdom') lo encuentra subiendo directorios, arrastra `lib.dom` al proxy y pisa los tipos de
