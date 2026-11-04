@@ -138,15 +138,22 @@ Desde la Fase 5, Inicio es el **piloto de la dirección «Señalética de termin
 
 ## 5. Ajustes
 
-- [ ] Se abre desde el engranaje de Inicio y se vuelve con el gesto de borde.
+Desde la Fase 5, Ajustes, Acerca de y Licencias siguen la dirección «Señalética de terminal» con la restricción máxima: la misma tipografía (Fira Sans), el fondo celeste muy claro y las placas blancas de Inicio, pero **sin bandas ni pictogramas**: es una lista agrupada común y silenciosa.
+
+- [ ] **Forma de la lista:** fondo celeste muy claro (en oscuro, el fondo de la app); cada sección tiene su encabezado chico en gris (Apariencia, Datos, Favoritos, Privacidad, Información) y debajo una placa blanca de esquinas apenas redondeadas, con un borde finito y **sin sombra**. Las filas se separan con una línea finita (nunca debajo de la última) y no llevan ícono a la izquierda.
+- [ ] **Chevron solo donde navega:** la flechita `›` aparece **únicamente** en «Acerca de Transportate» (y en «Licencias de software de terceros», dentro de Acerca de). Ninguna otra fila de Ajustes la lleva. «Ubicación» muestra el ícono de salir solo cuando abre los Ajustes del iPhone.
+- [ ] **Presionado:** al apoyar el dedo en una fila, se tiñe de celeste y el tinte respeta las esquinas de la placa.
+- [ ] **Se abre desde el engranaje de Inicio y se vuelve con el gesto de borde.** Header nativo chico con «Ajustes» y «Atrás»; las tabs y el gesto son los de siempre.
 - [ ] **Tema:** Sistema / Claro / Oscuro, al instante. Se mantiene al cerrar y reabrir la app.
 - [ ] **Actualizar cada:** 15 / 20 / 30 / 60 s, con el texto de ayuda. Con 15 s se nota el refresco más seguido en Inicio; se mantiene al reabrir.
 - [ ] **Índice de líneas y paradas:** "Versión del 12/10/2026 · 4,8 MB" (con tu fecha real), "Buscar actualización". Con modo avión dice "Necesitás conexión" y está deshabilitado. Con el proxy apagado: "No pudimos actualizar. Tocá para reintentar."
 - [ ] **Limpiar datos guardados:** aviso "Listo, limpiamos los datos guardados". **No** borra favoritos ni ajustes. Después las pantallas vuelven a cargar con skeleton.
-- [ ] **Borrar todos los favoritos:** deshabilitado con 0 ("No tenés favoritos guardados"). Con favoritos: diálogo nativo con "Cancelar" / "Borrar"; después aviso "Borraste tus favoritos." con **Deshacer**, que los restaura en el mismo orden. 📱 El aviso se ve sobre la tab bar.
+- [ ] **Borrar todos los favoritos:** ahora es una fila (no un botón) con el título en rojo; deshabilitada con 0 (título gris, "No tenés favoritos guardados"). Con favoritos: diálogo nativo con "Cancelar" / "Borrar"; después aviso "Borraste tus favoritos." con **Deshacer**, que los restaura en el mismo orden. 📱 El aviso se ve sobre la tab bar.
 - [ ] **📱 Ubicación (fila de Privacidad):** muestra el estado real: "Todavía no la pediste", "Permitida mientras usás la app" o "No permitida" (con "Podés buscar paradas a mano"). Sin preguntar, tocarla abre el diálogo del sistema; con permiso o bloqueado, abre los Ajustes del iPhone. Cambiá el permiso allá y volvé: la fila se actualiza sola.
-- [ ] **Acerca de:** nombre, versión y build reales, atribución a los datos del Gobierno de la Ciudad (CC BY 2.5 AR), "Transportate no es una app oficial del Gobierno de la Ciudad.", privacidad en 4 puntos, mapa y diseño. Los dos enlaces abren Safari.
-- [ ] **Licencias:** lista de librerías; tocar una despliega su texto.
+- [ ] **Texto grande en Ajustes:** con Dynamic Type al máximo, las filas crecen en alto: ni el valor ni el estado se cortan, y el segmentado de Tema y el de intervalo siguen enteros y tocables.
+- [ ] **Barra de descarga (📱, solo si descarga el índice grande de Colectivos):** debajo de «Descargando… 40 %» una barra finita (4 pt) azul sobre celeste, sin animación propia.
+- [ ] **Acerca de:** lectura en la misma tipografía, más aireada que la lista (nombre grande, párrafos de 17 pt, títulos de sección). «Diseño» dice que la app sigue Obelisco v2 adaptado a nativo, con Fira Sans y una dirección visual propia, «Señalética de terminal». Además: nombre, versión y build reales, atribución a los datos del Gobierno de la Ciudad (CC BY 2.5 AR), "Transportate no es una app oficial del Gobierno de la Ciudad.", privacidad en 4 puntos, mapa y diseño. Los dos enlaces abren Safari.
+- [ ] **Licencias:** una sola placa con una fila por librería (nombre en seminegrita y «versión · licencia» abajo); tocar una despliega su texto en Fira Sans y el chevron gira. Tiene que figurar `@expo-google-fonts/fira-sans` (MIT AND OFL-1.1) y **ninguna** Nunito ni Open Sans.
 
 ## 6. Tema claro y oscuro (recorrido transversal)
 
