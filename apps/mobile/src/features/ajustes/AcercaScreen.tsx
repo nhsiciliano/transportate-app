@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Image, Linking, ScrollView, View } from 'react-native';
 
 import { useTheme } from '@/shared/theme';
-import { Text } from '@/shared/ui';
+import { Text, type TextProps } from '@/shared/ui';
 
 import { Row, Section } from './SettingsList';
 
@@ -23,6 +23,13 @@ export const PRIVACIDAD_BULLETS = [
   'No medimos ni rastreamos lo que hacés.',
 ] as const;
 
+export const MAPA_ATRIBUCION =
+  'Mapa base: © OpenStreetMap contributors, © OpenMapTiles, tiles de OpenFreeMap.';
+export const MAPA_PRIVACIDAD =
+  'El mapa se descarga de un servicio externo, que puede ver tu dirección IP y la zona que mirás.';
+export const DISENO_TEXTO =
+  'La app sigue Obelisco v2, el sistema de diseño de la Ciudad de Buenos Aires, adaptado a nativo y con la tipografía Fira Sans. Sobre esa paleta tiene una dirección visual propia: «Señalética de terminal».';
+
 /** "Versión 0.1.0 (build 12)"; sin build (Expo Go, web) queda "Versión 0.1.0". */
 export function describeVersion(version: string | undefined, build: string | null): string {
   const base = `Versión ${version ?? '—'}`;
@@ -34,8 +41,24 @@ function openLink(url: string): void {
   Linking.openURL(url).catch(() => undefined);
 }
 
+/** Título de sección de lectura: 20/26 en 600 (contrato de Ajustes). */
+function Titulo({ children }: { children: string }) {
+  return (
+    <Text variant="heading.h6" style={{ lineHeight: 26 }}>
+      {children}
+    </Text>
+  );
+}
+
+/** Párrafo de lectura: 17/26 en 400, con el tope de Dynamic Type de 1.3 del texto corrido. */
+function Parrafo({ style, ...rest }: TextProps) {
+  return (
+    <Text maxFontSizeMultiplier={1.3} style={[{ fontSize: 17, lineHeight: 26 }, style]} {...rest} />
+  );
+}
+
 export function AcercaScreen() {
-  const { space, radius } = useTheme();
+  const { space, radius, colors, scheme, fontFamily } = useTheme();
   const router = useRouter();
   // `nativeBuildVersion` está tipado como `any` en expo-constants: se acota acá.
   const build: unknown = Constants.nativeBuildVersion;
@@ -46,6 +69,8 @@ export function AcercaScreen() {
 
   return (
     <ScrollView
+      testID="acerca-screen"
+      style={{ backgroundColor: scheme === 'light' ? colors.bg.elevated : colors.bg.base }}
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ padding: space[3], gap: space[4], paddingBottom: space[5] }}
     >
@@ -56,24 +81,31 @@ export function AcercaScreen() {
           accessibilityIgnoresInvertColors
           style={{ width: 72, height: 72, borderRadius: radius.lg }}
         />
-        <Text variant="heading.h4">Transportate</Text>
-        <Text variant="text.sm" tone="secondary" testID="acerca-version">
+        <Text variant="heading.h4" style={{ fontFamily: fontFamily.heading[700], lineHeight: 34 }}>
+          Transportate
+        </Text>
+        <Text
+          variant="text.sm"
+          tone="secondary"
+          testID="acerca-version"
+          style={{ fontSize: 15, lineHeight: 20 }}
+        >
           {version}
         </Text>
       </View>
 
       <View style={{ gap: space[2] }}>
-        <Text variant="heading.h6">Datos</Text>
-        <Text>
+        <Titulo>Datos</Titulo>
+        <Parrafo>
           Los datos de transporte son del Gobierno de la Ciudad de Buenos Aires (API de Transporte),
           publicados bajo licencia Creative Commons Atribución 2.5 Argentina. Las paradas de
           colectivo salen del catálogo «Colectivos: paradas» de BA Data, con la misma licencia.
-        </Text>
-        <Text>Transportate no es una app oficial del Gobierno de la Ciudad.</Text>
-        <Text>
+        </Parrafo>
+        <Parrafo>Transportate no es una app oficial del Gobierno de la Ciudad.</Parrafo>
+        <Parrafo>
           Los datos pueden tardar en actualizarse o fallar: siempre te mostramos hace cuánto se
           actualizaron.
-        </Text>
+        </Parrafo>
         <Section title="Enlaces">
           <Row
             title="Licencia CC BY 2.5 Argentina"
@@ -97,29 +129,26 @@ export function AcercaScreen() {
       </View>
 
       <View style={{ gap: space[2] }}>
-        <Text variant="heading.h6">Privacidad</Text>
+        <Titulo>Privacidad</Titulo>
         {PRIVACIDAD_BULLETS.map((bullet) => (
           <View key={bullet} style={{ flexDirection: 'row', gap: space[2] }}>
-            <Text accessibilityElementsHidden importantForAccessibility="no">
+            <Parrafo accessibilityElementsHidden importantForAccessibility="no">
               •
-            </Text>
-            <Text style={{ flex: 1 }}>{bullet}</Text>
+            </Parrafo>
+            <Parrafo style={{ flex: 1 }}>{bullet}</Parrafo>
           </View>
         ))}
       </View>
 
       <View style={{ gap: space[2] }}>
-        <Text variant="heading.h6">Mapa</Text>
-        <Text>Mapa base: © OpenStreetMap contributors, © OpenMapTiles, tiles de OpenFreeMap.</Text>
-        <Text>
-          El mapa se descarga de un servicio externo, que puede ver tu dirección IP y la zona que
-          mirás.
-        </Text>
+        <Titulo>Mapa</Titulo>
+        <Parrafo>{MAPA_ATRIBUCION}</Parrafo>
+        <Parrafo>{MAPA_PRIVACIDAD}</Parrafo>
       </View>
 
       <View style={{ gap: space[2] }}>
-        <Text variant="heading.h6">Diseño</Text>
-        <Text>Basado en Obelisco, el sistema de diseño de la Ciudad de Buenos Aires.</Text>
+        <Titulo>Diseño</Titulo>
+        <Parrafo>{DISENO_TEXTO}</Parrafo>
       </View>
 
       <Section title="Software">

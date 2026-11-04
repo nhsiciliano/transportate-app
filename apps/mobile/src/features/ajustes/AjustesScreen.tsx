@@ -1,4 +1,5 @@
-// Ajustes (tarea 4.10; brief `docs/briefs/06-ajustes.md`). Lista agrupada con filas de ≥ 44 pt.
+// Ajustes (tarea 4.10; brief `docs/briefs/06-ajustes.md`). Lista agrupada con filas de ≥ 52 pt en
+// placas blancas (dirección «Señalética de terminal», Fase 5, F5-LOW-B).
 // Cada cambio se aplica al instante y se guarda solo (sin botón "Guardar"):
 // - Tema → `useTheme().setPreference` (el ThemeProvider de la app persiste en MMKV).
 // - Intervalo → `useRefreshInterval().setSeconds` (RefreshIntervalProvider ← MMKV).
@@ -8,7 +9,7 @@
 // - Borrar favoritos → confirmación nativa + Snackbar con "Deshacer".
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Alert as NativeAlert, ScrollView, View } from 'react-native';
+import { Alert as NativeAlert, ScrollView } from 'react-native';
 
 import { useFavoritos } from '@/features/favoritos';
 import { usePermisoUbicacion, type PermisoUbicacion } from '@/features/ubicacion';
@@ -17,11 +18,11 @@ import { useIsOnline, useRefreshInterval } from '@/shared/query';
 import { getDefaultKeyValueStore, type KeyValueStore } from '@/shared/storage/kv';
 import { clearPersistedQueryCache } from '@/shared/storage/queryPersister';
 import { useTheme, type ThemePreference } from '@/shared/theme';
-import { Button, SegmentedControl, SnackbarProvider, Text, useSnackbar } from '@/shared/ui';
+import { SegmentedControl, SnackbarProvider, useSnackbar } from '@/shared/ui';
 
 import { IndiceRow } from './IndiceRow';
 import { REFRESH_INTERVAL_HELP, REFRESH_INTERVAL_OPTIONS, THEME_OPTIONS } from './preferences';
-import { Row, Section } from './SettingsList';
+import { ControlRow, Row, RowNote, SECTION_GAP, Section } from './SettingsList';
 
 export const CLEAR_DONE_MESSAGE = 'Listo, limpiamos los datos guardados';
 export const FAVORITOS_EMPTY_MESSAGE = 'No tenés favoritos guardados';
@@ -52,7 +53,7 @@ export function AjustesScreen(props: AjustesScreenProps) {
 
 function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
   const theme = useTheme();
-  const { space } = theme;
+  const { space, colors } = theme;
   const router = useRouter();
   const queryClient = useQueryClient();
   const snackbar = useSnackbar();
@@ -108,12 +109,14 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
 
   return (
     <ScrollView
+      testID="ajustes-screen"
+      // Mismo fondo que Inicio: elevado en claro (#edf4ff) y el de la app en oscuro.
+      style={{ backgroundColor: theme.scheme === 'light' ? colors.bg.elevated : colors.bg.base }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: space[3], gap: space[4], paddingBottom: space[5] }}
+      contentContainerStyle={{ padding: space[3], gap: SECTION_GAP, paddingBottom: space[5] }}
     >
       <Section title="Apariencia">
-        <View style={{ padding: space[3], gap: space[2] }}>
-          <Text variant="text.md">Tema</Text>
+        <ControlRow title="Tema">
           <SegmentedControl<ThemePreference>
             accessibilityLabel="Tema"
             options={THEME_OPTIONS}
@@ -122,12 +125,11 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
               theme.setPreference(preference);
             }}
           />
-        </View>
+        </ControlRow>
       </Section>
 
       <Section title="Datos">
-        <View style={{ padding: space[3], gap: space[2] }}>
-          <Text variant="text.md">Actualizar cada</Text>
+        <ControlRow title="Actualizar cada" note={REFRESH_INTERVAL_HELP}>
           <SegmentedControl
             accessibilityLabel="Actualizar cada"
             options={REFRESH_INTERVAL_OPTIONS.map((option) => ({
@@ -141,40 +143,30 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
               if (picked) refreshInterval.setSeconds(picked.value);
             }}
           />
-          <Text variant="text.sm" tone="secondary">
-            {REFRESH_INTERVAL_HELP}
-          </Text>
-        </View>
+        </ControlRow>
         <IndiceRow manifest={manifest} online={online} />
         <Row
           title="Limpiar datos guardados"
-          value="Borra los datos de transporte guardados en tu teléfono. No toca tus favoritos."
+          detail="Borra los datos de transporte guardados en tu teléfono. No toca tus favoritos."
           titleTone="link"
           onPress={handleClearData}
         />
       </Section>
 
       <Section title="Favoritos">
-        <View style={{ padding: space[3], gap: space[2] }}>
-          <Text variant="text.sm" tone="secondary">
-            {favoritosText}
-          </Text>
-          <Button
-            label="Borrar todos los favoritos"
-            variant="danger"
-            outline
-            fullWidth
-            disabled={favoritos.length === 0}
-            onPress={confirmRemoveAll}
-          />
-        </View>
+        <Row
+          title="Borrar todos los favoritos"
+          detail={favoritosText}
+          destructive
+          disabled={favoritos.length === 0}
+          onPress={confirmRemoveAll}
+        />
       </Section>
 
       <Section title="Privacidad">
         <Row
           title="Ubicación"
-          icon="sinUbicacion"
-          value={ubicacionCopy.value}
+          detail={ubicacionCopy.value}
           trailing={canRequestUbicacion ? undefined : 'externo'}
           accessibilityLabel={`Ubicación, ${ubicacionCopy.value}${ubicacionCopy.hint ? `. ${ubicacionCopy.hint}` : ''}. ${canRequestUbicacion ? 'Tocá para pedir el permiso' : 'Tocá para abrir la configuración'}`}
           onPress={() => {
@@ -182,18 +174,13 @@ function AjustesContent({ queryCacheStore }: AjustesScreenProps) {
             else void ubicacion.openSettings();
           }}
         >
-          {ubicacionCopy.hint ? (
-            <Text variant="text.sm" tone="secondary">
-              {ubicacionCopy.hint}
-            </Text>
-          ) : null}
+          {ubicacionCopy.hint ? <RowNote>{ubicacionCopy.hint}</RowNote> : null}
         </Row>
       </Section>
 
       <Section title="Información">
         <Row
           title="Acerca de Transportate"
-          icon="acercaDe"
           trailing="chevron"
           onPress={() => {
             router.push('/inicio/acerca');

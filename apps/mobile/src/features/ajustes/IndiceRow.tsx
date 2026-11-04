@@ -25,7 +25,10 @@ import { useTheme } from '@/shared/theme';
 import { Text } from '@/shared/ui';
 
 import { describeIndice } from './format';
-import { Row } from './SettingsList';
+import { LIST_TYPE, Row, RowDetail } from './SettingsList';
+
+/** Barra de progreso de la descarga: 4 pt de alto, radio 2 (contrato de Ajustes). */
+export const PROGRESS_BAR = { height: 4, radius: 2 } as const;
 
 export const INDICE_TITLE = 'Índice de líneas y paradas';
 export const INDICE_ERROR = 'No pudimos actualizar. Tocá para reintentar.';
@@ -87,7 +90,6 @@ export function IndiceRow({ manifest, online, downloadProgress: progressProp }: 
   return (
     <Row
       title={INDICE_TITLE}
-      icon="lista"
       disabled={disabled}
       busy={searching}
       onPress={() => {
@@ -104,19 +106,49 @@ export function IndiceRow({ manifest, online, downloadProgress: progressProp }: 
     >
       <View style={styles.line}>
         {searching ? <ActivityIndicator size="small" color={colors.text.secondary} /> : null}
-        <Text variant="text.sm" tone="secondary" style={styles.flex}>
-          {status}
-        </Text>
+        <RowDetail style={styles.flex}>{status}</RowDetail>
       </View>
+      {searching && downloadProgress !== null ? (
+        // Decorativa: el porcentaje ya está escrito en el estado y la fila es un solo elemento.
+        <View
+          testID="indice-progreso"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            height: PROGRESS_BAR.height,
+            marginTop: space[1],
+            borderRadius: PROGRESS_BAR.radius,
+            backgroundColor: colors.bg.pressed,
+            overflow: 'hidden',
+          }}
+        >
+          <View
+            testID="indice-progreso-relleno"
+            style={{
+              width: `${String(Math.round(Math.min(Math.max(downloadProgress, 0), 1) * 100))}%`,
+              height: PROGRESS_BAR.height,
+              backgroundColor: colors.role.secondary.base,
+            }}
+          />
+        </View>
+      ) : null}
       {showErrorLine ? (
         <View style={[styles.line, { gap: space[1] }]}>
           <Icon name="error" size={16} color={colors.role.danger.text} />
-          <Text variant="text.sm" color={colors.role.danger.text} style={styles.flex}>
+          <Text
+            variant="text.sm"
+            color={colors.role.danger.text}
+            style={[LIST_TYPE.detail, styles.flex]}
+          >
             {INDICE_ERROR}
           </Text>
         </View>
       ) : null}
-      <Text variant="headline.sm" tone={disabled ? 'disabled' : 'link'}>
+      <Text
+        variant="headline.sm"
+        tone={disabled ? 'disabled' : 'link'}
+        style={{ fontSize: 15, lineHeight: 20 }}
+      >
         {action}
       </Text>
     </Row>
