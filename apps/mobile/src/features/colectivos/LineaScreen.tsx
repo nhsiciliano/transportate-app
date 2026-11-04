@@ -18,6 +18,7 @@ import {
   boundsOf,
   panelHeights,
   pointCollection,
+  usePanelBottomInset,
   type MapViewHandle,
   type PanelIndex,
 } from '@/shared/map';
@@ -214,7 +215,9 @@ export function LineaScreen() {
   const window = useWindowDimensions();
   const [available, setAvailable] = useState(window.height);
   const [headerHeight, setHeaderHeight] = useState(120);
-  const heights = panelHeights(available, headerHeight);
+  // Lugar para la tab bar nativa (flota sobre el contenido): sin esto tapa la fila de acciones.
+  const bottomInset = usePanelBottomInset();
+  const heights = panelHeights(available, headerHeight, bottomInset);
 
   const refresh = () => {
     void posiciones.refetch();
@@ -280,6 +283,7 @@ export function LineaScreen() {
           onIndexChange={setPanel}
           availableHeight={available}
           headerHeight={headerHeight}
+          bottomInset={bottomInset}
           onHeaderHeight={setHeaderHeight}
           testID="linea-panel"
           header={

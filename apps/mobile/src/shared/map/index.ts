@@ -6,6 +6,7 @@ export {
   PANEL_HANDLE_HEIGHT,
   PANEL_LABELS,
   panelHeights,
+  usePanelBottomInset,
   type BottomPanelProps,
   type PanelIndex,
 } from './BottomPanel';

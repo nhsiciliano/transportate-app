@@ -3,6 +3,7 @@
 import { fireEvent, waitFor } from '@testing-library/react-native';
 import { screen } from 'expo-router/testing-library';
 import * as Location from 'expo-location';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import {
   FEED_VIEJO_S,
@@ -20,6 +21,16 @@ import { lineaRoutes, posicionesDe, renderLinea, RUTA_601, RUTA_602 } from './li
 
 // Router, providers reales y descarga del índice: con la máquina cargada pasan los 5 s.
 jest.setTimeout(30_000);
+
+// El router de prueba trae su propio `SafeAreaProvider` con insets en 0: se fija el de iOS con tab
+// bar (34 pt de indicador de inicio) para probar que el panel lo suma.
+const INSET_ABAJO = 34;
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual<typeof import('react-native-safe-area-context')>(
+    'react-native-safe-area-context',
+  ),
+  useSafeAreaInsets: () => ({ top: 47, left: 0, right: 0, bottom: 34 }),
+}));
 
 type Props = Record<string, unknown>;
 const props = (testID: string): Props => screen.getByTestId(testID).props as Props;
@@ -298,6 +309,16 @@ describe('Detalle de línea: interacción', () => {
         fetchMock.mock.calls.filter(([u]) => new URL(u).pathname === RUTA_601).length,
       ).toBeGreaterThan(antes);
     });
+  });
+
+  it('el panel colapsado deja lugar abajo para la tab bar nativa (inset de iOS)', async () => {
+    await renderLinea();
+    await screen.findByRole('button', { name: 'Ver más' });
+    const alto = StyleSheet.flatten(
+      screen.getByTestId('linea-panel').props.style as StyleProp<ViewStyle>,
+    )?.height;
+    // manija 28 + encabezado (120 hasta que se mide) + el inset de abajo.
+    expect(alto).toBe(28 + 120 + INSET_ABAJO);
   });
 
   it('el panel tiene un botón que lo sube y lo baja', async () => {
