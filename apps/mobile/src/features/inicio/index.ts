@@ -4,9 +4,11 @@ export {
   FAVORITOS_EN_INICIO,
   hrefDeFavorito,
   InicioScreen,
+  LEMA,
   resumenSubte,
   SIN_FAVORITOS,
   SUBTE_NORMAL,
+  TITULO_INICIO,
   type ResumenSubte,
 } from './InicioScreen';
 

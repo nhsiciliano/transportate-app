@@ -46,6 +46,10 @@ import {
   Text,
 } from '@/shared/ui';
 
+/** Título de la pantalla (large title del header): el nombre de la app, no «Inicio». */
+export const TITULO_INICIO = 'Transportate';
+/** Lema bajo el título (pedido del usuario, 2026-11-04): una línea, texto secundario. */
+export const LEMA = 'Toda la información para moverte a tu alcance';
 /** Favoritos que se muestran en Inicio (S28). */
 export const FAVORITOS_EN_INICIO = 5;
 export const SIN_FAVORITOS = 'Guardá tus líneas, paradas y estaciones para verlas acá.';
@@ -77,6 +81,10 @@ export function InicioScreen() {
       backgroundColor={scheme === 'light' ? colors.bg.elevated : colors.bg.base}
       gap={GAP_BLOQUES}
     >
+      {/* Lema pegado al large title: cierra el header en vez de abrir un bloque nuevo. */}
+      <Text variant="text.md" tone="secondary" style={styles.lema} testID="inicio-lema">
+        {LEMA}
+      </Text>
       {lineas !== undefined && estado.data !== undefined ? (
         <AlertaDestacada lineas={lineas} />
       ) : null}
@@ -530,6 +538,8 @@ function SinFavoritos() {
 }
 
 const styles = StyleSheet.create({
+  // Más cerca del título (arriba) que del primer bloque (abajo): el gap de 12 queda debajo.
+  lema: { marginTop: -4 },
   tira: { padding: 10, gap: 8 },
   tiraFila: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   etiqueta: { marginRight: 'auto' },

@@ -5,7 +5,8 @@
 // 1. `ThemeProvider` llama a `Appearance.setColorScheme` (lo nativo: tab bar, sheets, alerts).
 // 2. `navigationTheme(theme)`: el `ThemeProvider` de React Navigation (vía expo-router) con los
 //    colores del tema: títulos en `text.primary` y fondo sin flashes blancos entre pantallas.
-// 3. `stackScreenOptions(theme)`: lo que cada `Stack` de tab fija en sus headers.
+// 3. `stackScreenOptions(theme)`: lo que cada `Stack` de tab fija en sus headers (fuente del
+//    sistema en los títulos: ver la nota de la función).
 import { DarkTheme, DefaultTheme, type Theme as NavigationTheme } from 'expo-router';
 
 import { useTheme, type Theme } from './ThemeProvider';
@@ -36,12 +37,17 @@ export function navigationTheme(theme: Pick<Theme, 'scheme' | 'colors'>): Naviga
 
 /**
  * Opciones de header comunes a las `Stack` de los tabs: botón «Atrás» y botones del header en
- * `text.link`, títulos en `text.primary` con Fira Sans 700 y fondo del header igual al de la
- * pantalla (el large title se apoya sobre el mismo celeste en claro).
+ * `text.link`, títulos en `text.primary` y fondo del header igual al de la pantalla (el large
+ * title se apoya sobre el mismo celeste en claro).
+ *
+ * Los títulos van con la fuente del sistema, no con Fira Sans: con `fontFamily` en
+ * `headerTitleStyle`/`headerLargeTitleStyle` el header nativo de iOS 26 dejó de dibujar el título
+ * (validación en el iPhone, 2026-11-04). El chrome es del sistema por la regla del modo Operate;
+ * la dirección vive en el contenido.
  */
-export function stackScreenOptions(theme: Pick<Theme, 'scheme' | 'colors' | 'fontFamily'>) {
+export function stackScreenOptions(theme: Pick<Theme, 'scheme' | 'colors'>) {
   const fondo = fondoPantalla(theme);
-  const titulo = { fontFamily: theme.fontFamily.heading[700], color: theme.colors.text.primary };
+  const titulo = { color: theme.colors.text.primary };
   return {
     // Corto en iOS; en Android el back es el ícono nativo.
     headerBackTitle: 'Atrás',

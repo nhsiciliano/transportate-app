@@ -3,6 +3,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 
+import { TITULO_INICIO } from '@/features/inicio';
 import { Icon } from '@/shared/icons';
 import { useStackScreenOptions, useTheme } from '@/shared/theme';
 
@@ -39,7 +40,13 @@ export default function InicioLayout() {
       <Stack.Screen
         name="index"
         // Large title en iOS (colapsa con el scroll de `ScreenScroll`); en Android, barra común.
-        options={{ title: 'Inicio', headerLargeTitleEnabled: true, headerRight: AjustesButton }}
+        // El título es el nombre de la app (pedido del usuario, 2026-11-04): el tab sigue
+        // diciendo «Inicio» y la pantalla lleva debajo la línea `LEMA` de `InicioScreen`.
+        options={{
+          title: TITULO_INICIO,
+          headerLargeTitleEnabled: true,
+          headerRight: AjustesButton,
+        }}
       />
       <Stack.Screen name="ajustes" options={{ title: 'Ajustes' }} />
       <Stack.Screen name="acerca" options={{ title: 'Acerca de' }} />

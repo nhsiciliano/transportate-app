@@ -15,7 +15,6 @@ import {
   ChromeNativo,
   createMemoryPreferenceStore,
   dark,
-  fontFamily,
   light,
   nativeColorScheme,
   navigationTheme,
@@ -110,15 +109,19 @@ describe('tema de navegación y opciones de header', () => {
     expect(l.colors.background).toBe(light.bg.elevated);
   });
 
-  it('stackScreenOptions: «Atrás» en text.link, títulos en text.primary con Fira Sans y fondo de pantalla', () => {
-    expect(stackScreenOptions({ scheme: 'dark', colors: dark, fontFamily })).toMatchObject({
+  it('stackScreenOptions: «Atrás» en text.link, títulos en text.primary con la fuente del sistema y fondo de pantalla', () => {
+    const opciones = stackScreenOptions({ scheme: 'dark', colors: dark });
+    expect(opciones).toMatchObject({
       headerBackTitle: 'Atrás',
       headerTintColor: dark.text.link,
-      headerTitleStyle: { color: dark.text.primary, fontFamily: 'FiraSans_700Bold' },
-      headerLargeTitleStyle: { color: dark.text.primary, fontFamily: 'FiraSans_700Bold' },
+      headerTitleStyle: { color: dark.text.primary },
+      headerLargeTitleStyle: { color: dark.text.primary },
       headerStyle: { backgroundColor: dark.bg.base },
       headerLargeStyle: { backgroundColor: dark.bg.base },
     });
+    // Sin `fontFamily`: con Fira Sans el header nativo de iOS 26 no dibujaba el título.
+    expect(opciones.headerTitleStyle).not.toHaveProperty('fontFamily');
+    expect(opciones.headerLargeTitleStyle).not.toHaveProperty('fontFamily');
   });
 });
 
@@ -187,7 +190,7 @@ describe('headers reales de los tabs', () => {
       titleColor: dark.text.primary,
       largeTitleColor: dark.text.primary,
       backgroundColor: dark.bg.base,
-      titleFontFamily: 'FiraSans_700Bold',
+      titleFontFamily: undefined,
       userInterfaceStyle: 'dark',
     });
   });
