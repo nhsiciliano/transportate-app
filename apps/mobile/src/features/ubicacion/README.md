@@ -2,7 +2,32 @@
 
 Ubicación compartida (Fase 4, tarea 4.7 y fila de Ajustes). La usan Colectivos ("Paradas cercanas"), el mapa ("centrar en mí") y Ajustes. **La ubicación nunca sale del teléfono**: no se guarda en MMKV ni en la caché de consultas y no se manda al proxy ([`docs/05-privacidad.md`](../../../../../docs/05-privacidad.md) §3).
 
-## Brief operativo (tarea 4.1)
+## Brief operativo F5 (F5-MID-B)
+
+`PermisoUbicacionBloque` pasa a la dirección «Señalética de terminal» (contrato de Colectivos: `apps/mobile/.impeccable/surfaces/src-features-colectivos-colectivosscreen-tsx.md`). **Copy y comportamiento no cambian** (S32, `F4-ubicacion-*`); cambia la forma:
+
+- `Pictogram paradasCercanas` de 40 pt (`tone="board"`) a la izquierda; a su derecha, el título 17/600 «Activá la ubicación para ver paradas cerca tuyo» y el texto 15 `text.secondary` «Solo se usa mientras la app está abierta y no sale de tu teléfono.». Con `blocked`, una línea más: «La ubicación está desactivada para Transportate.».
+- Debajo, los botones de siempre: «Activar» (o «Abrir configuración» si el sistema ya no deja preguntar) y «Buscar a mano», que pasan a la línea de abajo si no entran.
+- Prop **`inset`**: dentro de una placa de tablero (`Board`), sin fondo ni borde propios, solo el padding de una fila (12 pt). Sin `inset`, el bloque va en una `Card`.
+- El título es el encabezado accesible del bloque (antes era «Ubicación»). Constantes: `PERMISO_TITLE`, `PERMISO_DETAIL`, `PERMISO_MESSAGE` (los dos unidos, como se leía antes) y `PERMISO_BLOCKED_MESSAGE`.
+
+| Estado del permiso | Forma F5 |
+| --- | --- |
+| `undetermined` / `denied` | Pictograma, título, texto, «Activar» y «Buscar a mano» |
+| `blocked` | Lo mismo + la línea de configuración desactivada y «Abrir configuración» en lugar de «Activar» |
+| `granted` | El bloque no se muestra |
+| Carga / vacío / error | No aplican: el bloque es presentacional; la pantalla que lo usa resuelve la carga de la posición (en Colectivos, skeleton dentro de la placa) |
+| Dynamic Type al tope | El título llega a 3–4 líneas y los botones se apilan; el pictograma queda arriba a la izquierda y no se trunca nada |
+
+**Contraste:** título `text.primary` / `bg.card` 16,69:1 (claro) y 13,53:1 (oscuro); texto `text.secondary` / `bg.card` 7,38:1 y 9,97:1; `Pictogram board` ícono / cuadrado 13,07:1 y 11,09:1, cuadrado / `bg.card` 13,07:1 y 9,94:1 (≥ 3:1). Cálculo con `ratio` de `tools/contraste/contraste.py`; detalle completo en el [README de Colectivos](../colectivos/README.md#contraste-toolscontrastecontrastepy-función-ratio).
+
+**Suposiciones F5:**
+
+1. **F5-ubicacion-1** — Un solo componente para dos contextos: `inset` quita el fondo y el borde en vez de duplicar el bloque. Quien lo meta en una placa pasa `inset`; sin él, es una `Card` con la misma forma.
+2. **F5-ubicacion-2** — El título pasa a ser un encabezado largo en lugar del «Ubicación» de antes: el lector ya anuncia de qué trata el bloque. `PERMISO_MESSAGE` se conserva con el texto unido para quien lo cite.
+3. **F5-ubicacion-3** — El pictograma es decorativo (no es un elemento accesible aparte): la información la llevan el título y el texto.
+
+## Brief operativo (tarea 4.1, Fase 4)
 
 **Qué hay:** un hook (`useUbicacion`), un hook solo de permiso (`usePermisoUbicacion`), dos funciones puras (`isInsideCaba`, `distanceMeters`) y un bloque de pantalla (`PermisoUbicacionBloque`). No tiene pantalla propia.
 
@@ -34,7 +59,7 @@ Ubicación compartida (Fase 4, tarea 4.7 y fila de Ajustes). La usan Colectivos 
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `geo.ts`                     | `CABA_BBOX`, `isInsideCaba(lat, lon)` y `distanceMeters(a, b)` (haversine)                                               |
 | `useUbicacion.ts`            | `usePermisoUbicacion()` (permiso + `checked`) y `useUbicacion()` (permiso + posición en memoria + `positionUnavailable`) |
-| `PermisoUbicacionBloque.tsx` | Bloque con el texto, "Activar" / "Abrir configuración" y "Buscar a mano"                                                 |
+| `PermisoUbicacionBloque.tsx` | Bloque con pictograma, título, texto, "Activar" / "Abrir configuración" y "Buscar a mano" (`inset` dentro de una placa)       |
 | `index.ts`                   | Exports públicos                                                                                                         |
 
 ## Uso
@@ -51,6 +76,7 @@ if (checked && permission !== 'granted') {
       onRequest={request}
       onOpenSettings={openSettings}
       onManual={() => setModo('buscar')}
+      // inset // dentro de una placa de tablero (Board), sin fondo propio
     />
   );
 }

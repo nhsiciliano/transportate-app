@@ -87,38 +87,45 @@ Desde la Fase 5, Inicio es el **piloto de la dirección «Señalética de termin
 
 ## 3. Colectivos
 
+Desde la Fase 5, Colectivos usa la misma dirección que Inicio (**«Señalética de terminal»**): fondo celeste muy claro, **placas blancas** con filas separadas por un trazo fino para todo lo que se busca o se lista, y **bandas de señal azules** solo donde hay un valor que cambia (tus favoritos y el panel de la línea). Compará con Inicio: tienen que parecer la misma app. La flecha pegada al borde derecho aparece **solo** en las filas que abren algo.
+
 ### Raíz
 
 - [ ] **Primer uso, descarga del índice (4.5):** "Preparando el listado de líneas y paradas…" con barra de progreso que avanza. La búsqueda se habilita al terminar. 📱 Probalo con la red lenta o cortá la red a mitad: tiene que mostrar "No pudimos descargar las líneas y paradas" con "Volver a intentar", y retomar al volver.
 - [ ] En **Ajustes → Índice de líneas y paradas** se ve la misma descarga con el progreso ("Descargando… 40 %") y el peso.
-- [ ] **Búsqueda local:** por número ("60"), por ramal o por calle (desde 3 caracteres para paradas). Sin resultados: "No encontramos «608». Probá con el número de línea o el nombre de una calle." Anda también en modo avión.
-- [ ] **📱 Paradas cercanas y permiso de ubicación pedido en contexto:** la app **no** pide la ubicación al abrirse. Recién al tocar "Activar" en el bloque de paradas cercanas sale el diálogo del sistema ("Mientras se usa la app"). Con permiso: las 10 paradas más cercanas con distancia ("a 120 m") y las líneas que pasan, y "Ver más" hasta 30.
-- [ ] **Sin permiso:** si tocás "No permitir", queda el bloque "Activá la ubicación para ver paradas cerca tuyo. Solo se usa mientras la app está abierta y no sale de tu teléfono." con "Buscar a mano". Si ya lo negaste antes, el botón dice "Abrir configuración" y abre los Ajustes del iPhone; al volver, la pantalla se actualiza sola.
+- [ ] **Forma de la raíz:** large title "Colectivos", el campo de búsqueda y, debajo, las placas: "Paradas cercanas" (si ya diste el permiso), "Recientes" y, si guardaste favoritos de colectivo, "Tus favoritos" como bandas azules/navy. No hay tarjetas sueltas ni sombras; las placas son blancas con un borde finito.
+- [ ] **Búsqueda local:** por número ("60"), por ramal o por calle (desde 3 caracteres para paradas). Líneas con la insignia del número, "Línea 60" y el ramal; paradas con el cuadrado oscuro y las líneas que paran ("60 · 152 · 168"). Todo en una sola placa, con flecha al borde. Sin resultados: "No encontramos «608». Probá con el número de línea o el nombre de una calle." Anda también en modo avión.
+- [ ] **📱 Paradas cercanas y permiso de ubicación pedido en contexto:** la app **no** pide la ubicación al abrirse. Recién al tocar "Activar" en el bloque de paradas cercanas sale el diálogo del sistema ("Mientras se usa la app"). Con permiso: las 10 paradas más cercanas dentro de una placa, cada una con el cuadrado oscuro, la calle, las líneas que pasan ("60 · 152 · 168", o "60 · 152 · 168 y 4 más" si son muchas) y la distancia a la derecha ("a 120 m"); la última fila es "Ver más" (hasta 30).
+- [ ] **Sin permiso:** el bloque va **dentro de la placa** "Paradas cercanas": cuadrado oscuro con el ícono de ubicación a la izquierda, "Activá la ubicación para ver paradas cerca tuyo" en negrita y debajo "Solo se usa mientras la app está abierta y no sale de tu teléfono.", con "Activar" y "Buscar a mano". Si tocás "No permitir", queda ese bloque. Si ya lo negaste antes, el botón dice "Abrir configuración" y abre los Ajustes del iPhone; al volver, la pantalla se actualiza sola.
 - [ ] **Fuera de CABA:** con una ubicación fuera de la Ciudad (podés simularla en el simulador de Xcode): "No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires." con la búsqueda a mano disponible.
-- [ ] **Líneas recientes:** abrí una línea; al volver a la raíz aparece entre las últimas 5.
+- [ ] **Recientes:** abrí una línea; al volver a la raíz aparece entre las últimas 5, en la placa "Recientes" (insignia, "Línea 152", "Ramal A · a Olivos" y la flecha).
+- [ ] **Tus favoritos:** guardá una línea y una parada de colectivo; aparecen como bandas navy con el valor vivo ("18 en servicio") y la flecha al borde; tocar una abre su detalle.
+- [ ] **Texto grande (Dynamic Type al máximo):** las filas crecen en alto, el nombre de la parada llega a 2 líneas y la distancia no se corta; el bloque de permiso apila los botones.
 
 ### Parada
 
-- [ ] Calle y altura, barrio, estrella de favorito y las líneas que paran, con insignia tocable que abre la línea **con la cámara en esa parada**.
-- [ ] **"Próximos arribos" solo si la respuesta los trae:** hoy lo normal es que **no** haya sección ni un "próximamente" (decisión N4). Si aparece, hasta 3 tiempos por línea con la frescura.
+- [ ] **Header nativo:** calle y altura como título, la estrella de favorito a la derecha (fácil de tocar) y, debajo, el barrio en gris. No hay banda azul: la parada no tiene un valor vivo.
+- [ ] **Placa "Líneas que paran":** una fila por línea (insignia, "Línea 60", ramal y cabecera) con flecha al borde; tocarla abre la línea **con la cámara en esa parada**. Una línea que no figura en el listado aparece sin flecha y sin ser tocable.
+- [ ] **Arribos solo si la respuesta los trae:** hoy lo normal es que **no** haya tiempos en las filas ni "Actualizado hace…" (decisión N4). Si aparecen, el primero va grande a la derecha de su fila ("2 min") y los siguientes (hasta 3 en total) chicos debajo, con la frescura al final de la pantalla.
 - [ ] Una parada que ya no existe en el índice dice "No encontramos esta parada".
 
 ### Línea con mapa
 
 - [ ] **📱 Mapa a pantalla casi completa** con el recorrido de la línea (punteado: es aproximado), las paradas (recién desde cierto zoom) y los colectivos activos como círculos con el número encima.
-- [ ] **📱 Panel inferior con tres alturas:** colapsado (insignia, ramal, "18 colectivos en servicio", frescura, estrella y "Actualizar"), medio (ramales y la nota del sentido) y expandido (lista de vehículos). Se arrastra desde la manija o el encabezado; el botón de la manija ("Ver más" / "Ver la lista completa" / "Ver menos") hace lo mismo sin arrastrar.
+- [ ] **📱 Panel inferior con tres alturas:** colapsado (una **banda azul fija** con "Línea 152 · Ramal A", "En servicio" y el número de colectivos **bien grande**, con "hace 25 s" al lado; debajo, frescura, estrella y "Actualizar"), medio (ramales y la nota del sentido) y expandido (la placa "Colectivos en servicio"). La banda **no** lleva flecha ni se toca: es una señal. Se arrastra desde la manija o el encabezado; el botón de la manija ("Ver más" / "Ver la lista completa" / "Ver menos") hace lo mismo sin arrastrar.
 - [ ] **📱 El panel y el mapa no compiten por los gestos:** arrastrar el panel no mueve el mapa, y arrastrar o hacer zoom en el mapa visible por encima del panel funciona con el panel en cualquier altura. En el nivel expandido, la lista scrollea sin mover el panel.
 - [ ] **📱 Gesto de volver:** desde el borde izquierdo vuelve a la pantalla anterior sin arrastrar el mapa.
-- [ ] **Lista por cercanía:** con el permiso de ubicación dado, en el nivel expandido el primer colectivo es el que dice la menor distancia ("a 350 m de vos") y la lista va de más cerca a más lejos. Sin permiso, el orden es por dato más reciente.
-- [ ] **Seguir un vehículo:** tocá un colectivo en el mapa (o en la lista): se resalta y el panel muestra "Interno 1404 · actualizado hace 25 s" con **"Seguir"**. Con "Seguir" la cámara lo acompaña en cada actualización (📱 con un háptico de selección); con Reducir movimiento, la cámara salta. Volvé a tocar para dejar de seguir.
+- [ ] **Lista por cercanía:** con el permiso de ubicación dado, en el nivel expandido el primer colectivo es el que dice la menor distancia ("a 350 m de vos") y la lista va de más cerca a más lejos. Sin permiso, el orden es por dato más reciente y cada fila dice el ramal. Cada fila lleva el cuadrado oscuro con el colectivo, el interno y "hace 25 s" a la derecha, **sin flecha** (elegir no abre otra pantalla); el elegido queda con el fondo marcado.
+- [ ] **Seguir un vehículo:** tocá un colectivo en el mapa (o en la lista): se resalta y **la banda se vuelve a señalizar** con un fundido corto: "Interno 1404", "Actualizado", "hace 25 s" y, con ubicación, "a 350 m de vos"; debajo aparecen **"Seguir"** y "Cerrar". "Cerrar" devuelve la banda al conteo, también con fundido; con **Reducir movimiento**, el cambio es seco. Con "Seguir" la cámara lo acompaña en cada actualización (📱 con un háptico de selección); con Reducir movimiento, la cámara salta. Volvé a tocar para dejar de seguir.
 - [ ] **Ramal:** si el número tiene más de un ramal, los `Chip`s del nivel medio cambian de ramal y la cámara se vuelve a encuadrar. Aparece la nota "El GPS de los colectivos no informa el sentido: ves los de las dos direcciones."
 - [ ] **Línea con muchos vehículos (más de 80):** los círculos se agrupan hasta cierto zoom; tocar un grupo acerca la cámara.
 - [ ] **Flecha de rumbo:** la flecha ▲ solo aparece si el vehículo trae rumbo; hoy el proxy no lo manda, así que **no** tenés que ver flechas (es lo esperado).
 - [ ] **"Centrar en mi ubicación"** en el mapa: pide el permiso en contexto la primera vez; con permiso centra el mapa y la lista suma "a 600 m de vos". Sin permiso no hay punto azul.
-- [ ] **Línea sin vehículos:** "No hay colectivos de esta línea con GPS activo ahora." (de noche, por ejemplo).
-- [ ] **Dato viejo / servicio caído:** con el proxy apagado, los marcadores se atenúan y aparece "No pudimos actualizar. Mostramos lo último que sabemos." con "Reintentar"; con el feed de más de 10 minutos, "Las posiciones pueden no ser actuales". Sin datos en absoluto: mapa sin marcadores y `ErrorState` en el panel.
+- [ ] **Línea sin vehículos:** la banda dice "Sin colectivos con GPS ahora" en lugar del número (de noche, por ejemplo).
+- [ ] **Dato viejo / servicio caído:** con el proxy apagado, los marcadores se atenúan y aparece "No pudimos actualizar. Mostramos lo último que sabemos." con "Reintentar"; con el feed de más de 10 minutos, la banda muestra un cuadrado ámbar con "Las posiciones pueden no ser actuales". Sin datos en absoluto: mapa sin marcadores y `ErrorState` en el panel.
 - [ ] **Polling solo a la vista:** salí de la línea (a otra tab) y fijate en la terminal de `wrangler dev` que dejan de llegar pedidos de posiciones de esa línea.
-- [ ] **VoiceOver:** el panel se lee con su botón de la manija; la lista de vehículos da la misma información que el mapa ("Interno 1404, actualizado hace 25 segundos, a 600 metros de vos").
+- [ ] **Texto grande en el panel:** la banda crece en alto y el número y "hace 25 s" nunca se cortan (el número se achica antes de cortarse).
+- [ ] **VoiceOver:** la banda se lee de una vez ("Línea 60 · Ramal A, 18 colectivos en servicio, dato más viejo de hace 25 segundos"); el panel se lee con su botón de la manija; la lista de vehículos da la misma información que el mapa ("Interno 1404, actualizado hace 25 segundos, a 600 metros de vos") y marca el elegido con "Seleccionado".
 
 ## 4. Favoritos
 

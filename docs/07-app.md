@@ -388,7 +388,7 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
 
 ## 19. Colectivos
 
-`src/features/colectivos` ([README](../apps/mobile/src/features/colectivos/README.md): brief operativo, estados y suposiciones `F4-colectivos-1…7`), tareas 4.5, 4.7, 4.11 y 4.12. Rutas finas: `colectivos/index.tsx` monta `ColectivosScreen` y `colectivos/parada/[id].tsx` monta `ParadaScreen`. El detalle de línea con el mapa (`colectivos/[linea].tsx`, tarea 4.6) es de otra tarea.
+`src/features/colectivos` ([README](../apps/mobile/src/features/colectivos/README.md): brief operativo, estados, contraste y suposiciones `F4-colectivos-1…7` y `F5-colectivos-1…11`), tareas 4.5, 4.7, 4.11 y 4.12; recompuesta en la Fase 5 (F5-MID-B) con la dirección «Señalética de terminal» (contrato en `apps/mobile/.impeccable/surfaces/src-features-colectivos-colectivosscreen-tsx.md`). Rutas finas: `colectivos/index.tsx` monta `ColectivosScreen` y `colectivos/parada/[id].tsx` monta `ParadaScreen`. El detalle de línea con el mapa (`colectivos/[linea].tsx`, tarea 4.6) es la §21.
 
 - **Índice (`useIndiceColectivos`):** `paradas.json` + `lineas-colectivos.json` como archivos grandes (§14).
   - Si `/v1/colectivos/lineas` tiene dato, sus líneas reemplazan a las del archivo, porque los `route_id` se reasignan (`06-proxy.md` §6).
@@ -398,26 +398,27 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
   - `buscar`, sin tildes y con ranking: número exacto, nombre exacto, número que empieza igual, y después ramal, cabecera o empresa. Paradas desde 3 caracteres.
   - `paradasCercanas`: filtro por rectángulo + haversine, radio de 1,5 km. Con 7.027 paradas tarda menos de 1 ms en Node.
   - `isInsideCaba`, `distanceMeters`, `formatDistancia`.
-- **Raíz:**
-  - Primer uso con "Preparando el listado de líneas y paradas…" y barra de progreso. Si falla, `ErrorState` "No pudimos descargar las líneas y paradas".
-  - Búsqueda local con resultados mezclados.
-  - Paradas cercanas: 10, con "Ver más" hasta 30. Tiene el bloque de permiso con "Activar", "Abrir configuración" y "Buscar a mano", y el caso fuera de CABA.
-  - Líneas recientes (MMKV, `transportate.colectivos.recientes.v1`, Zod, 5) y favoritos de colectivo con su dato vivo.
+- **Raíz** (fondo `bg.elevated` en claro, como Inicio; una banda solo donde hay un valor vivo, el resto en placas `Board`):
+  - Primer uso con "Preparando el listado de líneas y paradas…" y barra de progreso dentro de una placa. Si falla, `ErrorState` "No pudimos descargar las líneas y paradas".
+  - Búsqueda local: una placa con líneas (`LineBadge`, «Línea 60», ramal y cabecera) y paradas (`Pictogram parada`, líneas que paran) mezcladas.
+  - Paradas cercanas: placa con etiqueta, 10 filas (calle y altura, «60 · 152 · 168», «a 120 m» a la derecha, flecha) y fila final "Ver más" hasta 30. Sin permiso, el bloque de permiso va dentro de la placa (`inset`), con "Activar", "Abrir configuración" y "Buscar a mano"; también adentro, el caso fuera de CABA.
+  - Recientes (MMKV, `transportate.colectivos.recientes.v1`, Zod, 5): placa con la insignia, «Línea 152» y el ramal.
+  - Tus favoritos: `SignBand` `next` por favorito de colectivo, la misma banda que en Inicio (`modeloBanda`).
   - Todo funciona sin red una vez descargado el índice.
-- **Ubicación:** `useUbicacion({ watch: false })` y `PermisoUbicacionBloque` de `features/ubicacion` (§16b).
+- **Ubicación:** `useUbicacion({ watch: false })` y `PermisoUbicacionBloque` de `features/ubicacion` (§16b; en la Fase 5 con `Pictogram paradasCercanas`, título y texto, y `inset` dentro de la placa — `F5-ubicacion-1…3`).
   - Una sola lectura de la posición, precisión `Balanced`, solo en memoria.
   - Permiso pedido solo al tocar "Activar" (S32). Con el permiso bloqueado, "Abrir configuración".
-  - Mientras se lee el permiso o la posición, skeleton. Si la posición falla (`positionUnavailable`), "No pudimos saber dónde estás…" con "Volver a intentar" y "Buscar a mano".
+  - Mientras se lee el permiso o la posición, skeleton con la silueta de las filas dentro de la placa. Si la posición falla (`positionUnavailable`), "No pudimos saber dónde estás…" con "Volver a intentar" y "Buscar a mano".
   - `paradasCercanas` usa `distanceMeters` y "fuera de CABA" usa `isInsideCaba`, los de `features/ubicacion/geo.ts`.
 - **Parada:**
-  - Calle y altura, barrio y `FavoriteToggle` (nombre = calle y altura; subtítulo = "Líneas 10, 60, 152").
-  - Insignias de las líneas, que abren `/colectivos/[linea]` con `linea` = `lineaId` y el query param **`parada=<paradaId>`** (`PARAM_PARADA`), para que el mapa centre la cámara.
-  - "Próximos arribos" (`useArribosParada`) **solo si hay arribos**: por línea hasta 3 tiempos, con `FreshnessLabel` y la Alert de actualización fallida. Vacío, cargando o con error sin datos, la sección no existe (N4).
+  - Título nativo con calle y altura; `FavoriteToggle` (44×44; nombre = calle y altura; subtítulo = "Líneas 10, 60, 152") en el `headerRight`; barrio en 15 `text.secondary` debajo.
+  - Placa «Líneas que paran»: una fila por línea (`LineBadge`, «Línea 60», ramal y cabecera) que abre `/colectivos/[linea]` con `linea` = `lineaId` y el query param **`parada=<paradaId>`** (`PARAM_PARADA`), para que el mapa centre la cámara.
+  - Arribos (`useArribosParada`) **solo si hay**: en la fila de su línea, el primero a 24/700 y los siguientes (hasta 3) debajo en 13; `FreshnessLabel` y la Alert de actualización fallida. Vacío, cargando o con error sin datos, la fila no los muestra y no hay frescura (N4). No hay banda en Parada (`F5-colectivos-1`).
 - **Favorito de parada:** `useFavoritoLiveData` muestra las líneas que paran desde el índice. Si la parada ya no figura, `status: 'orphan'`: es el mismo criterio único de huérfano de §16.
 - **Tests:**
   - `src/features/colectivos/__tests__/model.test.ts`.
   - `test/colectivos/largeFiles.test.tsx`.
-  - `test/colectivos/pantallas.test.tsx`: índice descargando, error y listo; búsqueda; cercanas con y sin permiso y fuera de CABA; parada con y sin arribos; huérfano.
+  - `test/colectivos/pantallas.test.tsx`: índice descargando, error y listo; búsqueda; cercanas con y sin permiso y fuera de CABA; placas de la Fase 5 (cercanas con «Ver más», recientes, favoritos como bandas, resultados); parada con y sin arribos y línea sin destino; huérfano.
 
 ## 20. Estado al cierre de la Fase 4
 
@@ -458,21 +459,23 @@ Queda pendiente, sacado de los README de cada feature.
 
 ## 21. Colectivos: línea y mapa
 
-Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada=<paradaId>`) monta `features/colectivos/LineaScreen.tsx`. El brief operativo, los estados con su copy y las suposiciones `F4-colectivos-mapa-1…11` están en el [README de Colectivos](../apps/mobile/src/features/colectivos/README.md), sección "Línea y mapa".
+Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada=<paradaId>`) monta `features/colectivos/LineaScreen.tsx`. El brief operativo, los estados con su copy y las suposiciones `F4-colectivos-mapa-1…11` están en el [README de Colectivos](../apps/mobile/src/features/colectivos/README.md), sección "Línea y mapa"; la forma del panel de la Fase 5 (banda de señal fija, `F5-colectivos-2…7`), en "Brief operativo F5".
 
 | Pieza | Qué hace |
 | --- | --- |
 | `LineaScreen` | `usePosicionesLinea(lineaId, { enabled: useIsFocused() })`: polling solo con la pantalla a la vista (S10). Línea, ramales y paradas salen de `useIndiceColectivos()`; el recorrido, de `useStaticArchivoGrande('recorridos-colectivos.geojson')`; la posición de la persona, de `useUbicacion()` (solo en memoria). La cámara se encuadra una vez (parada, recorrido o vehículos) |
 | `MapaLinea` | Recorrido aproximado punteado, paradas desde zoom 14 y vehículos (círculo con el número, flecha ▲ solo si hay `rumbo`, atenuados por S31, feed viejo, sin conexión o actualización fallida). Con más de 80 vehículos se agrupan hasta zoom 13. Hit box de 44 |
-| `VehiculosSheet` | Encabezado siempre visible (insignia, ramal, cantidad, frescura, favorito, "Actualizar", avisos y el vehículo elegido con "Seguir"). Cuerpo con ramales y la lista accesible de vehículos |
+| `VehiculosSheet` | Encabezado siempre visible: `SignBand` `lead` **fija** (sin `onPress` ni flecha) con «Línea 152 · Ramal A», «En servicio», el conteo a 56 pt y la antigüedad del dato (`bandaDelPanel` de `lineaModel.ts`); debajo, frescura, favorito y "Actualizar"; con un vehículo elegido la banda se vuelve a señalizar («Interno 1404», «Actualizado», «hace 25 s», distancia) y suma "Cerrar" y "Seguir". Cuerpo con ramales y la lista accesible de vehículos como placa `Board` (`Pictogram colectivos`, interno, distancia o ramal, «hace 25 s»; filas sin flecha) |
 | `BottomPanel` (`shared/map`) | Panel con tres alturas, arrastrable y con un botón accesible en la manija (§18) |
 
+- **Movimiento firma:** la banda del panel cruza en fundido de 200 ms cuando cambia el conteo o el vehículo elegido (`transitionKey`); con Reducir movimiento, corte seco.
+- **Estados de la banda:** carga (valor en skeleton), error sin datos («Sin datos» + `ErrorState`), vacío («Sin colectivos con GPS ahora»), feed de más de 10 min (estado warning «Las posiciones pueden no ser actuales») y actualización fallida (`Alert` con «Reintentar»).
 - **Sentido:** el feed no lo informa. Se ven todos los vehículos del ramal y el selector es de ramal.
 - **Interno:** es el `id` del vehículo del feed.
 - **Alertas de colectivos:** el contrato v1 no las trae.
 - **Tests:**
-  - `test/colectivos/linea.test.tsx` (16 casos), con `test/colectivos/lineaFixtures.tsx` (posiciones validadas con `PosicionesLineaResponseV1` y recorrido con `GeoJsonFeatureCollectionV1`).
-  - `src/features/colectivos/__tests__/lineaModel.test.ts`.
+  - `test/colectivos/linea.test.tsx` (17 casos), con `test/colectivos/lineaFixtures.tsx` (posiciones validadas con `PosicionesLineaResponseV1` y recorrido con `GeoJsonFeatureCollectionV1`).
+  - `src/features/colectivos/__tests__/lineaModel.test.ts` (incluye `bandaDelPanel`).
 - **A validar en el dispositivo:**
   - que el panel y el mapa no compitan por los gestos;
   - el gesto de volver con el mapa;
