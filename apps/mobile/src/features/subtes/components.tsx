@@ -2,15 +2,7 @@
 // únicos colores que no vienen del tema son los de la línea (`route_color`, datos del estático).
 import type { EstadoServicioV1 } from '@transportate/contracts';
 import type { ReactNode } from 'react';
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 
 import { Icon, type IconName } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
@@ -158,63 +150,6 @@ export function ScreenScroll({
     </ScrollView>
   );
 }
-
-/** Fila tocable completa con chevron: se lee como una unidad. */
-export function FilaTocable({
-  onPress,
-  accessibilityLabel,
-  children,
-  style,
-  testID,
-}: {
-  onPress: () => void;
-  accessibilityLabel: string;
-  children: ReactNode;
-  style?: StyleProp<ViewStyle>;
-  testID?: string;
-}) {
-  const { colors, space, radius, borderWidth } = useTheme();
-  return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      accessible
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [
-        styles.fila,
-        {
-          minHeight: 56,
-          gap: space[2],
-          paddingVertical: space[2],
-          paddingHorizontal: space[3],
-          borderRadius: radius['3xl'],
-          borderWidth: borderWidth.control,
-          borderColor: colors.border.subtle,
-          backgroundColor: pressed ? colors.bg.pressed : colors.bg.card,
-        },
-        style,
-      ]}
-    >
-      <View style={styles.filaContenido}>{children}</View>
-      <Icon name="chevron" size={24} color={colors.text.secondary} />
-    </Pressable>
-  );
-}
-
-/** Título de sección (encabezado para el lector). */
-export function Seccion({ children }: { children: string }) {
-  return (
-    <Text variant="headline.md" accessibilityRole="header">
-      {children}
-    </Text>
-  );
-}
-
-const styles = StyleSheet.create({
-  fila: { flexDirection: 'row', alignItems: 'center' },
-  filaContenido: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-});
 
 // ---------------------------------------------------------------- «Señalética de terminal» (F5)
 

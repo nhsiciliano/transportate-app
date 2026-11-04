@@ -15,13 +15,11 @@ export {
   EstadoBoard,
   estadoBanda,
   EstadoChip,
-  FilaTocable,
   LineaBadge,
   REFRESH_ERROR_MESSAGE,
   RefreshErrorAlert,
   ScreenScroll,
   Rotulo,
-  Seccion,
   tonoNota,
   useFondo,
 } from './components';

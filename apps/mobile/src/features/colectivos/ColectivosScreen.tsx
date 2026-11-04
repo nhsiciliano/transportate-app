@@ -9,7 +9,8 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useFavoritoLiveData, useFavoritos, type FavoritoV1 } from '@/features/favoritos';
-import { hrefDeFavorito, modeloBanda } from '@/features/inicio';
+import { hrefDeFavorito } from '@/features/inicio';
+import { modeloBanda } from '@/features/favoritos';
 import { ScreenScroll, usePullToRefresh } from '@/features/subtes';
 import { isInsideCaba, PermisoUbicacionBloque, useUbicacion } from '@/features/ubicacion';
 import { invalidateColectivos } from '@/shared/api';
