@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Board, boardStatusPalette } from '..';
 import { contrastRatio } from '../../theme/contrast';
@@ -52,7 +52,7 @@ describe('Board', () => {
     const fila = screen.getByRole('button', {
       name: 'Línea B, Leandro N. Alem – Juan Manuel de Rosas, Obras entre Medrano y Alem',
     });
-    expect(fila).toHaveStyle({ minHeight: 56, paddingHorizontal: 12, paddingRight: 40 });
+    expect(fila).toHaveStyle({ minHeight: 56, paddingHorizontal: 12 });
     expect(screen.getByTestId('fila-flecha', { includeHiddenElements: true })).toBeOnTheScreen();
     expect(screen.getByText('Obras entre Medrano y Alem')).toHaveStyle({
       color: light.role.warning.text,
@@ -77,9 +77,36 @@ describe('Board', () => {
     const fila = screen.getByRole('button', { name: 'Interno 1404' });
     expect(screen.queryByTestId('fila-flecha', { includeHiddenElements: true })).toBeNull();
     expect(fila).toHaveStyle({ paddingHorizontal: 12 });
-    expect(fila).not.toHaveStyle({ paddingRight: 40 });
     await fireEvent.press(fila);
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('trailing de dos líneas grandes: la flecha sigue en la fila y el trailing no la pisa', async () => {
+    await renderThemed(
+      <Board>
+        <Board.Row
+          testID="fila"
+          title="Línea 15A"
+          subtitle="Ramal A"
+          onPress={jest.fn()}
+          trailing={
+            <View testID="tiempos">
+              <Text style={{ fontSize: 24, lineHeight: 28 }}>3 min</Text>
+              <Text style={{ fontSize: 13, lineHeight: 16 }}>21 min · 34 min</Text>
+            </View>
+          }
+        />
+      </Board>,
+    );
+    const flecha = screen.getByTestId('fila-flecha', { includeHiddenElements: true });
+    // La flecha es un elemento de la fila (no `absolute`) que no se encoge: nada la tapa.
+    expect(flecha).toHaveStyle({ width: 20, flexShrink: 0 });
+    expect(flecha).not.toHaveStyle({ position: 'absolute' });
+    // El trailing está antes que la flecha y tiene tope de ancho y puede encogerse.
+    const trailing = screen.getByTestId('tiempos').parent;
+    expect(trailing).toHaveStyle({ maxWidth: '50%', flexShrink: 1, minWidth: 0 });
+    const hijos = screen.getByTestId('fila').children as unknown[];
+    expect(hijos.indexOf(flecha)).toBeGreaterThan(hijos.indexOf(trailing));
   });
 
   it('fila sin onPress: un solo elemento accesible, sin botón ni flecha', async () => {
