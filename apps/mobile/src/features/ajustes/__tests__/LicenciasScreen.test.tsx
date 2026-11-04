@@ -2,6 +2,7 @@ import { screen, userEvent } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 
 import { LicenciasScreen } from '@/features/ajustes';
+import { fontFamily, light } from '@/shared/theme';
 
 import { renderThemed } from '../../../shared/ui/__fixtures__/renderThemed';
 import { licencias, LicenciaPaqueteSchema, type LicenciaPaquete } from '../licencias';
@@ -29,6 +30,47 @@ describe('licencias.json', () => {
     const names = licencias.map((p) => p.name);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en')));
     expect(names).toEqual(expect.arrayContaining(['react-native', 'expo', 'zod']));
+  });
+
+  it('incluye Fira Sans (MIT y OFL-1.1) y ya no Nunito ni Open Sans', () => {
+    const fira = licencias.find((p) => p.name === '@expo-google-fonts/fira-sans');
+    expect(fira).toBeDefined();
+    expect(fira?.license).toBe('MIT AND OFL-1.1');
+    expect(fira?.text).toMatch(/SIL OPEN FONT LICENSE/i);
+    const names = licencias.map((p) => p.name.toLowerCase());
+    expect(names.some((n) => n.includes('nunito') || n.includes('open-sans'))).toBe(false);
+  });
+});
+
+describe('LicenciasScreen · forma', () => {
+  it('es una sola placa: nombre 17/600, «versión · licencia» 15 y hairline entre filas', async () => {
+    await renderThemed(<LicenciasScreen paquetes={paquetes} />);
+    expect(screen.getByText('paquete-a')).toHaveStyle({
+      fontFamily: fontFamily.text[600],
+      fontSize: 17,
+      lineHeight: 22,
+    });
+    expect(screen.getByText('2.3.4 · Apache-2.0')).toHaveStyle({
+      fontSize: 15,
+      lineHeight: 20,
+      color: light.text.secondary,
+    });
+    // Dos filas = un solo separador.
+    expect(screen.getAllByTestId('fila-separador')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'paquete-a 1.0.0, licencia MIT' })).toHaveStyle({
+      minHeight: 52,
+    });
+  });
+
+  it('el texto de la licencia expandida va en 15/22 text.secondary', async () => {
+    const user = userEvent.setup();
+    await renderThemed(<LicenciasScreen paquetes={paquetes} />);
+    await user.press(screen.getByRole('button', { name: 'paquete-a 1.0.0, licencia MIT' }));
+    expect(screen.getByText(/Permission is hereby granted/)).toHaveStyle({
+      fontSize: 15,
+      lineHeight: 22,
+      color: light.text.secondary,
+    });
   });
 });
 

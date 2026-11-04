@@ -1,10 +1,11 @@
-import { screen, userEvent } from '@testing-library/react-native';
+import { screen, userEvent, within } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 
 import { AcercaScreen, describeVersion, PRIVACIDAD_BULLETS } from '@/features/ajustes';
+import { dark, fontFamily, light } from '@/shared/theme';
 
 import { renderThemed } from '../../../shared/ui/__fixtures__/renderThemed';
-import { CC_LICENSE_URL, DATOS_ABIERTOS_URL } from '../AcercaScreen';
+import { CC_LICENSE_URL, DATOS_ABIERTOS_URL, DISENO_TEXTO } from '../AcercaScreen';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -43,6 +44,79 @@ describe('describeVersion', () => {
   });
 });
 
+describe('AcercaScreen · lectura', () => {
+  it('nombre 28/34 en Fira Sans 700 y versión 15 en text.secondary', async () => {
+    await renderThemed(<AcercaScreen />);
+    expect(screen.getByText('Transportate')).toHaveStyle({
+      fontFamily: fontFamily.heading[700],
+      fontSize: 28,
+      lineHeight: 34,
+    });
+    expect(screen.getByTestId('acerca-version')).toHaveStyle({
+      fontSize: 15,
+      color: light.text.secondary,
+    });
+  });
+
+  it('títulos de sección 20/26 en 600 y párrafos 17/26 en 400 con tope de Dynamic Type 1.3', async () => {
+    await renderThemed(<AcercaScreen />);
+    for (const title of ['Datos', 'Privacidad', 'Mapa', 'Diseño']) {
+      const heading = screen.getByRole('header', { name: title });
+      expect(heading).toHaveStyle({
+        fontFamily: fontFamily.heading[600],
+        fontSize: 20,
+        lineHeight: 26,
+      });
+    }
+    const paragraph = screen.getByText(
+      'Transportate no es una app oficial del Gobierno de la Ciudad.',
+    );
+    expect(paragraph).toHaveStyle({
+      fontFamily: fontFamily.text[400],
+      fontSize: 17,
+      lineHeight: 26,
+      color: light.text.primary,
+    });
+    expect(paragraph.props.maxFontSizeMultiplier).toBe(1.3);
+    expect(screen.getByText(PRIVACIDAD_BULLETS[0])).toHaveStyle({ fontSize: 17, lineHeight: 26 });
+  });
+
+  it('«Diseño» nombra Obelisco v2, Fira Sans y la dirección «Señalética de terminal»', async () => {
+    await renderThemed(<AcercaScreen />);
+    const texto = screen.getByText(DISENO_TEXTO);
+    expect(DISENO_TEXTO).toMatch(/Obelisco v2/);
+    expect(DISENO_TEXTO).toMatch(/Fira Sans/);
+    expect(DISENO_TEXTO).toMatch(/«Señalética de terminal»/);
+    expect(DISENO_TEXTO).not.toMatch(/Nunito|Open Sans/);
+    expect(texto).toBeOnTheScreen();
+  });
+
+  it('los enlaces van en text.link con el ícono de salida y el chevron queda para Licencias', async () => {
+    await renderThemed(<AcercaScreen />);
+    const link = screen.getByRole('link', { name: 'Licencia CC BY 2.5 Argentina' });
+    expect(within(link).getByText('Licencia CC BY 2.5 Argentina')).toHaveStyle({
+      color: light.text.link,
+    });
+    expect(
+      within(link).getByTestId('fila-externo', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    const chevrons = screen.getAllByTestId('fila-chevron', { includeHiddenElements: true });
+    expect(chevrons).toHaveLength(1);
+    const licencias = screen.getByRole('button', { name: 'Licencias de software de terceros' });
+    expect(within(licencias).getByTestId('fila-chevron', { includeHiddenElements: true })).toBe(
+      chevrons[0],
+    );
+  });
+
+  it('en oscuro lee con los colores del esquema oscuro', async () => {
+    await renderThemed(<AcercaScreen />, 'dark');
+    expect(screen.getByTestId('acerca-screen')).toHaveStyle({ backgroundColor: dark.bg.base });
+    expect(
+      screen.getByText('Transportate no es una app oficial del Gobierno de la Ciudad.'),
+    ).toHaveStyle({ color: dark.text.primary });
+  });
+});
+
 describe('AcercaScreen', () => {
   it('muestra nombre, versión y build', async () => {
     await renderThemed(<AcercaScreen />);
@@ -77,9 +151,7 @@ describe('AcercaScreen', () => {
         'Mapa base: © OpenStreetMap contributors, © OpenMapTiles, tiles de OpenFreeMap.',
       ),
     ).toBeOnTheScreen();
-    expect(
-      screen.getByText('Basado en Obelisco, el sistema de diseño de la Ciudad de Buenos Aires.'),
-    ).toBeOnTheScreen();
+    expect(screen.getByText(DISENO_TEXTO)).toBeOnTheScreen();
   });
 
   it('los enlaces abren la licencia y los datos abiertos en el navegador', async () => {

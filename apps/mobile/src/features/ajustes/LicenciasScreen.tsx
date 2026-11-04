@@ -1,14 +1,22 @@
 // Licencias de software de terceros (Acerca de). Lista nombre · versión · licencia de las
 // dependencias de la app, con el texto expandible. Los datos salen de `licencias.json`, que
 // genera `scripts/licencias.mjs` (`pnpm licencias` en `apps/mobile`).
-import { useState } from 'react';
-import { FlatList, Linking, Pressable, View } from 'react-native';
+import { Fragment, useState } from 'react';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
 
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
-import { Text } from '@/shared/ui';
+import { Card, Text } from '@/shared/ui';
 
 import { licencias as defaultLicencias, type LicenciaPaquete } from './licencias';
+import {
+  Hairline,
+  ROW_MIN_HEIGHT,
+  ROW_PADDING_X,
+  RowDetail,
+  RowTitle,
+  SECTION_GAP,
+} from './SettingsList';
 
 export const LICENCIAS_INTRO =
   'Transportate está hecha con estas librerías de código abierto. Gracias a quienes las mantienen.';
@@ -19,7 +27,7 @@ export interface LicenciasScreenProps {
 }
 
 export function LicenciasScreen({ paquetes = defaultLicencias }: LicenciasScreenProps) {
-  const { space } = useTheme();
+  const { space, colors, scheme } = useTheme();
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   const toggle = (name: string) => {
@@ -31,27 +39,31 @@ export function LicenciasScreen({ paquetes = defaultLicencias }: LicenciasScreen
     });
   };
 
+  // Una placa con todas las filas (son ~25: no hace falta virtualizar, y así el radio, el outline
+  // y los hairlines son los de las demás pantallas). El texto de la licencia solo se monta abierto.
   return (
-    <FlatList
-      data={paquetes}
-      keyExtractor={(item) => item.name}
+    <ScrollView
+      testID="licencias-screen"
+      style={{ backgroundColor: scheme === 'light' ? colors.bg.elevated : colors.bg.base }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: space[3], paddingBottom: space[5] }}
-      ListHeaderComponent={
-        <Text tone="secondary" style={{ marginBottom: space[3] }}>
-          {LICENCIAS_INTRO}
-        </Text>
-      }
-      renderItem={({ item }) => (
-        <LicenciaItem
-          paquete={item}
-          expanded={open.has(item.name)}
-          onToggle={() => {
-            toggle(item.name);
-          }}
-        />
-      )}
-    />
+      contentContainerStyle={{ padding: space[3], gap: SECTION_GAP, paddingBottom: space[5] }}
+    >
+      <RowDetail style={{ fontSize: 17, lineHeight: 26 }}>{LICENCIAS_INTRO}</RowDetail>
+      <Card style={{ padding: 0, gap: 0, overflow: 'hidden' }}>
+        {paquetes.map((paquete, index) => (
+          <Fragment key={paquete.name}>
+            {index > 0 ? <Hairline /> : null}
+            <LicenciaItem
+              paquete={paquete}
+              expanded={open.has(paquete.name)}
+              onToggle={() => {
+                toggle(paquete.name);
+              }}
+            />
+          </Fragment>
+        ))}
+      </Card>
+    </ScrollView>
   );
 }
 
@@ -64,45 +76,57 @@ function LicenciaItem({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const { space, colors, component } = useTheme();
+  const { space, colors, component, fontFamily } = useTheme();
   const summary = `${paquete.name} ${paquete.version}, licencia ${paquete.license}`;
   return (
-    <View style={{ borderTopWidth: 1, borderTopColor: colors.border.subtle }}>
+    <View>
       <Pressable
         onPress={onToggle}
         accessibilityRole="button"
         accessibilityLabel={summary}
         accessibilityState={{ expanded }}
         style={({ pressed }) => ({
-          minHeight: component.hitSlop + space[2],
-          paddingVertical: space[2],
+          minHeight: ROW_MIN_HEIGHT,
+          paddingVertical: space[2] + 2,
+          paddingHorizontal: ROW_PADDING_X,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: space[2],
+          gap: space[3],
           backgroundColor: pressed ? colors.bg.pressed : 'transparent',
         })}
       >
-        <View style={{ flex: 1 }}>
-          <Text variant="headline.sm">{paquete.name}</Text>
-          <Text variant="text.sm" tone="secondary">
+        <View style={{ flex: 1, gap: 2 }}>
+          <RowTitle style={{ fontFamily: fontFamily.text[600] }}>{paquete.name}</RowTitle>
+          <RowDetail>
             {paquete.version} · {paquete.license}
-          </Text>
+          </RowDetail>
         </View>
         {/* Sin ícono de "expandir" en el mapa: el chevron gira para marcar el estado. */}
         <View style={{ transform: [{ rotate: expanded ? '90deg' : '0deg' }] }}>
-          <Icon name="chevron" size={20} />
+          <Icon name="chevron" size={20} color={colors.text.tertiary} />
         </View>
       </Pressable>
       {expanded ? (
-        <View style={{ paddingBottom: space[3], gap: space[2] }}>
+        <View
+          style={{
+            paddingHorizontal: ROW_PADDING_X,
+            paddingBottom: space[3],
+            gap: space[2],
+          }}
+        >
           {paquete.text ? (
-            <Text variant="text.xs" tone="secondary" selectable>
+            <Text
+              variant="text.sm"
+              tone="secondary"
+              selectable
+              style={{ fontSize: 15, lineHeight: 22 }}
+            >
               {paquete.text}
             </Text>
           ) : (
-            <Text variant="text.sm" tone="secondary">
+            <RowDetail>
               Este paquete no incluye el texto de la licencia. Podés leerlo en su repositorio.
-            </Text>
+            </RowDetail>
           )}
           {paquete.repository ? (
             <Pressable
@@ -113,9 +137,7 @@ function LicenciaItem({
               }}
               style={{ minHeight: component.hitSlop, justifyContent: 'center' }}
             >
-              <Text variant="text.sm" tone="link">
-                Ver repositorio
-              </Text>
+              <RowDetail tone="link">Ver repositorio</RowDetail>
             </Pressable>
           ) : null}
         </View>
