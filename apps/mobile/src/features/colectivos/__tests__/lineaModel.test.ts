@@ -1,10 +1,13 @@
 import type { VehiculoV1 } from '@transportate/contracts';
 
 import {
+  bandaDelPanel,
   edadVehiculo,
   enServicio,
   formatDistancia,
+  mensajeDeLinea,
   ordenarVehiculos,
+  POSICIONES_VIEJAS,
   recorridoDe,
   vehiculosCollection,
   vistaVehiculo,
@@ -125,5 +128,94 @@ describe('lineaModel', () => {
     expect(recorridoDe(recorridos, '60')?.features).toHaveLength(1);
     expect(recorridoDe(recorridos, '152')).toBeNull();
     expect(recorridoDe(undefined, '60')).toBeNull();
+  });
+
+  it('mensaje de la banda: ramal o, sin ramal, la cabecera', () => {
+    expect(mensajeDeLinea({ numero: '152', ramal: 'A' })).toBe('Línea 152 · Ramal A');
+    expect(mensajeDeLinea({ numero: '152', cabecera: 'Constitución – Retiro' })).toBe(
+      'Línea 152 · Constitución – Retiro',
+    );
+    expect(mensajeDeLinea({ numero: '152', ramal: '', cabecera: '' })).toBe('Línea 152');
+  });
+});
+
+describe('bandaDelPanel', () => {
+  const mensaje = 'Línea 152 · Ramal A';
+  const base = {
+    mensaje,
+    estado: 'datos' as const,
+    cantidad: 18,
+    edadMasVieja: 25,
+    feedViejo: false,
+    seleccionado: null,
+  };
+
+  it('con vehículos: conteo monumental y antigüedad del dato más viejo, sin re-anunciar', () => {
+    const b = bandaDelPanel(base);
+    expect(b).toMatchObject({
+      message: mensaje,
+      label: 'En servicio',
+      value: '18',
+      valueStyle: 'display',
+      status: { text: 'hace 25 s', tone: 'muted' },
+      transitionKey: 'conteo-18',
+    });
+    expect(b.accessibilityLabel).toBe(
+      'Línea 152 · Ramal A, 18 colectivos en servicio, dato más viejo de hace 25 segundos',
+    );
+  });
+
+  it('sin colectivos: el valor es la frase y va en texto', () => {
+    const b = bandaDelPanel({ ...base, estado: 'vacio', cantidad: 0, edadMasVieja: null });
+    expect(b).toMatchObject({
+      value: 'Sin colectivos con GPS ahora',
+      valueStyle: 'text',
+      status: undefined,
+      transitionKey: 'conteo-0',
+    });
+    expect(b.accessibilityLabel).toContain('No hay colectivos de esta línea con GPS activo ahora.');
+  });
+
+  it('cargando: valor nulo (skeleton); error: «Sin datos» sin estado', () => {
+    expect(bandaDelPanel({ ...base, estado: 'cargando' })).toMatchObject({
+      value: null,
+      transitionKey: 'cargando',
+    });
+    expect(bandaDelPanel({ ...base, estado: 'error' })).toMatchObject({
+      value: 'Sin datos',
+      valueStyle: 'text',
+      status: undefined,
+    });
+  });
+
+  it('feed viejo: el aviso (warning) reemplaza a la antigüedad', () => {
+    const b = bandaDelPanel({ ...base, feedViejo: true, edadMasVieja: 700 });
+    expect(b.status).toEqual({ text: POSICIONES_VIEJAS, tone: 'warning' });
+    expect(b.accessibilityLabel).toContain(POSICIONES_VIEJAS);
+  });
+
+  it('vehículo elegido: la banda se vuelve a señalizar con su interno, edad y distancia', () => {
+    const v = vistaVehiculo(vehiculo('1404', 25), {
+      now: NOW,
+      posicion: { lat: -34.603, lon: -58.39 },
+    });
+    const b = bandaDelPanel({ ...base, seleccionado: v });
+    expect(b).toMatchObject({
+      message: 'Interno 1404',
+      label: 'Actualizado',
+      value: 'hace 25 s',
+      valueStyle: 'text',
+      transitionKey: 'interno-1404',
+    });
+    expect(b.status).toEqual({ text: 'a 330 m de vos', tone: 'muted' });
+    expect(b.accessibilityLabel).toBe(v.hablado);
+  });
+
+  it('vehículo elegido sin ubicación: sin estado; con feed viejo, el aviso', () => {
+    const v = vistaVehiculo(vehiculo('1404', 25), { now: NOW, posicion: null });
+    expect(bandaDelPanel({ ...base, seleccionado: v }).status).toBeUndefined();
+    expect(bandaDelPanel({ ...base, seleccionado: v, feedViejo: true }).status?.tone).toBe(
+      'warning',
+    );
   });
 });

@@ -1,35 +1,31 @@
-// Contenido del panel del detalle de línea (tarea 4.6, brief 02-colectivos §3 y §5).
-// - Encabezado (siempre visible, también colapsado): insignia, ramal, "18 colectivos en servicio",
-//   frescura, favorito, "Actualizar" (en lugar de pull to refresh, que choca con el mapa), avisos
-//   y el vehículo elegido con "Seguir".
+// Contenido del panel del detalle de línea (tarea 4.6, brief 02-colectivos §3 y §5; F5-MID-B).
+// - Encabezado (siempre visible, también colapsado): banda de señal fija («Línea 152 · Ramal A»,
+//   «En servicio», el conteo a escala monumental y la antigüedad del dato; con un vehículo elegido
+//   se vuelve a señalizar), debajo frescura, favorito y "Actualizar" (en lugar de pull to refresh,
+//   que choca con el mapa), y avisos. Con un vehículo elegido suma "Seguir" / "Cerrar".
 // - Cuerpo (al subir el panel): ramales y la lista de vehículos, que es la vía principal para el
 //   lector de pantalla y para quien no quiere el mapa.
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { FavoriteToggle } from '@/features/favoritos';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
 import {
   Alert,
+  Board,
   Button,
-  Card,
   Chip,
-  EmptyState,
   ErrorState,
+  formatAge,
   FreshnessLabel,
-  LineBadge,
+  Pictogram,
+  SignBand,
   Skeleton,
   SkeletonGroup,
   Text,
 } from '@/shared/ui';
 
-import {
-  enServicio,
-  POSICIONES_VIEJAS,
-  REFRESH_FALLIDO,
-  SIN_VEHICULOS,
-  type VehiculoVista,
-} from './lineaModel';
+import { bandaDelPanel, formatDistancia, REFRESH_FALLIDO, type VehiculoVista } from './lineaModel';
 
 export const SENTIDO_NOTA =
   'El GPS de los colectivos no informa el sentido: ves los de las dos direcciones.';
@@ -48,9 +44,18 @@ export type SheetEstado =
 
 export interface VehiculosSheetHeaderProps {
   /** Sin línea resuelta todavía: skeleton del encabezado. */
-  linea: { lineaId: string; numero: string; nombre: string; descripcion: string } | null;
+  linea: {
+    lineaId: string;
+    numero: string;
+    nombre: string;
+    descripcion: string;
+    /** «Línea 152 · Ramal A» (`mensajeDeLinea`). */
+    mensaje: string;
+  } | null;
   estado: SheetEstado;
   cantidad: number;
+  /** Segundos del dato más viejo de las posiciones; `null` sin vehículos. */
+  edadMasVieja: number | null;
   sourceTimestamp: string | null;
   intervalSeconds: number;
   refreshing: boolean;
@@ -67,6 +72,7 @@ export function VehiculosSheetHeader({
   linea,
   estado,
   cantidad,
+  edadMasVieja,
   sourceTimestamp,
   intervalSeconds,
   refreshing,
@@ -83,29 +89,44 @@ export function VehiculosSheetHeader({
   if (linea === null) {
     return (
       <SkeletonGroup accessibilityLabel="Cargando la línea…" testID="linea-header-cargando">
-        <View style={[styles.row, { gap: space[3] }]}>
-          <Skeleton width={48} height={32} />
-          <View style={[styles.grow, { gap: space[2] }]}>
-            <Skeleton width="70%" height={16} />
-            <Skeleton width="45%" height={14} />
-          </View>
+        <View style={{ gap: space[2] }}>
+          <SignBand.Skeleton variant="lead" />
+          <Skeleton width="55%" height={16} />
         </View>
       </SkeletonGroup>
     );
   }
 
+  const conDatos = estado.kind === 'datos' || estado.kind === 'vacio';
+  const banda = bandaDelPanel({
+    mensaje: linea.mensaje,
+    estado: estado.kind,
+    cantidad,
+    edadMasVieja,
+    feedViejo,
+    seleccionado,
+  });
+
   return (
     <View style={{ gap: space[2] }}>
-      <View style={[styles.row, { gap: space[3] }]}>
-        <LineBadge kind="colectivo" label={linea.numero} size="lg" />
+      {/* Señal fija: no navega, así que no es botón ni lleva la flecha al borde. */}
+      <SignBand
+        variant="lead"
+        icon="colectivos"
+        message={banda.message}
+        label={banda.label}
+        value={banda.value}
+        valueStyle={banda.valueStyle}
+        status={banda.status}
+        transitionKey={banda.transitionKey}
+        accessibilityLabel={banda.accessibilityLabel}
+        testID="linea-banda"
+      />
+
+      <View style={[styles.row, styles.between, { gap: space[2] }]}>
         <View style={styles.grow}>
-          <Text variant="headline.md" numberOfLines={2}>
-            {linea.descripcion}
-          </Text>
-          {estado.kind === 'datos' || estado.kind === 'vacio' ? (
-            <Text tone="secondary" testID="linea-cantidad">
-              {enServicio(cantidad)}
-            </Text>
+          {conDatos ? (
+            <FreshnessLabel sourceTimestamp={sourceTimestamp} intervalSeconds={intervalSeconds} />
           ) : null}
         </View>
         <FavoriteToggle
@@ -114,14 +135,6 @@ export function VehiculosSheetHeader({
           nombre={linea.nombre}
           subtitulo={linea.descripcion}
         />
-      </View>
-
-      <View style={[styles.row, styles.between, { gap: space[2] }]}>
-        {estado.kind === 'datos' || estado.kind === 'vacio' ? (
-          <FreshnessLabel sourceTimestamp={sourceTimestamp} intervalSeconds={intervalSeconds} />
-        ) : (
-          <View />
-        )}
         <Button
           label="Actualizar"
           size="sm"
@@ -134,12 +147,6 @@ export function VehiculosSheetHeader({
         />
       </View>
 
-      {estado.kind === 'cargando' ? (
-        <SkeletonGroup accessibilityLabel="Buscando colectivos…" testID="linea-vehiculos-cargando">
-          <Skeleton width="60%" height={14} />
-        </SkeletonGroup>
-      ) : null}
-
       {estado.kind === 'error' ? (
         <ErrorState
           title={estado.title}
@@ -151,14 +158,6 @@ export function VehiculosSheetHeader({
         />
       ) : null}
 
-      {estado.kind === 'vacio' ? (
-        <EmptyState
-          message={SIN_VEHICULOS}
-          icon={<Icon name="colectivos" size={32} />}
-          testID="linea-vacio"
-        />
-      ) : null}
-
       {refreshError ? (
         <Alert
           role="warning"
@@ -166,33 +165,26 @@ export function VehiculosSheetHeader({
           action={{ label: 'Reintentar', onPress: onRefresh }}
           testID="linea-refresh-error"
         />
-      ) : feedViejo ? (
-        <Alert role="warning" message={POSICIONES_VIEJAS} testID="linea-feed-viejo" />
       ) : null}
 
       {seleccionado ? (
-        <Card testID="linea-seleccionado">
-          <View style={{ gap: space[2] }}>
-            <Text accessibilityLabel={seleccionado.hablado}>{seleccionado.texto}</Text>
-            <View style={[styles.row, { gap: space[2] }]}>
-              <Button
-                label={siguiendo ? 'Dejar de seguir' : 'Seguir'}
-                size="sm"
-                variant="primary"
-                onPress={onToggleSeguir}
-                accessibilityHint="El mapa se mueve con el colectivo en cada actualización"
-                testID="linea-seguir"
-              />
-              <Button
-                label="Cerrar"
-                size="sm"
-                variant="link"
-                onPress={onCerrarSeleccion}
-                accessibilityLabel={`Dejar de mostrar ${seleccionado.nombre}`}
-              />
-            </View>
-          </View>
-        </Card>
+        <View style={[styles.row, styles.between, { gap: space[2] }]} testID="linea-seleccionado">
+          <Button
+            label="Cerrar"
+            size="sm"
+            variant="link"
+            onPress={onCerrarSeleccion}
+            accessibilityLabel={`Dejar de mostrar ${seleccionado.nombre}`}
+          />
+          <Button
+            label={siguiendo ? 'Dejar de seguir' : 'Seguir'}
+            size="sm"
+            variant="primary"
+            onPress={onToggleSeguir}
+            accessibilityHint="El mapa se mueve con el colectivo en cada actualización"
+            testID="linea-seguir"
+          />
+        </View>
       ) : null}
     </View>
   );
@@ -204,6 +196,8 @@ export interface VehiculosSheetBodyProps {
   vehiculos: readonly VehiculoVista[];
   seleccionadoId: string | null;
   onSelectVehiculo: (id: string) => void;
+  /** «Ramal A»: el subtítulo de cada colectivo cuando no hay ubicación para decir la distancia. */
+  ramal?: string | undefined;
 }
 
 export function VehiculosSheetBody({
@@ -212,8 +206,9 @@ export function VehiculosSheetBody({
   vehiculos,
   seleccionadoId,
   onSelectVehiculo,
+  ramal,
 }: VehiculosSheetBodyProps) {
-  const { space, colors, component } = useTheme();
+  const { space, colors, fontFamily } = useTheme();
   return (
     <>
       {ramales.length > 1 ? (
@@ -241,40 +236,45 @@ export function VehiculosSheetBody({
       </Text>
 
       {vehiculos.length > 0 ? (
-        <View style={{ gap: space[1] }}>
-          <Text variant="headline.sm" accessibilityRole="header">
-            Colectivos en servicio
-          </Text>
+        <Board label="Colectivos en servicio" testID="linea-vehiculos">
           {vehiculos.map((v) => {
             const selected = v.id === seleccionadoId;
+            const distancia = v.metros === null ? undefined : formatDistancia(v.metros).short;
             return (
-              <Pressable
+              // El vehículo elegido se marca con el fondo de "apretado"; el que no reporta hace
+              // rato, atenuado (S31). La fila no navega: es un botón que selecciona, sin flecha.
+              <View
                 key={v.id}
-                accessibilityRole="button"
-                accessibilityLabel={v.hablado}
-                accessibilityState={{ selected }}
-                accessibilityHint="Lo muestra en el mapa"
-                onPress={() => {
-                  onSelectVehiculo(v.id);
+                style={{
+                  backgroundColor: selected ? colors.bg.pressed : 'transparent',
+                  opacity: v.viejo ? 0.7 : 1,
                 }}
-                style={({ pressed }) => [
-                  styles.row,
-                  {
-                    minHeight: component.hitSlop,
-                    gap: space[2],
-                    paddingHorizontal: space[2],
-                    backgroundColor: pressed || selected ? colors.bg.pressed : 'transparent',
-                    opacity: v.viejo ? 0.7 : 1,
-                  },
-                ]}
-                testID={`linea-vehiculo-${v.id}`}
               >
-                <Icon name={selected ? 'marcador' : 'colectivos'} size={20} />
-                <Text style={styles.grow}>{v.texto}</Text>
-              </Pressable>
+                <Board.Row
+                  testID={`linea-vehiculo-${v.id}`}
+                  leading={<Pictogram icon="colectivos" size={32} tone="board" />}
+                  title={v.nombre}
+                  subtitle={distancia ?? ramal}
+                  trailing={
+                    <Text
+                      variant="text.md"
+                      tone="secondary"
+                      style={{ fontFamily: fontFamily.text[400], fontSize: 15, lineHeight: 20 }}
+                    >
+                      {`hace ${formatAge(v.edad).short}`}
+                    </Text>
+                  }
+                  arrow={false}
+                  onPress={() => {
+                    onSelectVehiculo(v.id);
+                  }}
+                  accessibilityLabel={selected ? `${v.hablado}, Seleccionado` : v.hablado}
+                  accessibilityHint="Lo muestra en el mapa"
+                />
+              </View>
             );
           })}
-        </View>
+        </Board>
       ) : null}
     </>
   );

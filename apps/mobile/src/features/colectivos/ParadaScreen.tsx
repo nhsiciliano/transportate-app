@@ -1,31 +1,19 @@
-// Detalle de parada (brief 02-colectivos §3): información estática (calle y altura, líneas que
-// paran), favorito y "Próximos arribos" SOLO si el proxy trae arribos (N4, ADR-0006): sin
-// equivalencia la lista llega vacía y la sección no existe.
+// Detalle de parada (brief 02-colectivos §3; dirección «Señalética de terminal», F5-MID-B):
+// título nativo con calle y altura, favorito en el header, barrio debajo y una placa de tablero
+// «Líneas que paran» con una fila por línea. Si el proxy trae arribos (N4, ADR-0006) el primero
+// va a la derecha de su fila a 24 pt y los siguientes debajo; sin arribos la fila no los muestra.
+// No hay banda: la parada no tiene un valor vivo que señalizar (F5-colectivos-1).
 import type { ArriboColectivoV1 } from '@transportate/contracts';
 import { Stack } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { FavoriteToggle, useNow } from '@/features/favoritos';
-import {
-  RefreshErrorAlert,
-  ScreenScroll,
-  Seccion,
-  formatArribo,
-  usePullToRefresh,
-} from '@/features/subtes';
+import { RefreshErrorAlert, ScreenScroll, formatArribo, usePullToRefresh } from '@/features/subtes';
 import { useArribosParada } from '@/shared/api';
 import { useRefreshInterval } from '@/shared/query';
 import { useTheme } from '@/shared/theme';
-import {
-  EmptyState,
-  ErrorState,
-  FreshnessLabel,
-  LineBadge,
-  Skeleton,
-  SkeletonGroup,
-  Text,
-} from '@/shared/ui';
+import { Board, EmptyState, ErrorState, FreshnessLabel, LineBadge, Text } from '@/shared/ui';
 
 import { useIndiceColectivos } from './hooks';
 import { describirLineas, lineaParaNumero, numerosDeParada } from './model';
@@ -37,10 +25,17 @@ import { ERROR_INDICE, PREPARANDO } from './ColectivosScreen';
 export const ARRIBOS_POR_LINEA = 3;
 
 export function ParadaScreen({ id }: { id: string | undefined }) {
+  const { colors, scheme } = useTheme();
   const indice = useIndiceColectivos();
   const parada = id === undefined ? undefined : indice.indice?.paradaPorId.get(id);
   const arribos = useArribosParada(id);
   const { refreshing, onRefresh } = usePullToRefresh([() => arribos.refetch()]);
+  const { seconds } = useRefreshInterval();
+  const now = Math.max(useNow(15_000), arribos.dataUpdatedAt);
+  const grupos = useMemo(
+    () => (arribos.data === undefined ? [] : agrupar(arribos.data.arribos, now)),
+    [arribos.data, now],
+  );
 
   let body;
   if (indice.isLoadingError) {
@@ -54,108 +49,172 @@ export function ParadaScreen({ id }: { id: string | undefined }) {
     );
   } else if (indice.indice === undefined) {
     body = indice.isDownloading ? (
-      <ProgresoIndice progress={indice.progress} label={PREPARANDO} />
-    ) : (
-      <SkeletonGroup accessibilityLabel="Cargando la parada…" testID="parada-skeleton">
-        <View style={{ gap: 12 }}>
-          <Skeleton height={32} width={240} />
-          <Skeleton height={24} width={160} />
+      <Board>
+        <View style={styles.relleno}>
+          <ProgresoIndice progress={indice.progress} label={PREPARANDO} />
         </View>
-      </SkeletonGroup>
+      </Board>
+    ) : (
+      <Board.Skeleton rows={3} accessibilityLabel="Cargando la parada…" testID="parada-skeleton" />
     );
   } else if (parada === undefined) {
     body = (
-      <EmptyState
-        testID="parada-inexistente"
-        title="No encontramos esta parada"
-        message="Puede haber cambiado de lugar. Buscala por el nombre de la calle."
-      />
+      <Board>
+        <EmptyState
+          testID="parada-inexistente"
+          title="No encontramos esta parada"
+          message="Puede haber cambiado de lugar. Buscala por el nombre de la calle."
+        />
+      </Board>
     );
   } else {
     const numeros = numerosDeParada(parada);
     body = (
       <>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="headline.lg" accessibilityRole="header">
-              {parada.nombre}
-            </Text>
-            {parada.barrio !== null ? (
-              <Text variant="text.sm" tone="secondary">
-                {parada.barrio}
-              </Text>
-            ) : null}
-          </View>
-          <FavoriteToggle
-            tipo="parada_colectivo"
-            refId={parada.id}
-            nombre={parada.nombre}
-            subtitulo={describirLineas(numeros)}
-          />
-        </View>
-        <Seccion>Líneas que paran</Seccion>
-        <LineasDeParada paradaId={parada.id} numeros={numeros} indice={indice.indice} />
-        <Arribos arribos={arribos} onRetry={onRefresh} />
+        {parada.barrio !== null ? (
+          <Text variant="text.md" tone="secondary" testID="parada-barrio" style={styles.barrio}>
+            {parada.barrio}
+          </Text>
+        ) : null}
+        {arribos.isRefreshError && grupos.length > 0 ? (
+          <RefreshErrorAlert onRetry={onRefresh} />
+        ) : null}
+        <LineasDeParada
+          paradaId={parada.id}
+          numeros={numeros}
+          grupos={grupos}
+          indice={indice.indice}
+        />
+        {/* Frescura solo si hay arribos (N4, F4-colectivos-7). */}
+        {grupos.length > 0 ? (
+          <FreshnessLabel sourceTimestamp={arribos.sourceTimestamp} intervalSeconds={seconds} />
+        ) : null}
       </>
     );
   }
 
   return (
     <>
-      <Stack.Screen options={{ title: parada?.nombre ?? 'Parada' }} />
-      <ScreenScroll refreshing={refreshing} onRefresh={onRefresh} testID="parada-screen">
+      <Stack.Screen
+        options={{
+          title: parada?.nombre ?? 'Parada',
+          // La estrella vive en el header nativo (44×44, `FavoriteToggle`).
+          headerRight:
+            parada === undefined
+              ? () => null
+              : () => (
+                  <FavoriteToggle
+                    tipo="parada_colectivo"
+                    refId={parada.id}
+                    nombre={parada.nombre}
+                    subtitulo={describirLineas(numerosDeParada(parada))}
+                  />
+                ),
+        }}
+      />
+      <ScreenScroll
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        testID="parada-screen"
+        backgroundColor={scheme === 'light' ? colors.bg.elevated : colors.bg.base}
+        gap={12}
+      >
         {body}
       </ScreenScroll>
     </>
   );
 }
 
-function LineasDeParada({
-  paradaId,
-  numeros,
-  indice,
-}: {
-  paradaId: string;
-  numeros: readonly string[];
-  indice: Parameters<typeof lineaParaNumero>[0];
-}) {
-  const abrirLinea = useAbrirLinea();
-  const { colors, component, radius } = useTheme();
+interface GrupoArribos {
+  linea: string;
+  tiempos: number[];
+}
+
+/** «2 min» a la derecha de la fila: el primero grande y los siguientes chicos, debajo. */
+function ArribosDeFila({ tiempos }: { tiempos: readonly number[] }) {
+  const { fontFamily } = useTheme();
+  const [primero, ...resto] = tiempos.map(formatArribo);
+  if (primero === undefined) return null;
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }} accessibilityRole="list">
-      {numeros.map((n) => {
-        const linea = lineaParaNumero(indice, n);
-        const badge = <LineBadge kind="colectivo" label={n} size="lg" />;
-        // Sin ramal conocido (número que no está en el listado de líneas): insignia sin acción.
-        if (linea === undefined) return <View key={n}>{badge}</View>;
-        return (
-          <Pressable
-            key={n}
-            testID={`linea-parada-${n}`}
-            accessibilityRole="button"
-            accessibilityLabel={`Línea ${n}. Ver en el mapa`}
-            onPress={() => {
-              abrirLinea(linea, paradaId);
-            }}
-            style={({ pressed }) => ({
-              minWidth: component.hitSlop,
-              minHeight: component.hitSlop,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: radius.xl,
-              backgroundColor: pressed ? colors.bg.pressed : 'transparent',
-            })}
-          >
-            {badge}
-          </Pressable>
-        );
-      })}
+    <View style={styles.arribos}>
+      <Text
+        variant="headline.lg"
+        maxFontSizeMultiplier={1.2}
+        style={{ fontFamily: fontFamily.heading[700], fontSize: 24, lineHeight: 28 }}
+      >
+        {primero.short}
+      </Text>
+      {resto.length === 0 ? null : (
+        <Text
+          variant="text.sm"
+          tone="secondary"
+          style={{ fontFamily: fontFamily.text[400], fontSize: 13, lineHeight: 16 }}
+        >
+          {resto.map((x) => x.short).join(' · ')}
+        </Text>
+      )}
     </View>
   );
 }
 
+function LineasDeParada({
+  paradaId,
+  numeros,
+  grupos,
+  indice,
+}: {
+  paradaId: string;
+  numeros: readonly string[];
+  grupos: readonly GrupoArribos[];
+  indice: Parameters<typeof lineaParaNumero>[0];
+}) {
+  const abrirLinea = useAbrirLinea();
+  // Una fila por línea que para; las que traen arribos sin figurar en la parada se suman al final.
+  const extra = grupos.map((g) => g.linea).filter((l) => !numeros.includes(l));
+  return (
+    <Board label="Líneas que paran" testID="lineas-que-paran">
+      {[...numeros, ...extra].map((n) => {
+        const linea = lineaParaNumero(indice, n);
+        const tiempos = grupos.find((g) => g.linea === n)?.tiempos ?? [];
+        const spoken = tiempos.map((t) => formatArribo(t).spoken);
+        const subtitle = linea?.descripcion;
+        return (
+          <Board.Row
+            key={n}
+            testID={`linea-parada-${n}`}
+            leading={<LineBadge kind="colectivo" label={n} />}
+            title={`Línea ${n}`}
+            subtitle={subtitle}
+            trailing={tiempos.length === 0 ? undefined : <ArribosDeFila tiempos={tiempos} />}
+            accessibilityLabel={[
+              `Línea ${n}`,
+              subtitle,
+              spoken.length === 0
+                ? undefined
+                : `Próximo ${spoken[0] ?? ''}${
+                    spoken.length > 1 ? `, después ${spoken.slice(1).join(' y ')}` : ''
+                  }`,
+            ]
+              .filter((x) => x !== undefined && x !== '')
+              .join('. ')}
+            // Sin ramal conocido (número que no está en el listado de líneas): sin destino, sin flecha.
+            {...(linea === undefined
+              ? {}
+              : {
+                  onPress: () => {
+                    abrirLinea(linea, paradaId);
+                  },
+                  accessibilityHint: 'Ver en el mapa',
+                })}
+          />
+        );
+      })}
+    </Board>
+  );
+}
+
 /** Arribos agrupados por línea, el más próximo primero; hasta 3 por línea. */
-function agrupar(arribos: readonly ArriboColectivoV1[], now: number) {
+function agrupar(arribos: readonly ArriboColectivoV1[], now: number): GrupoArribos[] {
   const porLinea = new Map<string, number[]>();
   for (const a of arribos) {
     const t = Date.parse(a.horaEstimada);
@@ -171,50 +230,8 @@ function agrupar(arribos: readonly ArriboColectivoV1[], now: number) {
     .sort((a, b) => (a.tiempos[0] ?? 0) - (b.tiempos[0] ?? 0));
 }
 
-function Arribos({
-  arribos,
-  onRetry,
-}: {
-  arribos: ReturnType<typeof useArribosParada>;
-  onRetry: () => void;
-}) {
-  const { seconds } = useRefreshInterval();
-  const now = Math.max(useNow(15_000), arribos.dataUpdatedAt);
-  const grupos = useMemo(
-    () => (arribos.data === undefined ? [] : agrupar(arribos.data.arribos, now)),
-    [arribos.data, now],
-  );
-  // Sin arribos (vacío, cargando o error sin datos): la sección no existe (N4, F4-colectivos-7).
-  if (grupos.length === 0) return null;
-  return (
-    <View style={{ gap: 12 }} testID="proximos-arribos">
-      <Seccion>Próximos arribos</Seccion>
-      {arribos.isRefreshError ? <RefreshErrorAlert onRetry={onRetry} /> : null}
-      {grupos.map((g) => {
-        const t = g.tiempos.map(formatArribo);
-        return (
-          <View
-            key={g.linea}
-            accessible
-            accessibilityLabel={`Línea ${g.linea}: ${t.map((x) => x.spoken).join(', ')}.`}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
-          >
-            <LineBadge kind="colectivo" label={g.linea} />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16, flex: 1 }}>
-              {t.map((x, i) => (
-                <Text
-                  key={i}
-                  variant={i === 0 ? 'headline.lg' : 'text.lg'}
-                  tone={i === 0 ? 'primary' : 'secondary'}
-                >
-                  {x.short}
-                </Text>
-              ))}
-            </View>
-          </View>
-        );
-      })}
-      <FreshnessLabel sourceTimestamp={arribos.sourceTimestamp} intervalSeconds={seconds} />
-    </View>
-  );
-}
+const styles = StyleSheet.create({
+  relleno: { padding: 12 },
+  barrio: { fontSize: 15, lineHeight: 20 },
+  arribos: { alignItems: 'flex-end', gap: 2 },
+});
