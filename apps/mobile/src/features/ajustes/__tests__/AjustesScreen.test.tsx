@@ -84,7 +84,7 @@ describe('Ajustes · favoritos', () => {
     await renderWithApp(<AjustesScreen />, { fetch: okFetch }).render();
 
     expect(screen.getByText(FAVORITOS_EMPTY_MESSAGE)).toBeOnTheScreen();
-    const button = screen.getByRole('button', { name: 'Borrar todos los favoritos' });
+    const button = screen.getByRole('button', { name: /^Borrar todos los favoritos/ });
     expect(button).toBeDisabled();
     await user.press(button);
     expect(alert).not.toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe('Ajustes · favoritos', () => {
     await app.render();
     expect(screen.getByText('Tenés 2 favoritos guardados.')).toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Borrar todos los favoritos' }));
+    await user.press(screen.getByRole('button', { name: /^Borrar todos los favoritos/ }));
 
     expect(alert).toHaveBeenCalledTimes(1);
     const [title, , buttons] = alert.mock.calls[0] ?? [];
@@ -129,7 +129,7 @@ describe('Ajustes · favoritos', () => {
     await app.render();
     expect(screen.getByText('Tenés 1 favorito guardado.')).toBeOnTheScreen();
 
-    await user.press(screen.getByRole('button', { name: 'Borrar todos los favoritos' }));
+    await user.press(screen.getByRole('button', { name: /^Borrar todos los favoritos/ }));
     const buttons = alert.mock.calls[0]?.[2];
     await act(() => {
       buttons?.find((b) => b.text === 'Cancelar')?.onPress?.();
