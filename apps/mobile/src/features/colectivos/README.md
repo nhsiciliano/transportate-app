@@ -12,14 +12,14 @@ Modo **Operate**: tabs nativas, large title, header, gesto de volver y controles
 
 **Raíz** (`ColectivosScreen`, fondo `bg.elevated` en claro y `bg.base` en oscuro, 12 pt entre bloques):
 
-| Bloque | Forma |
-| --- | --- |
-| Búsqueda | `SearchInput` «Buscá una línea o parada», como antes |
-| Paradas cercanas | `Board` con etiqueta: hasta 10 filas (`Pictogram parada` 32, calle y altura, **líneas que paran** «60 · 152 · 168», distancia «a 120 m» a la derecha en 15/600, flecha → parada) y fila final «Ver más» (hasta 30). Sin permiso, dentro de la placa va `PermisoUbicacionBloque inset`. Fuera de CABA y sin cercanas: `EmptyState` compacto dentro de la placa |
-| Recientes | `Board` con etiqueta «Recientes»: `LineBadge`, «Línea 152», «Ramal A · a Olivos», flecha → línea |
-| Tus favoritos | `SignBand` `next` con el mismo contenido que en Inicio (`modeloBanda` y `hrefDeFavorito` de `@/features/inicio`); una por favorito de colectivo (línea o parada) |
-| Búsqueda activa | Una sola placa con líneas (`LineBadge`, «Línea 60», ramal y cabecera) y paradas (`Pictogram parada`, líneas que paran) mezcladas; `EmptyState` si no hay resultados |
-| Índice sin descargar / error | `ProgresoIndice` dentro de una placa / `ErrorState` |
+| Bloque                       | Forma                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Búsqueda                     | `SearchInput` «Buscá una línea o parada», como antes                                                                                                                                                                                                                                                                                                          |
+| Paradas cercanas             | `Board` con etiqueta: hasta 10 filas (`Pictogram parada` 32, calle y altura, **líneas que paran** «60 · 152 · 168», distancia «a 120 m» a la derecha en 15/600, flecha → parada) y fila final «Ver más» (hasta 30). Sin permiso, dentro de la placa va `PermisoUbicacionBloque inset`. Fuera de CABA y sin cercanas: `EmptyState` compacto dentro de la placa |
+| Recientes                    | `Board` con etiqueta «Recientes»: `LineBadge`, «Línea 152», «Ramal A · a Olivos», flecha → línea                                                                                                                                                                                                                                                              |
+| Tus favoritos                | `SignBand` `next` con el mismo contenido que en Inicio (`modeloBanda` y `hrefDeFavorito` de `@/features/inicio`); una por favorito de colectivo (línea o parada)                                                                                                                                                                                              |
+| Búsqueda activa              | Una sola placa con líneas (`LineBadge`, «Línea 60», ramal y cabecera) y paradas (`Pictogram parada`, líneas que paran) mezcladas; `EmptyState` si no hay resultados                                                                                                                                                                                           |
+| Índice sin descargar / error | `ProgresoIndice` dentro de una placa / `ErrorState`                                                                                                                                                                                                                                                                                                           |
 
 **Parada** (`ParadaScreen`): título nativo con calle y altura; `FavoriteToggle` (44×44) en el `headerRight`; barrio en 15 `text.secondary` debajo del header; `Board` «Líneas que paran» con una fila por línea (`LineBadge`, «Línea 60», ramal y cabecera). Si hay arribos, el primero va a la derecha de su fila en 24/700 y los siguientes (hasta 3 en total) debajo en 13 `text.secondary`; la flecha lleva a `/colectivos/[linea]?parada=<id>`. `FreshnessLabel` solo si hay arribos (N4). **No hay banda**: la parada no tiene un valor vivo que señalizar.
 
@@ -28,42 +28,43 @@ Modo **Operate**: tabs nativas, large title, header, gesto de volver y controles
 - **Colapsado:** primera pieza, una `SignBand` **fija** (`lead`, sin `onPress`, sin flecha): pictograma «colectivos», «Línea 152 · Ramal A» (sin ramal, la cabecera), rótulo «En servicio», el **conteo a escala monumental** y como estado muted la antigüedad del dato («hace 25 s»). Debajo, en una fila: `FreshnessLabel`, `FavoriteToggle` y «Actualizar». La manija y su botón («Ver más» / «Ver menos») siguen igual.
 - **Vehículo elegido:** la banda se vuelve a señalizar (fundido): «Interno 1404», «Actualizado», «hace 25 s» y, si hay ubicación, «a 350 m de vos». Una fila más con «Cerrar» y «Seguir» / «Dejar de seguir». Al cerrar vuelve al conteo, también con fundido.
 - **Medio:** `Chip`s de ramal y la nota de sentido, sin cambios de componente.
-- **Expandido:** la lista de vehículos como placa «Colectivos en servicio»: `Pictogram colectivos` 32, «Interno 1404», «a 350 m de vos» (o el ramal si no hay ubicación) y «hace 25 s» en 15 `text.secondary`. Seleccionar no navega, así que las filas son botones **sin flecha** (`arrow={false}`).
-- **Movimiento:** solo el fundido de la banda (`transitionKey` = conteo o `interno-<id>`); con Reducir movimiento, corte seco. Del skeleton al primer valor no hay fundido.
+- **Expandido:** la lista de vehículos como placa. Con ubicación, el rótulo es «Colectivos a menos de 3 km» con «N de M en servicio» al lado y solo entran los que están a ≤ 3.000 m (F5-colectivos-12); sin ubicación, «Colectivos en servicio» con la lista completa. Cada fila: `Pictogram colectivos` 32, «Interno 1404», «a 350 m de vos» (o el ramal si no hay ubicación) y «hace 25 s» en 15 `text.secondary`. Seleccionar no navega, así que las filas son botones **sin flecha** (`arrow={false}`).
+- **Tab bar:** el panel deja abajo el lugar de la tab bar nativa (F5-colectivos-13): el encabezado entero —banda y fila de acciones— queda por encima de ella en colapsado y la lista llega a su último vehículo en expandido.
+- **Movimiento:** el fundido de la banda y el de las filas de la lista al entrar o salir de los 3 km (200 ms) (`transitionKey` = conteo o `interno-<id>`) y, en la lista, el fundido de entrada, salida y reacomodo de las filas (`FadeIn`/`FadeOut`/`LinearTransition` de Reanimated, `FILA_FUNDIDO_MS`); con Reducir movimiento, corte seco. Del skeleton al primer valor no hay fundido.
 
 ### Estados F5
 
-| Estado | Raíz | Parada | Línea (panel) |
-| --- | --- | --- | --- |
-| Carga | Índice: progreso dentro de una placa. Cercanas: tres filas de skeleton dentro de la placa | `Board.Skeleton` (3 filas) o progreso del índice | Sin línea: `SignBand.Skeleton` lead + una línea. Con línea y sin posiciones: banda con el valor en skeleton |
-| Vacío | Sin resultados / sin cercanas / fuera de CABA: `EmptyState` dentro de la placa con el copy de siempre | «No encontramos esta parada» dentro de una placa | Banda con «Sin colectivos con GPS ahora» (la etiqueta hablada suma «No hay colectivos de esta línea con GPS activo ahora.») |
-| Error | `ErrorState` «No pudimos descargar las líneas y paradas» + reintento | ídem | Banda con «Sin datos» + `ErrorState` con reintento (o «Las posiciones de colectivos no están disponibles por ahora», sin reintento) |
-| Error con datos | — | Alert «No pudimos actualizar…» + «Reintentar» (solo si ya hay arribos) | Alert «No pudimos actualizar. Mostramos lo último que sabemos.» + «Reintentar»; marcadores atenuados |
-| Dato viejo | — | `FreshnessLabel` (warning > 3·R, aviso > 10 min) | Más de 10 min: estado **warning** «Las posiciones pueden no ser actuales» en la banda (cuadrado ámbar con texto); vehículo con más de 5 min, atenuado |
-| Sin conexión | `OfflineBanner` global; búsqueda y cercanas son locales | Información estática | Últimas posiciones atenuadas; `OfflineBanner` global |
-| Sin permiso | `PermisoUbicacionBloque inset` dentro de la placa «Paradas cercanas» (S32) | — | «Centrar en mi ubicación» pide el permiso en contexto; sin permiso no hay distancias |
+| Estado          | Raíz                                                                                                  | Parada                                                                 | Línea (panel)                                                                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Carga           | Índice: progreso dentro de una placa. Cercanas: tres filas de skeleton dentro de la placa             | `Board.Skeleton` (3 filas) o progreso del índice                       | Sin línea: `SignBand.Skeleton` lead + una línea. Con línea y sin posiciones: banda con el valor en skeleton                                           |
+| Vacío           | Sin resultados / sin cercanas / fuera de CABA: `EmptyState` dentro de la placa con el copy de siempre | «No encontramos esta parada» dentro de una placa                       | Banda con «Sin colectivos con GPS ahora» (la etiqueta hablada suma «No hay colectivos de esta línea con GPS activo ahora.»)                           |
+| Error           | `ErrorState` «No pudimos descargar las líneas y paradas» + reintento                                  | ídem                                                                   | Banda con «Sin datos» + `ErrorState` con reintento (o «Las posiciones de colectivos no están disponibles por ahora», sin reintento)                   |
+| Error con datos | —                                                                                                     | Alert «No pudimos actualizar…» + «Reintentar» (solo si ya hay arribos) | Alert «No pudimos actualizar. Mostramos lo último que sabemos.» + «Reintentar»; marcadores atenuados                                                  |
+| Dato viejo      | —                                                                                                     | `FreshnessLabel` (warning > 3·R, aviso > 10 min)                       | Más de 10 min: estado **warning** «Las posiciones pueden no ser actuales» en la banda (cuadrado ámbar con texto); vehículo con más de 5 min, atenuado |
+| Sin conexión    | `OfflineBanner` global; búsqueda y cercanas son locales                                               | Información estática                                                   | Últimas posiciones atenuadas; `OfflineBanner` global                                                                                                  |
+| Sin permiso     | `PermisoUbicacionBloque inset` dentro de la placa «Paradas cercanas» (S32)                            | —                                                                      | «Centrar en mi ubicación» pide el permiso en contexto; sin permiso no hay distancias                                                                  |
 
 ### Contraste (`tools/contraste/contraste.py`, función `ratio`)
 
 Mínimo: 4,5:1 texto, 3:1 elementos gráficos. Los pares de las bandas (`lead` sobre el panel incluido) son los de la tabla de [Inicio](../inicio/README.md#contraste-de-la-banda-toolscontrastecontrastepy-fórmula-wcag-2x); la banda `lead` contra el fondo del panel (`bg.card`) da 7,38:1 en claro (`#035c80` / `#ffffff`) y 5,59:1 en oscuro (`#67a5cd` / `#1b2836`). Pares nuevos de las placas:
 
-| Esquema | Par | Primer plano | Fondo | Ratio | Cumple |
-| --- | --- | --- | --- | ---: | :---: |
-| claro | `text.primary` en filas (título 17/600, distancia, 1.er arribo 24/700) / `bg.card` | `#08202f` | `#ffffff` | 16,69:1 | ✅ |
-| claro | `text.secondary` en filas (subtítulo, «hace 25 s», detalle del permiso) / `bg.card` | `#4a5766` | `#ffffff` | 7,38:1 | ✅ |
-| claro | `text.secondary` (etiqueta de placa 13/600, barrio 15) / `bg.elevated` | `#4a5766` | `#edf4ff` | 6,67:1 | ✅ |
-| claro | `text.primary` / `bg.pressed` (vehículo elegido) | `#08202f` | `#d6e4f6` | 12,95:1 | ✅ |
-| claro | `text.secondary` / `bg.pressed` (vehículo elegido) | `#4a5766` | `#d6e4f6` | 5,72:1 | ✅ |
-| claro | `Pictogram board`: ícono / cuadrado | `#ffffff` | `#1d3343` | 13,07:1 | ✅ |
-| claro | `Pictogram board`: cuadrado / `bg.card` — y / `bg.pressed` | `#1d3343` | `#ffffff` — `#d6e4f6` | 13,07 — 10,14:1 | ✅ |
-| claro | Flecha (`text.secondary`) / `bg.card` — y / `bg.pressed` | `#4a5766` | `#ffffff` — `#d6e4f6` | 7,38 — 5,72:1 | ✅ |
-| oscuro | `text.primary` en filas / `bg.card` | `#edf4ff` | `#1b2836` | 13,53:1 | ✅ |
-| oscuro | `text.secondary` en filas / `bg.card` | `#c7d4e6` | `#1b2836` | 9,97:1 | ✅ |
-| oscuro | `text.secondary` (etiqueta, barrio) / `bg.elevated` | `#c7d4e6` | `#121f2c` | 11,12:1 | ✅ |
-| oscuro | `text.primary` — `text.secondary` / `bg.pressed` | `#edf4ff` — `#c7d4e6` | `#253240` | 11,80 — 8,69:1 | ✅ |
-| oscuro | `Pictogram board`: ícono / cuadrado | `#08202f` | `#a4d9ff` | 11,09:1 | ✅ |
-| oscuro | `Pictogram board`: cuadrado / `bg.card` — y / `bg.pressed` | `#a4d9ff` | `#1b2836` — `#253240` | 9,94 — 8,67:1 | ✅ |
-| oscuro | Flecha (`text.secondary`) / `bg.card` — y / `bg.pressed` | `#c7d4e6` | `#1b2836` — `#253240` | 9,97 — 8,69:1 | ✅ |
+| Esquema | Par                                                                                 | Primer plano          | Fondo                 |           Ratio | Cumple |
+| ------- | ----------------------------------------------------------------------------------- | --------------------- | --------------------- | --------------: | :----: |
+| claro   | `text.primary` en filas (título 17/600, distancia, 1.er arribo 24/700) / `bg.card`  | `#08202f`             | `#ffffff`             |         16,69:1 |   ✅   |
+| claro   | `text.secondary` en filas (subtítulo, «hace 25 s», detalle del permiso) / `bg.card` | `#4a5766`             | `#ffffff`             |          7,38:1 |   ✅   |
+| claro   | `text.secondary` (etiqueta de placa 13/600, barrio 15) / `bg.elevated`              | `#4a5766`             | `#edf4ff`             |          6,67:1 |   ✅   |
+| claro   | `text.primary` / `bg.pressed` (vehículo elegido)                                    | `#08202f`             | `#d6e4f6`             |         12,95:1 |   ✅   |
+| claro   | `text.secondary` / `bg.pressed` (vehículo elegido)                                  | `#4a5766`             | `#d6e4f6`             |          5,72:1 |   ✅   |
+| claro   | `Pictogram board`: ícono / cuadrado                                                 | `#ffffff`             | `#1d3343`             |         13,07:1 |   ✅   |
+| claro   | `Pictogram board`: cuadrado / `bg.card` — y / `bg.pressed`                          | `#1d3343`             | `#ffffff` — `#d6e4f6` | 13,07 — 10,14:1 |   ✅   |
+| claro   | Flecha (`text.secondary`) / `bg.card` — y / `bg.pressed`                            | `#4a5766`             | `#ffffff` — `#d6e4f6` |   7,38 — 5,72:1 |   ✅   |
+| oscuro  | `text.primary` en filas / `bg.card`                                                 | `#edf4ff`             | `#1b2836`             |         13,53:1 |   ✅   |
+| oscuro  | `text.secondary` en filas / `bg.card`                                               | `#c7d4e6`             | `#1b2836`             |          9,97:1 |   ✅   |
+| oscuro  | `text.secondary` (etiqueta, barrio) / `bg.elevated`                                 | `#c7d4e6`             | `#121f2c`             |         11,12:1 |   ✅   |
+| oscuro  | `text.primary` — `text.secondary` / `bg.pressed`                                    | `#edf4ff` — `#c7d4e6` | `#253240`             |  11,80 — 8,69:1 |   ✅   |
+| oscuro  | `Pictogram board`: ícono / cuadrado                                                 | `#08202f`             | `#a4d9ff`             |         11,09:1 |   ✅   |
+| oscuro  | `Pictogram board`: cuadrado / `bg.card` — y / `bg.pressed`                          | `#a4d9ff`             | `#1b2836` — `#253240` |   9,94 — 8,67:1 |   ✅   |
+| oscuro  | Flecha (`text.secondary`) / `bg.card` — y / `bg.pressed`                            | `#c7d4e6`             | `#1b2836` — `#253240` |   9,97 — 8,69:1 |   ✅   |
 
 El outline y los separadores de las placas (`border.subtle`) son decorativos (DESIGN.md §7): la información no depende de ellos. El cuadrado de estado de la banda (ámbar «Las posiciones pueden no ser actuales») lleva el borde de 1 pt en el color `on` de la banda y el texto al lado: el color nunca es el único canal.
 
@@ -85,6 +86,14 @@ El outline y los separadores de las placas (`border.subtle`) son decorativos (DE
 9. **F5-colectivos-9** — El subtítulo de una parada nombra hasta 6 líneas; con más, 3 y «y N más» (`textoDeLineas`). El detalle completo está en la parada.
 10. **F5-colectivos-10** — En la parada, la placa suma una fila por cada línea que trae arribos aunque no figure entre las que paran (sin destino ni flecha), para no perder un dato; una línea sin ramal en el listado tampoco lleva flecha ni es botón (la flecha promete un destino). La sección «Próximos arribos» desaparece: los tiempos viven en la fila de su línea.
 11. **F5-colectivos-11** — La estrella de la parada va en el `headerRight` nativo (44×44); mientras la parada no se resolvió, el header no muestra nada a la derecha.
+12. **F5-colectivos-12** — **La lista de vehículos del panel muestra solo los que están a ≤ 3 km** (`RADIO_LISTA_METROS = 3000`, `filtrarCercanos` en `lineaModel.ts`), pedido del usuario: «el resto no sería necesario; que vayan apareciendo a medida que estén más cerca». Detalles:
+    - Rige solo **con ubicación** (permiso dado y posición conocida). Sin ubicación, lista completa ordenada por dato reciente y rótulo «Colectivos en servicio», como antes.
+    - Las posiciones se refrescan cada R segundos, así que un colectivo entra o sale cuando cruza los 3 km; las filas lo hacen con un fundido de 200 ms (seco con Reducir movimiento).
+    - El vehículo **elegido o seguido se queda** aunque se aleje: no se lo saca de abajo del dedo. Al cerrar la selección, sale. Cuenta en el «N» de «N de M».
+    - «N de M en servicio»: N = filas de la lista, M = colectivos de la línea con GPS. Si ninguno está a menos de 3 km: «Ningún colectivo a menos de 3 km. Hay 7 en servicio más lejos.» (singular «Hay 1 en servicio más lejos.»), dentro de una placa compacta y **sin botón**.
+    - **La banda sigue diciendo el total** (es el dato de la línea) y **el mapa no se filtra**: muestra todos los vehículos.
+    - **Pregunta para el usuario:** ¿el mapa también debería mostrar solo los de ≤ 3 km? No se hizo porque el recorrido y los colectivos lejanos ayudan a entender por dónde viene la línea, y un mapa que cambia de contenido al moverse confunde; si se quiere, es un filtro en `vehiculosCollection` con el mismo `filtrarCercanos`.
+13. **F5-colectivos-13** — **Lugar para la tab bar.** `NativeTabs` (`expo-router/native-tabs`) no es el navegador de `@react-navigation/bottom-tabs` (no es dependencia): **no existe `useBottomTabBarHeight`**. Se mide con `usePanelBottomInset()` (`shared/map/BottomPanel.tsx`): en iOS es `useSafeAreaInsets().bottom` leído dentro de la tab, porque `NativeTabs` envuelve cada pantalla en su propio `SafeAreaProvider` y el `UITabBarController` incluye la tab bar en el safe area de abajo (tab bar + indicador de inicio); en Android es 0, porque `NativeTabs` mete el contenido en un `SafeAreaView` que ya lo deja arriba de la tab bar (sumar el inset de sistema dejaría un hueco doble). `panelHeights(available, headerHeight, bottomInset)` suma el inset al colapsado y `BottomPanel` lo agrega como `paddingBottom` del cuerpo; medio y expandido son 50 % y 90 % del alto disponible y lo contienen. El cuerpo se oculta (`opacity: 0`) en colapsado para que la lista no asome bajo la tab bar translúcida. Los controles del mapa suben el mismo alto (`bottomOffset`). **A confirmar en el iPhone**: el alto exacto depende de lo que el sistema informe para la tab bar (con iOS 26 la tab bar flotante).
 
 ## Brief operativo (tarea 4.1, Fase 4)
 

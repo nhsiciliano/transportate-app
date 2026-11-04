@@ -127,7 +127,7 @@ Implementado en `features/colectivos` (`LineaScreen.tsx`, `MapaLinea.tsx`, `Vehi
 
 | Nivel        | Alto                                                    | Botón de la manija (lector y quien no arrastra) |
 | ------------ | ------------------------------------------------------- | ----------------------------------------------- |
-| 0, colapsado | manija (28 pt, área táctil de 44) + `header` medido     | "Ver más"                                       |
+| 0, colapsado | manija (28 pt, área táctil de 44) + `header` medido + `bottomInset` | "Ver más"                                       |
 | 1, medio     | 50 % del alto disponible (siempre más que el colapsado) | "Ver la lista completa"                         |
 | 2, expandido | 90 %                                                    | "Ver menos" (`accessibilityState.expanded`)     |
 
@@ -135,6 +135,7 @@ Implementado en `features/colectivos` (`LineaScreen.tsx`, `MapaLinea.tsx`, `Vehi
   - Se arrastra desde la manija o el encabezado (`usePanGesture` de RNGH 3 con `disableReanimated`: corre en JS y mueve un valor compartido).
   - Al soltar se elige el nivel más cercano con un poco de inercia (`nearestIndex`).
   - El cuerpo es un `ScrollView` que scrollea solo desde el nivel medio, así no compite con el arrastre.
+- **Tab bar:** `bottomInset` (`usePanelBottomInset()`: inset de abajo del safe area en iOS dentro de `NativeTabs`, 0 en Android) se suma al colapsado y como `paddingBottom` del cuerpo, para que el encabezado no quede tapado por la tab bar translúcida (F5-colectivos-13).
 - **Reducir movimiento:** cambia de nivel sin animar; si no, `withTiming` de 220 ms.
 - **Por qué no la `formSheet` nativa acá:** F4-colectivos-mapa-1 en `features/colectivos/README.md`. La sección de abajo sigue valiendo para detalles pasajeros sobre un mapa.
 

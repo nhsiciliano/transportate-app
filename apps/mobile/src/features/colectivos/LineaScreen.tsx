@@ -32,6 +32,7 @@ import {
   CLUSTER_MAX_ZOOM,
   CLUSTER_MIN_VEHICULOS,
   FEED_VIEJO_S,
+  filtrarCercanos,
   mensajeDeLinea,
   ordenarVehiculos,
   POSICIONES_NO_DISPONIBLES,
@@ -146,6 +147,13 @@ export function LineaScreen() {
   const [seleccionadoId, setSeleccionadoId] = useState<string | null>(null);
   const [siguiendo, setSiguiendo] = useState(false);
   const seleccionado = vistas.find((v) => v.id === seleccionadoId) ?? null;
+  // La lista (no el mapa ni la banda) muestra solo los de ≤ 3 km cuando se sabe dónde está la
+  // persona; el elegido o seguido se queda aunque se aleje. Sin ubicación, la lista completa.
+  const conUbicacion = posicion !== null;
+  const enLista = useMemo(
+    () => (conUbicacion ? filtrarCercanos(vistas, { seleccionado: seleccionadoId }) : vistas),
+    [vistas, conUbicacion, seleccionadoId],
+  );
 
   const vehiculosFc = useMemo(
     () =>
@@ -320,7 +328,9 @@ export function LineaScreen() {
               encuadrado.current = false;
               router.setParams({ linea: id });
             }}
-            vehiculos={vistas}
+            vehiculos={enLista}
+            total={vistas.length}
+            conUbicacion={conUbicacion}
             seleccionadoId={seleccionado?.id ?? null}
             onSelectVehiculo={select}
             ramal={
