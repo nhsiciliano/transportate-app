@@ -100,7 +100,7 @@ Todos los providers reciben sus dependencias por prop, con un default de producc
 - **Chrome nativo (F5-HIGH-C):** la preferencia también manda en lo que dibuja el sistema, aunque el teléfono esté en el otro modo.
   - `ThemeProvider` llama a `Appearance.setColorScheme` cuando cambia la preferencia: `light`/`dark` fuerzan el estilo de la app (headers, large titles, botón «Atrás», tab bar nativa, sheets, alerts y controles); `system` quita el override (`'auto'` en RN 0.88). Con el override activo `useColorScheme()` devuelve el esquema forzado, pero `resolveScheme` da lo correcto: con `light`/`dark` manda la preferencia y con `system` el override ya no está.
   - `ChromeNativo` (`shared/theme`, en el layout raíz, **dentro** del router) envuelve la navegación con el `ThemeProvider` de React Navigation (`navigationTheme`: `primary` = `text.link`, `background` = fondo de pantalla, `card` = `bg.card`, `text` = `text.primary`, `border` = `border.subtle`, `dark` según el esquema). El header nativo toma de ahí su `userInterfaceStyle` y el fondo de transición no flashea en blanco. También pone la barra de estado por esquema (`light` sobre oscuro, `dark` sobre claro), no `auto`.
-  - Las `Stack` de los tabs usan `useStackScreenOptions()`: `headerTintColor` `text.link` («Atrás» y botones del header), `headerTitleStyle` y `headerLargeTitleStyle` en `text.primary` con Fira Sans 700, y `headerStyle`/`headerLargeStyle`/`contentStyle` con el fondo de pantalla (`bg.elevated` en claro, `bg.base` en oscuro; `fondoPantalla`).
+  - Las `Stack` de los tabs usan `useStackScreenOptions()`: `headerTintColor` `text.link` («Atrás» y botones del header), `headerTitleStyle` y `headerLargeTitleStyle` en `text.primary` con la fuente del sistema, y `contentStyle` con el fondo de pantalla (`bg.elevated` en claro, `bg.base` en oscuro; `fondoPantalla`). **Sin `headerStyle` ni `headerLargeStyle`:** con un `backgroundColor` explícito en el header, iOS 26+ (Liquid Glass) deja el header nativo alto y sin título en todas las pantallas (react-native-screens 4.30, expo-router 58; visto en el iPhone el 2026-11-04 y reproducido en el simulador). Sin fondo propio, expo-router usa la barra del sistema, que se apoya sobre el `contentStyle` y sigue el esquema del tema.
   - Tests: `src/shared/theme/__tests__/chrome.test.tsx` (con `Appearance.setColorScheme` y `useColorScheme` mockeados, y el router real: con «Oscuro» y el sistema en claro el header nativo sale con los colores oscuros y `userInterfaceStyle: 'dark'`).
 - **`useTheme()`** devuelve `{ scheme, colors, typography, fontFamily, space, radius, borderWidth, component, motion, preference, setPreference }`. Fuera de un provider devuelve el tema claro de solo lectura.
 - **Texto:**
@@ -202,6 +202,25 @@ pnpm test && pnpm lint && pnpm typecheck      # en apps/mobile, o desde la raíz
 ```
 
 La app necesita **dev client** porque MMKV y Nitro son nativos; no anda en Expo Go. La estrategia de tests está en [`09-testing.md`](09-testing.md) §8.
+
+### Simulador de iOS sin CocoaPods (build de EAS)
+
+La Mac tiene Xcode y runtimes de simulador pero no CocoaPods, así que `pnpm ios` no compila. El camino que funciona (2026-11-04): el dev client **para simulador** se compila en EAS con el perfil `development-simulator` y se instala con `simctl`. Metro y el proxy corren en la Mac como para el iPhone.
+
+```sh
+cd apps/mobile
+npx eas-cli build --platform ios --profile development-simulator --non-interactive --no-wait   # ~10 min en la nube
+npx eas-cli build:view <id> --json                                      # hasta ver "status": "FINISHED" y applicationArchiveUrl
+curl -L -o build.tar.gz "<applicationArchiveUrl>" && tar xzf build.tar.gz   # en una carpeta vacía fuera del repo
+xcrun simctl boot "iPhone 17" && xcrun simctl install booted Transportate.app
+xcrun simctl launch booted app.transportate.mobile --initialUrl "http://localhost:8081?disableOnboarding=1"
+xcrun simctl io booted screenshot captura.png
+```
+
+- `--initialUrl` lo lee expo-dev-launcher y evita tocar el launcher; `disableOnboarding=1` saca el cartel del menú de desarrollo.
+- Para navegar sin tocar la pantalla (no hace falta `Simulator.app`): deep links, `xcrun simctl openurl booted "transportate://subtes"`. iOS pregunta «¿Abrir en Transportate?» salvo que el esquema esté aprobado: agregá las claves `com.apple.CoreSimulator.CoreSimulatorBridge-->transportate` y `…-->exp+transportate` con valor `app.transportate.mobile` en `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Library/Preferences/com.apple.launchservices.schemeapproval.plist` (`/usr/libexec/PlistBuddy`, es lo mismo que hace Expo CLI) y reiniciá el simulador.
+- Modo oscuro del sistema: `xcrun simctl ui booted appearance dark` (la preferencia de Ajustes se prueba desde la app).
+- Un build nuevo hace falta solo cuando cambia una dependencia nativa; el JS llega por Metro.
 
 ## 12. Decisiones y suposiciones de la Fase 3
 

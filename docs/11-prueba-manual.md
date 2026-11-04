@@ -37,8 +37,8 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 
 Desde la Fase 5, Inicio es el **piloto de la dirección «Señalética de terminal»**: fondo celeste muy claro, tipografía Fira Sans en toda la app y bandas de señal azules para los favoritos. Compará con el boceto `apps/mobile/.impeccable/mocks/decision/senal-terminal.html`.
 
-- [ ] **Large title:** "Inicio" grande arriba, que se achica al scrollear. El botón de engranaje "Ajustes" se ve y se toca fácil. Las tabs y el gesto de volver son los nativos de siempre.
-- [ ] **Tipografía:** títulos y textos de toda la app en Fira Sans (más estrecha y técnica que la anterior), sin textos en la fuente del sistema salvo los controles nativos.
+- [ ] **Large title:** "Transportate" grande arriba (y debajo, en texto secundario, "Toda la información para moverte a tu alcance"), que se achica al scrollear. El botón de engranaje "Ajustes" se ve y se toca fácil. Las tabs y el gesto de volver son los nativos de siempre.
+- [ ] **Tipografía:** títulos y textos del contenido en Fira Sans (más estrecha y técnica que la anterior); en la fuente del sistema solo los controles nativos y los títulos de header y large titles (chrome del sistema).
 - [ ] **Tira «Subte ahora»:** tarjeta blanca con los 7 discos (A, B, C, D, E, H, Premetro) y una línea de estado. Con todo normal: "Todas las líneas funcionan con normalidad". Con demoras: "B con demoras · …" en ámbar. Tocar la tira abre Subtes.
 - [ ] **Alert destacada** solo si hay una línea **interrumpida** (con demoras no hay Alert: lo dice la tira). Depende del día.
 - [ ] **Bandas de favoritos:** hasta 5. La primera es grande (azul, 148 pt) con el minuto a escala monumental y «Próximo» si es un arribo; las demás son navy, más bajas. La flecha queda pegada al borde derecho (abajo en la grande, al medio en las chicas). Tocar una abre su detalle.
@@ -173,7 +173,7 @@ Desde la Fase 5, Ajustes, Acerca de y Licencias siguen la dirección «Señalét
 - [ ] Recorré Inicio, Subtes (raíz, línea, estación, mapa), Favoritos y Ajustes en **Claro** y en **Oscuro**.
 - [ ] Nada queda con texto ilegible, fondo que no cambió o un borde que desaparece. Los colores de línea (A, H, Premetro) siguen distinguibles en los dos temas.
 - [ ] **📱 Oscuro con el sistema en claro:** dejá el iPhone en modo claro y elegí **Oscuro** en Ajustes. Los títulos grandes («Subtes», «Colectivos», «Favoritos»), los títulos de header («Ajustes», el nombre de una parada, «Línea 15A»), el botón «Atrás», «Editar/Listo» y la tab bar tienen que verse **oscuros y legibles** (texto claro sobre fondo oscuro), igual que la hora de la barra de estado. Volvé a **Sistema**: todo vuelve a claro. Repetí al revés (sistema en oscuro, elegí **Claro**).
-- [ ] **📱 Títulos con Fira Sans:** los large titles y los títulos de header usan la misma letra que el resto de la app, y el large title sigue achicándose al scrollear (si dejara de colapsar en iOS 26, anotalo: el plan B es la fuente del sistema solo en el large title).
+- [ ] **📱 Títulos de header visibles:** cada tab raíz muestra su large title («Transportate», «Colectivos», «Subtes», «Favoritos») en la fuente del sistema, y el large title se achica al scrollear. Si un header queda alto y sin texto, es el defecto de iOS 26+ con fondo explícito en el header (`docs/07-app.md` §4, chrome nativo): anotalo.
 
 ## 7. Texto grande y Reducir movimiento
 

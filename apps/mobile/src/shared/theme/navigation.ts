@@ -5,8 +5,8 @@
 // 1. `ThemeProvider` llama a `Appearance.setColorScheme` (lo nativo: tab bar, sheets, alerts).
 // 2. `navigationTheme(theme)`: el `ThemeProvider` de React Navigation (vía expo-router) con los
 //    colores del tema: títulos en `text.primary` y fondo sin flashes blancos entre pantallas.
-// 3. `stackScreenOptions(theme)`: lo que cada `Stack` de tab fija en sus headers (fuente del
-//    sistema en los títulos: ver la nota de la función).
+// 3. `stackScreenOptions(theme)`: lo que cada `Stack` de tab fija en sus headers (sin fondo
+//    propio y con la fuente del sistema en los títulos: ver la nota de la función).
 import { DarkTheme, DefaultTheme, type Theme as NavigationTheme } from 'expo-router';
 
 import { useTheme, type Theme } from './ThemeProvider';
@@ -37,13 +37,18 @@ export function navigationTheme(theme: Pick<Theme, 'scheme' | 'colors'>): Naviga
 
 /**
  * Opciones de header comunes a las `Stack` de los tabs: botón «Atrás» y botones del header en
- * `text.link`, títulos en `text.primary` y fondo del header igual al de la pantalla (el large
- * title se apoya sobre el mismo celeste en claro).
+ * `text.link`, títulos en `text.primary` y fondo de pantalla (`contentStyle`) del tema.
  *
- * Los títulos van con la fuente del sistema, no con Fira Sans: con `fontFamily` en
- * `headerTitleStyle`/`headerLargeTitleStyle` el header nativo de iOS 26 dejó de dibujar el título
- * (validación en el iPhone, 2026-11-04). El chrome es del sistema por la regla del modo Operate;
- * la dirección vive en el contenido.
+ * Sin `headerStyle`/`headerLargeStyle`: en iOS 26+ (Liquid Glass) expo-router usa la barra del
+ * sistema cuando nada fija el fondo del header. Con un `backgroundColor` explícito, el header
+ * nativo (react-native-screens 4.30) queda alto y **sin título**, en todas las pantallas; es el
+ * defecto que apareció en el iPhone el 2026-11-04 y se reprodujo en el simulador (iOS 27). La
+ * barra translúcida se apoya sobre el `contentStyle`, así que en claro se ve celeste y en oscuro
+ * oscuro, como antes. Nota: expo-router comenta el mismo defecto en `useHeaderConfigProps`.
+ *
+ * Los títulos van con la fuente del sistema (regla del modo Operate: el chrome es del sistema y
+ * la dirección vive en el contenido). Fira Sans en `fontFamily` también dibuja el título; no era
+ * la causa del header vacío.
  */
 export function stackScreenOptions(theme: Pick<Theme, 'scheme' | 'colors'>) {
   const fondo = fondoPantalla(theme);
@@ -54,8 +59,6 @@ export function stackScreenOptions(theme: Pick<Theme, 'scheme' | 'colors'>) {
     headerTintColor: theme.colors.text.link,
     headerTitleStyle: titulo,
     headerLargeTitleStyle: titulo,
-    headerStyle: { backgroundColor: fondo },
-    headerLargeStyle: { backgroundColor: fondo },
     contentStyle: { backgroundColor: fondo },
   } as const;
 }

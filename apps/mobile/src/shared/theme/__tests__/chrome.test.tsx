@@ -109,17 +109,21 @@ describe('tema de navegación y opciones de header', () => {
     expect(l.colors.background).toBe(light.bg.elevated);
   });
 
-  it('stackScreenOptions: «Atrás» en text.link, títulos en text.primary con la fuente del sistema y fondo de pantalla', () => {
+  it('stackScreenOptions: «Atrás» en text.link, títulos en text.primary con la fuente del sistema, fondo solo en el contenido', () => {
     const opciones = stackScreenOptions({ scheme: 'dark', colors: dark });
     expect(opciones).toMatchObject({
       headerBackTitle: 'Atrás',
       headerTintColor: dark.text.link,
       headerTitleStyle: { color: dark.text.primary },
       headerLargeTitleStyle: { color: dark.text.primary },
-      headerStyle: { backgroundColor: dark.bg.base },
-      headerLargeStyle: { backgroundColor: dark.bg.base },
+      contentStyle: { backgroundColor: dark.bg.base },
     });
-    // Sin `fontFamily`: con Fira Sans el header nativo de iOS 26 no dibujaba el título.
+    // Sin fondo propio del header: con `headerStyle.backgroundColor` el header nativo de iOS 26+
+    // queda sin título (reproducido en el simulador el 2026-11-04). La barra del sistema se apoya
+    // sobre `contentStyle`.
+    expect(opciones).not.toHaveProperty('headerStyle');
+    expect(opciones).not.toHaveProperty('headerLargeStyle');
+    // Fuente del sistema en los títulos (chrome del sistema, regla del modo Operate).
     expect(opciones.headerTitleStyle).not.toHaveProperty('fontFamily');
     expect(opciones.headerLargeTitleStyle).not.toHaveProperty('fontFamily');
   });
@@ -189,7 +193,8 @@ describe('headers reales de los tabs', () => {
       color: dark.text.link,
       titleColor: dark.text.primary,
       largeTitleColor: dark.text.primary,
-      backgroundColor: dark.bg.base,
+      // Sin fondo propio: expo-router deja la barra del sistema (iOS 26+) o transparente.
+      backgroundColor: 'transparent',
       titleFontFamily: undefined,
       userInterfaceStyle: 'dark',
     });
@@ -208,7 +213,7 @@ describe('headers reales de los tabs', () => {
     expect(header()).toMatchObject({
       color: light.text.link,
       titleColor: light.text.primary,
-      backgroundColor: light.bg.elevated,
+      backgroundColor: 'transparent',
       userInterfaceStyle: 'light',
     });
   });

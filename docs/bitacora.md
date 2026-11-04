@@ -378,9 +378,20 @@ El usuario mandó tres capturas más (Inicio, Colectivos, Subtes en claro) y tre
 
 Verificado sobre `main`: `typecheck`, `lint`, `format:check` y **742 de 742 tests**. `test/subtes/static.test.tsx` sigue siendo sensible a la carga de la máquina (falla con otro Jest corriendo a la vez; sola, en verde en 2,5 s).
 
+### Tercera ronda (2026-11-04, 14:30): los títulos seguían sin aparecer
+
+El usuario re-probó y los headers seguían vacíos: la hipótesis de la fuente (segunda ronda) era falsa. Esta vez se reprodujo en la Mac en vez de pedir otra prueba:
+
+| Paso | Resultado |
+| --- | --- |
+| **Reproducir** | La Mac sí tiene Xcode 27 con runtimes de simulador (iOS 27.0/27.1); lo que no tiene es CocoaPods. Se compiló el dev client para simulador en EAS (perfil `development-simulator`, ya definido en `eas.json`; build `e8dd4b0e`, 9 min) y se instaló con `simctl` (flujo documentado en [`07-app.md`](07-app.md) §11). Con `main` (b7b4c72), Inicio en el simulador salía igual que en el iPhone: header alto y sin «Transportate». |
+| **Causa** | `stackScreenOptions` fijaba `headerStyle`/`headerLargeStyle` con `backgroundColor`. En iOS 26+ (Liquid Glass) expo-router 58 usa la barra del sistema solo cuando nada fija el fondo del header; con fondo explícito, react-native-screens 4.30 deja el header **sin título** (expo-router lo comenta en su propio `useHeaderConfigProps`: «The title becomes invisible if background color is set with large title on iOS 26»; acá pasó en todas las pantallas). Era lo único que F5-HIGH-C había agregado al header, junto con la fuente. |
+| **Prueba de la hipótesis** | Sacando solo esas dos líneas: «Transportate», «Colectivos» y «Subtes» se dibujan, en claro y con el sistema en oscuro. Con Fira Sans de vuelta en `fontFamily` **también** se dibujan: la fuente nunca fue el problema. |
+| **Corrección** | `stackScreenOptions` sin `headerStyle` ni `headerLargeStyle`; la barra translúcida del sistema se apoya sobre `contentStyle` (celeste en claro, oscuro en oscuro) y sigue el `userInterfaceStyle` del tema, así que el modo forzado desde Ajustes sigue funcionando. Los títulos quedan con la fuente del sistema por la regla del modo Operate (no por el defecto); el comentario del módulo, el brief de Inicio, `07-app.md` y `11-prueba-manual.md` se corrigieron. Tests de `chrome.test.tsx`: ahora exigen que no haya `headerStyle`/`headerLargeStyle` y que el header nativo salga con `backgroundColor: 'transparent'`. |
+
 ### Pendiente
 
-1. **Re-prueba del usuario en el iPhone**: títulos de los headers visibles (y en oscuro forzado), «Transportate» con el lema en Inicio, panel sobre la tab bar, lista a 3 km, flecha en Parada; después, **capturas finales** de cada tab en claro, oscuro, Dynamic Type grande y vacío (la Mac no tiene CocoaPods ni runtime de simulador, así que no hay capturas locales).
+1. **Re-prueba del usuario en el iPhone** (ahora sí con reproducción previa en el simulador): títulos de los headers visibles en claro y con «Oscuro» forzado, «Transportate» con el lema en Inicio, panel sobre la tab bar, lista a 3 km, flecha en Parada; después, **capturas finales** de cada tab en claro, oscuro, Dynamic Type grande y vacío. Las capturas locales ahora salen del simulador (`07-app.md` §11); las del iPhone siguen valiendo para lo que el simulador no tiene (ubicación real, háptico).
 2. Con las capturas: **finish review** (`impeccable-finish-reviewer`) contra los contratos y el boceto; correcciones; **documenter** para reescribir `DESIGN.md` desde lo construido (hoy DESIGN.md describe el sistema previo: Nunito/Open Sans, Card radio 16).
 3. Decisiones abiertas: texto de «Diseño» en Acerca de; contacto o «Reportar un problema» (F4-ajustes-3); `Board.Row selected`.
 4. Después, el resto de la fase (5.1–5.7).
