@@ -1,5 +1,6 @@
 // Layout raíz: un Stack que contiene el grupo de tabs y la pantalla de "no encontrado".
-// Áreas seguras con SafeAreaProvider y barra de estado automática (sigue el modo claro/oscuro).
+// Áreas seguras con SafeAreaProvider. Chrome nativo (headers, tab bar, barra de estado) con el tema
+// de la app vía `ChromeNativo` (F5-HIGH-C): sigue la preferencia de Ajustes, no solo el sistema.
 //
 // Fuentes (tarea 3.4): el splash nativo queda visible hasta que carga Fira Sans (3 pesos). Si la
 // carga falla, se oculta igual para no colgar la app, que sigue con la fuente del sistema.
@@ -16,7 +17,6 @@
 // dos veces.
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -34,7 +34,7 @@ import {
   createRefreshIntervalStore,
   createThemePreferenceStore,
 } from '@/shared/storage/preferences';
-import { ThemeProvider, useTheme } from '@/shared/theme';
+import { ChromeNativo, ThemeProvider, useTheme } from '@/shared/theme';
 import { OfflineBanner } from '@/shared/ui';
 
 // En el scope del módulo, sin await: dentro de un componente podría llegar tarde
@@ -77,16 +77,17 @@ function AppTree() {
         <QueryProvider>
           <RefreshIntervalProvider store={intervalStore}>
             <FavoritosProvider>
-              <WithOfflineBanner>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen
-                    name="+not-found"
-                    options={{ headerShown: true, title: 'No encontrado' }}
-                  />
-                </Stack>
-              </WithOfflineBanner>
-              <StatusBar style="auto" />
+              <ChromeNativo>
+                <WithOfflineBanner>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen
+                      name="+not-found"
+                      options={{ headerShown: true, title: 'No encontrado' }}
+                    />
+                  </Stack>
+                </WithOfflineBanner>
+              </ChromeNativo>
             </FavoritosProvider>
           </RefreshIntervalProvider>
         </QueryProvider>

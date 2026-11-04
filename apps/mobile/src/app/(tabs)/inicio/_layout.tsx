@@ -4,7 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 
 import { Icon } from '@/shared/icons';
-import { useTheme } from '@/shared/theme';
+import { useStackScreenOptions, useTheme } from '@/shared/theme';
 
 // Botón (no `Link`): `Link asChild` le pone `role="link"` al hijo y el lector de pantalla lo
 // anunciaría como enlace.
@@ -32,9 +32,10 @@ function AjustesButton() {
 }
 
 export default function InicioLayout() {
+  // Header desde el tema: «Atrás» y botones en `text.link`, títulos en `text.primary` (F5-HIGH-C).
+  const screenOptions = useStackScreenOptions();
   return (
-    // `headerBackTitle` corto en iOS; en Android el back es el ícono nativo.
-    <Stack screenOptions={{ headerBackTitle: 'Atrás' }}>
+    <Stack screenOptions={screenOptions}>
       <Stack.Screen
         name="index"
         // Large title en iOS (colapsa con el scroll de `ScreenScroll`); en Android, barra común.

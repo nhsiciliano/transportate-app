@@ -6,12 +6,13 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
-import { useColorScheme, type TextStyle } from 'react-native';
+import { Appearance, useColorScheme, type TextStyle } from 'react-native';
 import {
   borderWidth,
   component,
@@ -111,6 +112,15 @@ export interface ThemeProviderProps {
 }
 
 /**
+ * Lo que se le pide a lo nativo según la preferencia (F5-HIGH-C): `light`/`dark` fuerzan el estilo
+ * de la app (headers, large titles, botón «Atrás», tab bar, sheets, alerts y controles); `system`
+ * quita el override (`'auto'` en RN 0.88) y vuelve a seguir al sistema.
+ */
+export function nativeColorScheme(preference: ThemePreference): 'light' | 'dark' | 'auto' {
+  return preference === 'system' ? 'auto' : preference;
+}
+
+/**
  * Envuelve el store para que `useSyncExternalStore` se entere de los `set` hechos desde la app
  * aunque el store no tenga `subscribe` (o no avise en su propio `set`), y además reenvía los
  * avisos del store original (cambios hechos desde afuera).
@@ -145,7 +155,15 @@ export function ThemeProvider({ children, store }: ThemeProviderProps) {
   const system = useColorScheme();
   const setPreference = obs.set;
 
+  // Con un override activo, `useColorScheme()` devuelve el esquema forzado; `resolveScheme` igual
+  // da lo correcto porque con `light`/`dark` manda la preferencia, y con `system` el override ya
+  // se quitó (a lo sumo un render con el valor anterior mientras corre el efecto).
   const scheme = resolveScheme(preference, system);
+
+  // Propaga la preferencia a lo nativo. Solo cuando cambia (no en cada render).
+  useEffect(() => {
+    Appearance.setColorScheme(nativeColorScheme(preference));
+  }, [preference]);
   const theme = useMemo(
     () => buildTheme(scheme, preference, setPreference),
     [scheme, preference, setPreference],

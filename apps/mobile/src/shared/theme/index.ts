@@ -2,6 +2,7 @@ export * from './tokens';
 export {
   createMemoryPreferenceStore,
   fontScaleCap,
+  nativeColorScheme,
   resolveScheme,
   textStyle,
   ThemeProvider,
@@ -11,3 +12,10 @@ export {
   type ThemePreferenceStore,
   type ThemeProviderProps,
 } from './ThemeProvider';
+export {
+  fondoPantalla,
+  navigationTheme,
+  stackScreenOptions,
+  useStackScreenOptions,
+} from './navigation';
+export { ChromeNativo } from './ChromeNativo';
