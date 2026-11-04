@@ -30,6 +30,6 @@ expo-env.d.ts
 
 # Impeccable: solo se versionan los briefs de superficie y los bocetos de decisión
 .impeccable/questions/
-.impeccable/review/
+**/.impeccable/review/
 .impeccable/live/
 .impeccable/build/
