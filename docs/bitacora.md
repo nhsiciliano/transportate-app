@@ -352,9 +352,22 @@ En los README de cada feature: `F5-inicio-1…8`, `F5-subtes-1…7`, `F5-favorit
 - **F5-inicio-1**: la «decisión seguida de pantalla en pantalla» del contrato se resolvió por construcción: el detalle abre con la misma forma de banda arriba (línea, estación, línea de colectivos); Parada no lleva banda porque no tiene valor vivo (N4).
 - La redacción del párrafo «Diseño» de Acerca de es provisional.
 
+### Validación del usuario en el iPhone y correcciones (2026-11-04)
+
+El usuario recorrió toda la app en el iPhone (12 capturas, guardadas fuera del repo en `apps/mobile/.impeccable/review/iphone-2026-11-04/`) y aprobó la dirección. Tres defectos y un pedido, resueltos el mismo día:
+
+| Hallazgo | Causa | Corrección | Dispatch |
+| --- | --- | --- | --- |
+| Con «Oscuro» elegido en Ajustes y el sistema en claro, los large titles, los títulos de header, «Atrás» y la tab bar quedaban claros (texto negro sobre fondo oscuro) | La preferencia nunca llegaba a lo nativo: sin `Appearance.setColorScheme` ni tema de React Navigation; las `Stack` no fijaban colores de header | `ThemeProvider` llama a `Appearance.setColorScheme`; `ChromeNativo` (dentro del router) provee el tema de navegación con la paleta de Obelisco y la `StatusBar` por esquema; `useStackScreenOptions` en las cinco stacks (tint `text.link`, títulos en `text.primary` con Fira Sans 700, fondo de pantalla) | F5-HIGH-C, 6cc7c93 |
+| En Parada, las filas con dos tiempos tapaban la flecha | La flecha de `Board.Row` era absoluta sobre una reserva de 40 pt que el `trailing` invadía | La flecha es un elemento de la fila con `flexShrink: 0`; el `trailing` baja de línea antes que taparla | F5-HIGH-C, b5ecbac |
+| En la línea de colectivos, la fila de frescura, estrella y «Actualizar» del panel colapsado quedaba bajo la tab bar | `panelHeights` no reservaba el inset de la tab bar flotante de `NativeTabs` (sin `useBottomTabBarHeight`) | `usePanelBottomInset`: en iOS el inset inferior del safe area dentro del tab, sumado como `paddingBottom` en los tres niveles; 0 en Android | F5-MID-C, 0ee8dde |
+| **Pedido:** la lista de colectivos solo con los que están a menos de 3 km, que entren y salgan a medida que se acercan | — | Con ubicación, `filtrarCercanos` (`RADIO_LISTA_METROS = 3000`): rótulo «Colectivos a menos de 3 km · N de M en servicio», vacío compacto, el elegido se queda aunque se aleje, fundido de filas (seco con Reducir movimiento); sin ubicación, la lista completa. La banda sigue con el total y el mapa no se filtra (pregunta abierta F5-colectivos-12) | F5-MID-C, 51ce81d |
+
+Merges 320dfba (high) y 9ec5abd (mid). Verificado sobre `main`: `lint`, `typecheck`, `format:check` y **738 de 740 tests**; los 2 que fallan (`test/fonts.test.tsx`, `test/layout.test.tsx`, carga de fuentes con error) fallan solo por una **suba de dependencias sin commitear** en el repo principal (Expo ~58.0.23, jest-expo ~58.0.14, con rangos `~`, hecha a las 11:15 fuera del flujo del coordinador); con 58.0.22, en los worktrees, pasan (719 y 728 tests en verde según los workers). Pendiente de decisión del usuario: dejar la suba (pasar a exactas, `versiones.md`, ajustar esos 2 tests) o revertirla.
+
 ### Pendiente
 
-1. **Validación visual del usuario en el iPhone** con `11-prueba-manual.md` (§1–§5 reescritos con la forma nueva, más §6–§8 transversales) y **capturas** de cada tab en claro, oscuro, Dynamic Type grande y vacío (la Mac no tiene CocoaPods ni runtime de simulador, así que no hay capturas locales).
+1. **Re-prueba del usuario en el iPhone** de lo corregido (modo oscuro forzado, panel sobre la tab bar, lista a 3 km, flecha en Parada) y **capturas finales** de cada tab en claro, oscuro, Dynamic Type grande y vacío (la Mac no tiene CocoaPods ni runtime de simulador, así que no hay capturas locales).
 2. Con las capturas: **finish review** (`impeccable-finish-reviewer`) contra los contratos y el boceto; correcciones; **documenter** para reescribir `DESIGN.md` desde lo construido (hoy DESIGN.md describe el sistema previo: Nunito/Open Sans, Card radio 16).
 3. Decisiones abiertas: texto de «Diseño» en Acerca de; contacto o «Reportar un problema» (F4-ajustes-3); `Board.Row selected`.
 4. Después, el resto de la fase (5.1–5.7).
