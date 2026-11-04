@@ -166,6 +166,7 @@ Transportate/
 
 | # | Tarea | Dificultad |
 |---|---|---|
+| 5.0 | Rediseño con Impeccable: dirección «Señalética de terminal» (ronda de dirección 2026-11-03, piloto en Inicio validado en el iPhone el 2026-11-04, extensión a Subtes, Colectivos, Favoritos y Ajustes); cierre con capturas, finish review y `DESIGN.md` nuevo | 🔴 |
 | 5.1 | Impeccable `audit` nativo + `critique`: corregir hallazgos de accesibilidad, performance, theming y conformidad de plataforma | 🟡 |
 | 5.2 | Impeccable `adapt` nativo + `harden`: tablets, landscape, teclado, textos largos, errores de red, i18n defensiva | 🟡 |
 | 5.3 | Modo offline completo: favoritos y último dato cacheado marcados como no actualizados; banner de sin conexión | 🟡 |

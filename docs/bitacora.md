@@ -316,6 +316,45 @@ El usuario probó la fase en el iPhone con el dev client `cabc9c80` (el primer i
 
 **Fase 4 completada técnicamente el 2026-11-03; pendiente de validación del usuario.** La tarea 4.8 (Tránsito) sigue diferida por falta de fuente de cortes (N3) y la 4.1 se resolvió con un brief operativo por feature en lugar de Impeccable.
 
-## Fase 5 — Pulido y escalado
+## Fase 5 — Pulido y escalado · **5.0 rediseño integrado en `main`, pendiente de validación visual del usuario**
 
-_Sin iniciar._
+La fase arrancó por una tarea que no estaba en el plan original: el usuario pidió un **rediseño con Impeccable** antes del pulido (tarea 5.0 en `00-plan.md`). Lo demás de la fase (5.1–5.7) sigue sin iniciar.
+
+### Dirección (2026-11-03)
+
+- Impeccable instalado por fin (alcance local: solo el repo principal; los worktrees leen las referencias por ruta absoluta). Ronda de dirección con `concept-seed` (seed `2db0aa292d67ea2e`, modo Operate). El usuario fijó de antemano: paleta Obelisco v2 intacta, Material Symbols fijos, tipografía libre, navegación cambiable.
+- La tirada asignó «Boleto y SUBE»; el usuario eligió la retadora **«Señalética de terminal»** (señalética de aeropuerto traducida al azul y navy de Obelisco): bandas de señal con una decisión por banda, pictograma blanco en cuadrado, flecha clavada al borde, minutos monumentales, Fira Sans. Bocetos de la ronda en `apps/mobile/.impeccable/mocks/decision/` (commit d79a53f).
+- Regla del modo Operate que gobernó todo: el mundo aporta **solo tipografía, paleta, densidad y un movimiento firma**; tabs, headers, gesto de volver y controles del sistema no cambian.
+
+### Piloto en Inicio (F5-HIGH-A, high-dev, 2026-11-03)
+
+Commits 8b295c6…d7fd87f: Fira Sans 0.4.1 como única familia (Nunito y Open Sans fuera), `SignBand` (`lead`/`next`, fundido de 200 ms al cambiar la decisión, corte seco con Reducir movimiento), Inicio recompuesto (tira «Subte ahora», bandas de favoritos con la más cercana como líder solo si el permiso ya existe, fila de frescura). Contrato de dirección en `apps/mobile/.impeccable/surfaces/src-features-inicio-inicioscreen-tsx.md`. Decisión del coordinador F5-inicio-7: el cuadrado del pictograma en claro no llega a 3:1 contra las bandas y se mantiene como contenedor decorativo (el pictograma sí llega, 16,69:1). **El usuario lo probó en el iPhone el 2026-11-04 y lo aprobó**; las capturas para la revisión de cierre quedaron para después.
+
+### Extensión al resto de la app (2026-11-04)
+
+Base compartida del coordinador en `main` (02ed444): `Card` con radio 6 (antes 16), `SignBand` como señal fija sin flecha cuando no abre nada, y un **brief de superficie con contrato de dirección por tab** (`.impeccable/surfaces/`: Subtes, Colectivos, Favoritos, Ajustes). Reglas fijadas en los contratos: una banda es una decisión viva (arribo, estado, conteo); lo demás va en **placas de tablero** (`Board`: placa blanca, outline, radio 6, filas ≥ 56 pt con hairline); la flecha al borde solo donde hay destino; Ajustes con la restricción máxima (listas agrupadas del sistema, sin bandas ni pictogramas).
+
+| Dispatch | Worker | Qué quedó | Commits |
+| --- | --- | --- | --- |
+| F5-HIGH-B | high-dev | `Pictogram`, `Board` (+ `Row` con `arrow`, `Status`, `Skeleton`, `separatorInset`) y slots `leading`/`trailing` de `SignBand`; **Subtes**: raíz como placa de tablero (7 líneas, estado a la derecha, resumen como nota, «Mapa de la red» como fila), línea con banda fija de estado y estaciones en placa con el trazo GTFS continuo, estación con una banda monumental por sentido («Próximo», «4 min», «Después 7 y 12 min») y estrella en el header; **Favoritos**: una banda `next` por favorito con el mismo contenido que Inicio (`features/favoritos/banda.ts`, Inicio importa de ahí), edición dentro de la banda (manija, «Quitar», texto → alias), huérfano sin flecha, fundido al entrar y salir de la edición | 7a053b3, 3fb46c9, 5bcd82d, 110e516, a45191f |
+| F5-MID-B | mid-dev | **Colectivos**: panel de la línea como banda fija con el conteo a 56 pt (se vuelve a señalizar al elegir un vehículo), lista de vehículos como filas sin flecha, raíz con placas (cercanas con distancia a la derecha, recientes, resultados) y favoritos de colectivo como bandas, parada con estrella en el header, barrio y placa «Líneas que paran»; `PermisoUbicacionBloque` con `Pictogram` y prop `inset` | 7406a65, 1b4c3fc, b3d59e2, 24f9722 |
+| F5-LOW-B | low-dev | **Ajustes** como lista agrupada en placas (encabezados 13/600, filas de 52 pt, chevron solo donde navega, destructiva en danger), **Acerca de** en lectura con el texto nuevo de «Diseño», **Licencias** en placa; docs de marca: `PRODUCT.md`, S23 y el plan ahora dicen Fira Sans | 7ab47dc, 2a0d81e, b4ada0c, 0abaee9 |
+
+Merges en `main`: 7e4226b (low), 0b41821 (high), 6f20d03 (mid) y 7555e48 (limpieza del coordinador: `FilaTocable`/`Seccion` eliminadas, Colectivos importa `modeloBanda` de favoritos). Sin conflictos. Verificado por el coordinador sobre `main`: `lint`, `typecheck`, `format:check`, **707 tests en 66 suites en una sola corrida** y `expo export --platform ios` sin errores.
+
+### Suposiciones nuevas
+
+En los README de cada feature: `F5-inicio-1…8`, `F5-subtes-1…7`, `F5-favoritos-1…7`, `F5-colectivos-1…11`, `F5-ubicacion-1…3`, `F5-ajustes-1…10`. Las que conviene que el usuario mire primero:
+
+- **F5-favoritos-2**: Favoritos ya no muestra el disco de color de la línea de subte; usa el pictograma por tipo, como Inicio.
+- **F5-colectivos-6**: `Board.Row` no tiene `selected`; el vehículo elegido se marca con fondo `bg.pressed` y «Seleccionado» en la etiqueta. Candidato a prop compartido.
+- **F5-ajustes-8**: el rojo de la fila destructiva mientras se toca da 4,03:1 (solo durante la pulsación).
+- **F5-inicio-1**: la «decisión seguida de pantalla en pantalla» del contrato se resolvió por construcción: el detalle abre con la misma forma de banda arriba (línea, estación, línea de colectivos); Parada no lleva banda porque no tiene valor vivo (N4).
+- La redacción del párrafo «Diseño» de Acerca de es provisional.
+
+### Pendiente
+
+1. **Validación visual del usuario en el iPhone** con `11-prueba-manual.md` (§1–§5 reescritos con la forma nueva, más §6–§8 transversales) y **capturas** de cada tab en claro, oscuro, Dynamic Type grande y vacío (la Mac no tiene CocoaPods ni runtime de simulador, así que no hay capturas locales).
+2. Con las capturas: **finish review** (`impeccable-finish-reviewer`) contra los contratos y el boceto; correcciones; **documenter** para reescribir `DESIGN.md` desde lo construido (hoy DESIGN.md describe el sistema previo: Nunito/Open Sans, Card radio 16).
+3. Decisiones abiertas: texto de «Diseño» en Acerca de; contacto o «Reportar un problema» (F4-ajustes-3); `Board.Row selected`.
+4. Después, el resto de la fase (5.1–5.7).
