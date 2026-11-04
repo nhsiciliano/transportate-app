@@ -222,6 +222,14 @@ describe('Detalle de línea: interacción', () => {
     );
     expect(screen.getByTestId('linea-seleccionado')).toBeOnTheScreen();
     expect(screen.getByTestId('linea-banda')).toHaveTextContent(/Interno 1404/);
+    // La fila elegida lo dice al lector; la lista selecciona, no navega: ninguna fila lleva flecha.
+    expect(
+      screen.getByRole('button', {
+        name: 'Interno 1404, actualizado hace 25 segundos, Seleccionado',
+      }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByTestId('linea-vehiculo-1404-flecha')).toBeNull();
+    expect(screen.queryByTestId('linea-vehiculo-1410-flecha')).toBeNull();
     // «Cerrar» devuelve la banda al conteo.
     await fireEvent.press(screen.getByRole('button', { name: 'Dejar de mostrar Interno 1404' }));
     expect(screen.queryByTestId('linea-seleccionado')).toBeNull();

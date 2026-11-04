@@ -1,23 +1,29 @@
-// Raíz del tab Colectivos (brief 02-colectivos §3): búsqueda local, paradas cercanas, líneas
-// recientes y favoritos de colectivo. Estados en README.md ("Brief operativo").
+// Raíz del tab Colectivos (brief 02-colectivos §3; dirección «Señalética de terminal», F5-MID-B).
+// Buscar (`SearchInput`), paradas cercanas y recientes en placas de tablero (`Board`) y, solo para
+// los favoritos —las únicas decisiones vivas de esta pantalla—, bandas de señal. Estados en
+// README.md ("Brief operativo F5").
 import type { ParadaV1 } from '@transportate/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { FavoritoLiveData, useFavoritos, type FavoritoV1 } from '@/features/favoritos';
+import { useFavoritoLiveData, useFavoritos, type FavoritoV1 } from '@/features/favoritos';
+import { hrefDeFavorito, modeloBanda } from '@/features/inicio';
+import { ScreenScroll, usePullToRefresh } from '@/features/subtes';
 import { isInsideCaba, PermisoUbicacionBloque, useUbicacion } from '@/features/ubicacion';
-import { FilaTocable, ScreenScroll, Seccion, usePullToRefresh } from '@/features/subtes';
 import { invalidateColectivos } from '@/shared/api';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
 import {
+  Board,
   Button,
   EmptyState,
   ErrorState,
   LineBadge,
+  Pictogram,
   SearchInput,
+  SignBand,
   Skeleton,
   SkeletonGroup,
   Text,
@@ -30,6 +36,7 @@ import {
   formatDistancia,
   numerosDeParada,
   paradasCercanas,
+  textoDeLineas,
   type IndiceColectivos,
   type LineaColectivo,
 } from './model';
@@ -41,14 +48,18 @@ export const PREPARANDO = 'Preparando el listado de líneas y paradas…';
 export const ERROR_INDICE = 'No pudimos descargar las líneas y paradas';
 export const FUERA_DE_CABA =
   'No encontramos paradas cerca. Transportate cubre la Ciudad de Buenos Aires.';
-/** El texto del bloque de permiso es el de `features/ubicacion` (`PERMISO_MESSAGE`). */
+/** El texto del bloque de permiso es el de `features/ubicacion` (`PERMISO_TITLE`/`PERMISO_DETAIL`). */
 export const SIN_POSICION =
   'No pudimos saber dónde estás. Revisá que la ubicación del teléfono esté activada.';
 export const CERCANAS_INICIAL = 10;
 export const CERCANAS_MAX = 30;
 
+/** Separación entre bloques (la de Inicio: 12 pt) y entre bandas (8 pt). */
+const GAP_BLOQUES = 12;
+const GAP_BANDAS = 8;
+
 export function ColectivosScreen() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const queryClient = useQueryClient();
   const indice = useIndiceColectivos();
   const [consulta, setConsulta] = useState('');
@@ -61,7 +72,14 @@ export function ColectivosScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Colectivos', headerLargeTitleEnabled: true }} />
-      <ScreenScroll refreshing={refreshing} onRefresh={onRefresh} testID="colectivos-screen">
+      <ScreenScroll
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        testID="colectivos-screen"
+        // Mismo mundo que Inicio: fondo elevado en claro, el de la app en oscuro.
+        backgroundColor={scheme === 'light' ? colors.bg.elevated : colors.bg.base}
+        gap={GAP_BLOQUES}
+      >
         <SearchInput
           key={focusNonce}
           autoFocus={focusNonce > 0}
@@ -84,7 +102,9 @@ export function ColectivosScreen() {
             onRetry={() => void indice.refetch()}
           />
         ) : indice.indice === undefined ? (
-          <ProgresoIndice progress={indice.progress} label={PREPARANDO} />
+          <Placa>
+            <ProgresoIndice progress={indice.progress} label={PREPARANDO} />
+          </Placa>
         ) : buscando ? (
           <Resultados indice={indice.indice} consulta={consulta} />
         ) : (
@@ -104,6 +124,15 @@ export function ColectivosScreen() {
   );
 }
 
+/** Contenido suelto dentro de una placa sin etiqueta (progreso de la descarga). */
+function Placa({ children }: { children: React.ReactNode }) {
+  return (
+    <Board testID="indice-placa">
+      <View style={styles.relleno}>{children}</View>
+    </Board>
+  );
+}
+
 // ---------------------------------------------------------------- búsqueda
 
 function Resultados({ indice, consulta }: { indice: IndiceColectivos; consulta: string }) {
@@ -112,14 +141,16 @@ function Resultados({ indice, consulta }: { indice: IndiceColectivos; consulta: 
   const r = useMemo(() => buscar(indice, consulta), [indice, consulta]);
   if (r.lineas.length === 0 && r.paradas.length === 0) {
     return (
-      <EmptyState
-        testID="sin-resultados"
-        message={`No encontramos «${consulta.trim()}». Probá con el número de línea o el nombre de una calle.`}
-      />
+      <Board>
+        <EmptyState
+          testID="sin-resultados"
+          message={`No encontramos «${consulta.trim()}». Probá con el número de línea o el nombre de una calle.`}
+        />
+      </Board>
     );
   }
   return (
-    <View style={{ gap: 8 }} accessibilityRole="list">
+    <Board testID="resultados">
       {r.lineas.map((l) => (
         <LineaFila
           key={`l-${l.lineaId}`}
@@ -138,25 +169,28 @@ function Resultados({ indice, consulta }: { indice: IndiceColectivos; consulta: 
           }}
         />
       ))}
-    </View>
+    </Board>
   );
 }
 
+/** Fila de línea: la insignia, «Línea 60» y su ramal y cabecera. Va dentro de un `Board`. */
 export function LineaFila({ linea, onPress }: { linea: LineaColectivo; onPress: () => void }) {
   return (
-    <FilaTocable
+    <Board.Row
       onPress={onPress}
       testID={`linea-${linea.lineaId}`}
+      leading={<LineBadge kind="colectivo" label={linea.numero} />}
+      title={`Línea ${linea.numero}`}
+      subtitle={linea.descripcion}
       accessibilityLabel={`Línea ${linea.numero}. ${linea.descripcion}`}
-    >
-      <LineBadge kind="colectivo" label={linea.numero} />
-      <Text variant="text.md" style={{ flex: 1 }} numberOfLines={2}>
-        {linea.descripcion}
-      </Text>
-    </FilaTocable>
+    />
   );
 }
 
+/**
+ * Fila de parada: pictograma, calle y altura, las líneas que paran («60 · 152 · 168») y, si hay,
+ * la distancia («a 120 m») a la derecha. Va dentro de un `Board`.
+ */
 export function ParadaFila({
   parada,
   distancia,
@@ -166,37 +200,51 @@ export function ParadaFila({
   distancia?: string;
   onPress: () => void;
 }) {
+  const { fontFamily } = useTheme();
   const numeros = numerosDeParada(parada);
   return (
-    <FilaTocable
+    <Board.Row
       onPress={onPress}
       testID={`parada-${parada.id}`}
+      leading={<Pictogram icon="parada" size={32} tone="board" />}
+      title={parada.nombre}
+      subtitle={textoDeLineas(numeros)}
+      trailing={
+        distancia === undefined ? undefined : (
+          <Text
+            variant="headline.sm"
+            style={{ fontFamily: fontFamily.text[600], fontSize: 15, lineHeight: 20 }}
+          >
+            {distancia}
+          </Text>
+        )
+      }
       accessibilityLabel={[`Parada ${parada.nombre}`, distancia, describirLineas(numeros)]
         .filter((x) => x !== undefined)
         .join('. ')}
-    >
-      <View style={{ flex: 1, gap: 6 }}>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
-          <Text variant="headline.sm" style={{ flex: 1 }} numberOfLines={2}>
-            {parada.nombre}
-          </Text>
-          {distancia !== undefined ? (
-            <Text variant="text.sm" tone="secondary">
-              {distancia}
-            </Text>
-          ) : null}
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-          {numeros.map((n) => (
-            <LineBadge key={n} kind="colectivo" label={n} size="sm" />
-          ))}
-        </View>
-      </View>
-    </FilaTocable>
+    />
   );
 }
 
 // ---------------------------------------------------------------- cercanas
+
+/** Silueta de la carga: tres filas con pictograma, calle y líneas. Va dentro de la placa. */
+function FilasEsqueleto() {
+  return (
+    <SkeletonGroup accessibilityLabel="Buscando paradas cerca tuyo…" testID="cercanas-skeleton">
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={styles.filaEsqueleto}>
+          <Skeleton height={32} width={32} radius={4} />
+          <View style={styles.textosEsqueleto}>
+            <Skeleton height={16} width="55%" radius={4} />
+            <Skeleton height={12} width="35%" radius={4} />
+          </View>
+          <Skeleton height={14} width={48} radius={4} />
+        </View>
+      ))}
+    </SkeletonGroup>
+  );
+}
 
 function Cercanas({
   indice,
@@ -225,18 +273,11 @@ function Cercanas({
     !ubicacion.checked ||
     (ubicacion.permission === 'granted' && punto === null && !ubicacion.positionUnavailable)
   ) {
-    contenido = (
-      <SkeletonGroup accessibilityLabel="Buscando paradas cerca tuyo…" testID="cercanas-skeleton">
-        <View style={{ gap: 8 }}>
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} height={64} radius={16} />
-          ))}
-        </View>
-      </SkeletonGroup>
-    );
+    contenido = <FilasEsqueleto />;
   } else if (ubicacion.permission !== 'granted') {
     contenido = (
       <PermisoUbicacionBloque
+        inset
         testID="permiso-ubicacion"
         permission={ubicacion.permission}
         onRequest={() => void ubicacion.request()}
@@ -246,14 +287,14 @@ function Cercanas({
     );
   } else if (punto === null) {
     contenido = (
-      <View style={{ gap: 12 }} testID="sin-posicion">
-        <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={[styles.relleno, styles.sinPosicion]} testID="sin-posicion">
+        <View style={styles.sinPosicionTexto}>
           <Icon name="sinUbicacion" size={24} color={colors.text.secondary} />
-          <Text variant="text.md" style={{ flex: 1 }}>
+          <Text variant="text.md" style={styles.flex}>
             {SIN_POSICION}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={styles.botones}>
           <Button label="Volver a intentar" size="md" onPress={() => void ubicacion.refresh()} />
           <Button
             label="Buscar a mano"
@@ -275,39 +316,36 @@ function Cercanas({
       />
     );
   } else {
-    contenido = (
-      <>
-        <View style={{ gap: 8 }} accessibilityRole="list">
-          {cercanas.slice(0, limite).map(({ parada, metros }) => (
-            <ParadaFila
-              key={parada.id}
-              parada={parada}
-              distancia={formatDistancia(metros)}
-              onPress={() => {
-                router.push({ pathname: '/colectivos/parada/[id]', params: { id: parada.id } });
-              }}
-            />
-          ))}
-        </View>
+    return (
+      <Board label="Paradas cercanas" testID="cercanas">
+        {cercanas.slice(0, limite).map(({ parada, metros }) => (
+          <ParadaFila
+            key={parada.id}
+            parada={parada}
+            distancia={formatDistancia(metros)}
+            onPress={() => {
+              router.push({ pathname: '/colectivos/parada/[id]', params: { id: parada.id } });
+            }}
+          />
+        ))}
         {cercanas.length > limite ? (
-          <Button
-            label="Ver más"
-            variant="link"
-            size="md"
+          <Board.Row
+            key="ver-mas"
+            testID="cercanas-ver-mas"
+            title="Ver más"
             onPress={() => {
               setLimite(CERCANAS_MAX);
             }}
           />
         ) : null}
-      </>
+      </Board>
     );
   }
 
   return (
-    <View style={{ gap: 12 }}>
-      <Seccion>Paradas cercanas</Seccion>
+    <Board label="Paradas cercanas" testID="cercanas">
       {contenido}
-    </View>
+    </Board>
   );
 }
 
@@ -318,73 +356,80 @@ function Recientes() {
   const abrirLinea = useAbrirLinea();
   if (recientes.length === 0) return null;
   return (
-    <View style={{ gap: 12 }}>
-      <Seccion>Líneas recientes</Seccion>
-      <View style={{ gap: 8 }} accessibilityRole="list">
-        {recientes.map((r) => (
-          <FilaTocable
-            key={r.lineaId}
-            testID={`reciente-${r.lineaId}`}
-            accessibilityLabel={`Línea ${r.numero}. ${r.descripcion}`}
-            onPress={() => {
-              abrirLinea(r);
-            }}
-          >
-            <LineBadge kind="colectivo" label={r.numero} />
-            <Text variant="text.md" style={{ flex: 1 }} numberOfLines={2}>
-              {r.descripcion}
-            </Text>
-          </FilaTocable>
-        ))}
-      </View>
-    </View>
+    <Board label="Recientes" testID="recientes">
+      {recientes.map((r) => (
+        <Board.Row
+          key={r.lineaId}
+          testID={`reciente-${r.lineaId}`}
+          leading={<LineBadge kind="colectivo" label={r.numero} />}
+          title={`Línea ${r.numero}`}
+          subtitle={r.descripcion}
+          accessibilityLabel={`Línea ${r.numero}. ${r.descripcion}`}
+          onPress={() => {
+            abrirLinea(r);
+          }}
+        />
+      ))}
+    </Board>
+  );
+}
+
+/** Un favorito de colectivo: la misma banda `next` que en Inicio, con su dato vivo. */
+function FavoritoBanda({ favorito }: { favorito: FavoritoV1 }) {
+  const router = useRouter();
+  const live = useFavoritoLiveData(favorito);
+  const modelo = modeloBanda(favorito, live, { lider: false });
+  return (
+    <SignBand
+      variant="next"
+      {...modelo}
+      testID={`favorito-${favorito.id}`}
+      // Si cambia el valor, la banda cruza en fundido (movimiento firma, ya resuelto en SignBand).
+      transitionKey={`${favorito.id}|${modelo.value ?? ''}`}
+      onPress={() => {
+        router.push(hrefDeFavorito(favorito));
+      }}
+    />
   );
 }
 
 function FavoritosColectivo() {
-  const router = useRouter();
-  const { colors } = useTheme();
+  const { fontFamily } = useTheme();
   const { favoritos } = useFavoritos();
   const propios = favoritos.filter(
     (f) => f.tipo === 'linea_colectivo' || f.tipo === 'parada_colectivo',
   );
   if (propios.length === 0) return null;
-  const abrir = (f: FavoritoV1) => {
-    if (f.tipo === 'parada_colectivo') {
-      router.push({ pathname: '/colectivos/parada/[id]', params: { id: f.refId } });
-    } else {
-      router.push({ pathname: '/colectivos/[linea]', params: { linea: f.refId } });
-    }
-  };
   return (
-    <View style={{ gap: 12 }}>
-      <Seccion>Tus favoritos</Seccion>
-      <View style={{ gap: 8 }} accessibilityRole="list">
-        {propios.map((f) => (
-          <FilaTocable
-            key={f.id}
-            testID={`favorito-${f.id}`}
-            accessibilityLabel={[f.alias, f.nombre, f.subtitulo]
-              .filter((x) => x !== undefined)
-              .join('. ')}
-            onPress={() => {
-              abrir(f);
-            }}
-          >
-            <Icon
-              name={f.tipo === 'parada_colectivo' ? 'parada' : 'colectivos'}
-              size={24}
-              color={colors.text.secondary}
-            />
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text variant="headline.sm" numberOfLines={1}>
-                {f.alias ?? f.nombre}
-              </Text>
-              <FavoritoLiveData favorito={f} />
-            </View>
-          </FilaTocable>
-        ))}
-      </View>
+    <View style={styles.favoritos} testID="favoritos-colectivo">
+      <Text
+        variant="text.sm"
+        tone="secondary"
+        accessibilityRole="header"
+        style={{ fontFamily: fontFamily.text[600], fontSize: 13, lineHeight: 16 }}
+      >
+        Tus favoritos
+      </Text>
+      {propios.map((f) => (
+        <FavoritoBanda key={f.id} favorito={f} />
+      ))}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  relleno: { padding: 12 },
+  sinPosicion: { gap: 12 },
+  sinPosicionTexto: { flexDirection: 'row', gap: 12 },
+  botones: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  filaEsqueleto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 56,
+    paddingHorizontal: 12,
+  },
+  textosEsqueleto: { flex: 1, gap: 6 },
+  favoritos: { gap: GAP_BANDAS },
+});

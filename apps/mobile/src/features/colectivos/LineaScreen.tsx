@@ -319,6 +319,11 @@ export function LineaScreen() {
             vehiculos={vistas}
             seleccionadoId={seleccionado?.id ?? null}
             onSelectVehiculo={select}
+            ramal={
+              lineaIndice?.ramal === undefined || lineaIndice.ramal === ''
+                ? undefined
+                : `Ramal ${lineaIndice.ramal}`
+            }
           />
         </BottomPanel>
       ) : null}

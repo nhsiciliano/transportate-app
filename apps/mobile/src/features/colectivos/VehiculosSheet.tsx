@@ -5,24 +5,27 @@
 //   que choca con el mapa), y avisos. Con un vehículo elegido suma "Seguir" / "Cerrar".
 // - Cuerpo (al subir el panel): ramales y la lista de vehículos, que es la vía principal para el
 //   lector de pantalla y para quien no quiere el mapa.
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { FavoriteToggle } from '@/features/favoritos';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
 import {
   Alert,
+  Board,
   Button,
   Chip,
   ErrorState,
+  formatAge,
   FreshnessLabel,
+  Pictogram,
   SignBand,
   Skeleton,
   SkeletonGroup,
   Text,
 } from '@/shared/ui';
 
-import { bandaDelPanel, REFRESH_FALLIDO, type VehiculoVista } from './lineaModel';
+import { bandaDelPanel, formatDistancia, REFRESH_FALLIDO, type VehiculoVista } from './lineaModel';
 
 export const SENTIDO_NOTA =
   'El GPS de los colectivos no informa el sentido: ves los de las dos direcciones.';
@@ -193,6 +196,8 @@ export interface VehiculosSheetBodyProps {
   vehiculos: readonly VehiculoVista[];
   seleccionadoId: string | null;
   onSelectVehiculo: (id: string) => void;
+  /** «Ramal A»: el subtítulo de cada colectivo cuando no hay ubicación para decir la distancia. */
+  ramal?: string | undefined;
 }
 
 export function VehiculosSheetBody({
@@ -201,8 +206,9 @@ export function VehiculosSheetBody({
   vehiculos,
   seleccionadoId,
   onSelectVehiculo,
+  ramal,
 }: VehiculosSheetBodyProps) {
-  const { space, colors, component } = useTheme();
+  const { space, colors, fontFamily } = useTheme();
   return (
     <>
       {ramales.length > 1 ? (
@@ -230,40 +236,45 @@ export function VehiculosSheetBody({
       </Text>
 
       {vehiculos.length > 0 ? (
-        <View style={{ gap: space[1] }}>
-          <Text variant="headline.sm" accessibilityRole="header">
-            Colectivos en servicio
-          </Text>
+        <Board label="Colectivos en servicio" testID="linea-vehiculos">
           {vehiculos.map((v) => {
             const selected = v.id === seleccionadoId;
+            const distancia = v.metros === null ? undefined : formatDistancia(v.metros).short;
             return (
-              <Pressable
+              // El vehículo elegido se marca con el fondo de "apretado"; el que no reporta hace
+              // rato, atenuado (S31). La fila no navega: es un botón que selecciona, sin flecha.
+              <View
                 key={v.id}
-                accessibilityRole="button"
-                accessibilityLabel={v.hablado}
-                accessibilityState={{ selected }}
-                accessibilityHint="Lo muestra en el mapa"
-                onPress={() => {
-                  onSelectVehiculo(v.id);
+                style={{
+                  backgroundColor: selected ? colors.bg.pressed : 'transparent',
+                  opacity: v.viejo ? 0.7 : 1,
                 }}
-                style={({ pressed }) => [
-                  styles.row,
-                  {
-                    minHeight: component.hitSlop,
-                    gap: space[2],
-                    paddingHorizontal: space[2],
-                    backgroundColor: pressed || selected ? colors.bg.pressed : 'transparent',
-                    opacity: v.viejo ? 0.7 : 1,
-                  },
-                ]}
-                testID={`linea-vehiculo-${v.id}`}
               >
-                <Icon name={selected ? 'marcador' : 'colectivos'} size={20} />
-                <Text style={styles.grow}>{v.texto}</Text>
-              </Pressable>
+                <Board.Row
+                  testID={`linea-vehiculo-${v.id}`}
+                  leading={<Pictogram icon="colectivos" size={32} tone="board" />}
+                  title={v.nombre}
+                  subtitle={distancia ?? ramal}
+                  trailing={
+                    <Text
+                      variant="text.md"
+                      tone="secondary"
+                      style={{ fontFamily: fontFamily.text[400], fontSize: 15, lineHeight: 20 }}
+                    >
+                      {`hace ${formatAge(v.edad).short}`}
+                    </Text>
+                  }
+                  arrow={false}
+                  onPress={() => {
+                    onSelectVehiculo(v.id);
+                  }}
+                  accessibilityLabel={selected ? `${v.hablado}, Seleccionado` : v.hablado}
+                  accessibilityHint="Lo muestra en el mapa"
+                />
+              </View>
             );
           })}
-        </View>
+        </Board>
       ) : null}
     </>
   );

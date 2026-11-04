@@ -10,6 +10,7 @@ import {
   lineaParaNumero,
   normalizar,
   numeroDeLinea,
+  textoDeLineas,
   numerosDeParada,
   paradasCercanas,
   paradasDeNumero,
@@ -116,5 +117,17 @@ describe('cercanía', () => {
     // Medido: < 1 ms por búsqueda en Node sin carga. El umbral es holgado a propósito: los tests
     // corren en paralelo en una máquina compartida y solo tiene que atrapar un O(n²) o algo así.
     expect(ms).toBeLessThan(200);
+  });
+});
+
+describe('textoDeLineas', () => {
+  it('hasta 6 líneas las nombra todas, separadas por «·»', () => {
+    expect(textoDeLineas(['60'])).toBe('60');
+    expect(textoDeLineas(['60', '152', '168'])).toBe('60 · 152 · 168');
+    expect(textoDeLineas(['1', '2', '3', '4', '5', '6'])).toBe('1 · 2 · 3 · 4 · 5 · 6');
+  });
+
+  it('con más de 6 nombra 3 y resume el resto', () => {
+    expect(textoDeLineas(['60', '152', '168', '10', '5', '7', '9'])).toBe('60 · 152 · 168 y 4 más');
   });
 });
