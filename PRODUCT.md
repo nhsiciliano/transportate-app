@@ -62,14 +62,15 @@ Compromisos que el plan fija y que son **vinculantes** para el trabajo visual (s
 
 - **Nombre:** Transportate.
 - **Autoridad visual: Obelisco v2** (sistema de diseño del GCBA), adaptado a nativo. Tokens extraídos en `docs/02-obelisco-tokens.md` (Fase 1.5).
-- **Tipografías:** **Nunito** para títulos y **Open Sans** para texto (pesos 400/600/700).
+- **Tipografía:** **Fira Sans** (pesos 400/600/700), una sola familia para títulos y texto.
+- **Dirección visual: «Señalética de terminal».** Elegida por el usuario el 2026-11-03 con Impeccable (contrato de dirección en `apps/mobile/.impeccable/surfaces/`), con el piloto en Inicio validado en el iPhone el 2026-11-04 y extendida al resto de la app ese mismo día. Aporta tipografía, densidad, placas y bandas de señal sobre la paleta de Obelisco v2, que no cambia; las tabs, los large titles, los headers, el gesto de volver, las sheets y los controles quedan nativos.
 - **Íconos:** **Material Symbols Rounded**, **FILL 1**, como SVG (`@material-symbols/svg-400`).
 - **Atribución obligatoria** a los datos del GCBA (licencia CC-BY-2.5-AR) en la pantalla "Acerca de".
 - **Voz:** rioplatense, directa, sin jerga técnica; breve porque se lee de pie y en movimiento. *(Suposición: tono cercano pero sobrio, sin humor en estados de error del servicio.)*
 
 **Tensiones abiertas (a resolver en `shape` / `adapt` nativo, no acá):**
 
-1. Las guías de plataforma recomiendan SF Symbols y San Francisco en iOS, y Roboto + Material 3 en Android; el plan impone Material Symbols y Nunito/Open Sans en ambas. Hay que decidir cuánto de la identidad Obelisco se superpone a lo nativo (por ejemplo, tipografía de marca en títulos y la del sistema en controles) sin romper Dynamic Type, safe areas ni gesto de volver.
+1. Las guías de plataforma recomiendan SF Symbols y San Francisco en iOS, y Roboto + Material 3 en Android; el plan impone Material Symbols y Fira Sans en ambas. Hay que decidir cuánto de la identidad Obelisco se superpone a lo nativo (por ejemplo, tipografía de marca en títulos y la del sistema en controles) sin romper Dynamic Type, safe areas ni gesto de volver.
 2. Obelisco es un sistema web y no define modo oscuro ni equivalentes de componentes nativos: la derivación (Fase 1.6) y la adaptación son decisiones de diseño pendientes.
 
 ## Evidence on Hand

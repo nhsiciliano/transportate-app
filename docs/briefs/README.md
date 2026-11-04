@@ -134,7 +134,7 @@ Todos se construyen una vez en `shared/ui` (plan, tarea 3.7) y se usan igual en 
 22. **S22** — Los nombres de estaciones se muestran normalizados con tildes desde el estático procesado (`docs/02b-colores-subte.md:97`).
 
 ### Plataforma
-23. **S23** — Tipografía de marca (Nunito/Open Sans) en títulos y contenido; controles del sistema (switches, segmentados, menús) con su tipografía nativa. Resuelve la tensión 1 de `PRODUCT.md:72` sin romper Dynamic Type.
+23. **S23** — Tipografía de marca (Fira Sans) en títulos y contenido; controles del sistema (switches, segmentados, menús) con su tipografía nativa. Resuelve la tensión 1 de `PRODUCT.md:72` sin romper Dynamic Type.
 24. **S24** — Bottom sheet para el detalle sobre el mapa (sheet nativa en iOS, bottom sheet Material en Android).
 25. **S25** — Haptics solo en selección y en guardar favorito.
 
