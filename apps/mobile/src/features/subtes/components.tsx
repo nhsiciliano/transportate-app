@@ -18,12 +18,15 @@ import {
   Alert,
   alertPalette,
   badgePalette,
+  Board,
   LineBadge,
   STATUS,
   StatusChip,
   Text,
   type AlertRole,
+  type BoardStatusTone,
   type LineBadgeSize,
+  type SignBandStatus,
 } from '@/shared/ui';
 
 import type { LineaSubte } from './model';
@@ -212,3 +215,54 @@ const styles = StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center' },
   filaContenido: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
 });
+
+// ---------------------------------------------------------------- «Señalética de terminal» (F5)
+
+/** Estado de servicio → tono del estado a la derecha de una fila de placa. */
+export const ESTADO_BOARD: Record<EstadoServicioV1, BoardStatusTone> = {
+  normal: 'ok',
+  demorada: 'warning',
+  interrumpida: 'danger',
+  sin_datos: 'muted',
+};
+
+/** El estado de una línea a la derecha de su fila («Con demoras» con cuadrado ámbar). */
+export function EstadoBoard({ estado, testID }: { estado: EstadoServicioV1; testID?: string }) {
+  return <Board.Status text={STATUS[estado].label} tone={ESTADO_BOARD[estado]} testID={testID} />;
+}
+
+/** Tono de la nota (resumen de alerta) según el estado de la línea. */
+export function tonoNota(estado: EstadoServicioV1): 'warning' | 'danger' | 'muted' {
+  return estado === 'interrumpida' ? 'danger' : estado === 'demorada' ? 'warning' : 'muted';
+}
+
+/** Cuadrado de estado de una banda: solo con demoras o interrumpida. */
+export function estadoBanda(
+  estado: EstadoServicioV1,
+  text: string = STATUS[estado].label,
+): SignBandStatus | undefined {
+  if (estado === 'demorada') return { tone: 'warning', text };
+  if (estado === 'interrumpida') return { tone: 'danger', text };
+  return undefined;
+}
+
+/** Fondo de las pantallas del mundo: `bg.elevated` (#edf4ff) en claro, `bg.base` en oscuro. */
+export function useFondo(): string {
+  const { colors, scheme } = useTheme();
+  return scheme === 'light' ? colors.bg.elevated : colors.bg.base;
+}
+
+/** Rótulo de bloque (13/600 `text.secondary`), como «Subte ahora» o la etiqueta de una placa. */
+export function Rotulo({ children }: { children: string }) {
+  const { fontFamily } = useTheme();
+  return (
+    <Text
+      variant="text.sm"
+      tone="secondary"
+      accessibilityRole="header"
+      style={{ fontFamily: fontFamily.text[600], fontSize: 13, lineHeight: 16 }}
+    >
+      {children}
+    </Text>
+  );
+}

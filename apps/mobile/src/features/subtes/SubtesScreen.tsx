@@ -1,31 +1,35 @@
-// Raíz del tab Subtes (brief 03-subtes §3): 7 líneas con su estado, búsqueda local de las 108
-// estaciones y acceso al mapa. Estados en README.md ("Brief operativo").
+// Raíz del tab Subtes con la dirección «Señalética de terminal» (Fase 5; contrato en
+// `.impeccable/surfaces/src-features-subtes-subtesscreen-tsx.md`): el tablero de estado de la red.
+// Las 7 líneas en una sola placa con el estado alineado a la derecha, la frescura y el acceso al
+// mapa; la búsqueda local de las 108 estaciones arriba. Estados en README.md ("Brief operativo").
 import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
 
 import { useRefreshInterval } from '@/shared/query';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
 import {
-  Button,
+  Board,
   EmptyState,
   ErrorState,
   FreshnessLabel,
+  LineBadge,
+  Pictogram,
   SearchInput,
-  Skeleton,
-  SkeletonGroup,
   STATUS,
-  Text,
 } from '@/shared/ui';
 
-import { EstadoChip, FilaTocable, LineaBadge, RefreshErrorAlert, ScreenScroll } from './components';
+import { EstadoBoard, RefreshErrorAlert, ScreenScroll, tonoNota, useFondo } from './components';
 import { useLineasConEstado, usePullToRefresh, type LineaConEstado } from './hooks';
-import { buscarEstaciones, type EstacionSubte, type RedSubte } from './model';
+import { buscarEstaciones, type EstacionSubte, type LineaSubte, type RedSubte } from './model';
+
+/** Separación entre bloques (12 pt, como Inicio). */
+const GAP = 12;
 
 export function SubtesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const fondo = useFondo();
   const { seconds } = useRefreshInterval();
   const { lineas, estado, red } = useLineasConEstado();
   const [consulta, setConsulta] = useState('');
@@ -36,7 +40,13 @@ export function SubtesScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Subtes', headerLargeTitleEnabled: true }} />
-      <ScreenScroll refreshing={refreshing} onRefresh={onRefresh} testID="subtes-screen">
+      <ScreenScroll
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        testID="subtes-screen"
+        backgroundColor={fondo}
+        gap={GAP}
+      >
         <SearchInput
           value={consulta}
           onChangeText={setConsulta}
@@ -53,16 +63,6 @@ export function SubtesScreen() {
           <Resultados red={red.red} consulta={consulta} />
         ) : (
           <>
-            <Button
-              label="Ver mapa"
-              variant="secondary"
-              outline
-              size="md"
-              icon={<Icon name="mapa" size={20} color={colors.role.secondary.text} />}
-              onPress={() => {
-                router.push('/subtes/mapa');
-              }}
-            />
             {estado.isRefreshError ? (
               <RefreshErrorAlert onRetry={() => void estado.refetch()} />
             ) : null}
@@ -73,9 +73,14 @@ export function SubtesScreen() {
                 onRetry={() => void red.refetch()}
               />
             ) : lineas === undefined || (estado.isPending && !estado.isLoadingError) ? (
-              <FilasSkeleton />
+              <Board.Skeleton
+                rows={7}
+                accessibilityLabel="Cargando el estado de las líneas…"
+                testID="subtes-skeleton"
+              />
             ) : (
               <>
+                {/* F4-subtes-4: sin estado ni caché, las 7 filas en "Sin información" + ErrorState. */}
                 {estado.isLoadingError ? (
                   <ErrorState
                     {...messageOf(estado.error)}
@@ -83,7 +88,7 @@ export function SubtesScreen() {
                     onRetry={() => void estado.refetch()}
                   />
                 ) : null}
-                <View style={{ gap: 8 }} accessibilityRole="list">
+                <Board testID="subtes-lineas">
                   {lineas.map((item) => (
                     <LineaRow
                       key={item.linea.key}
@@ -96,7 +101,7 @@ export function SubtesScreen() {
                       }}
                     />
                   ))}
-                </View>
+                </Board>
                 {estado.data !== undefined ? (
                   <FreshnessLabel
                     sourceTimestamp={estado.sourceTimestamp}
@@ -105,6 +110,17 @@ export function SubtesScreen() {
                 ) : null}
               </>
             )}
+            <Board>
+              <Board.Row
+                testID="subtes-mapa"
+                leading={<Pictogram icon="mapa" tone="board" size={32} />}
+                title="Mapa de la red"
+                accessibilityLabel="Mapa de la red"
+                onPress={() => {
+                  router.push('/subtes/mapa');
+                }}
+              />
+            </Board>
           </>
         )}
       </ScreenScroll>
@@ -117,36 +133,48 @@ function messageOf(error: { userMessage(): { title: string; cause: string | null
   return { title: m.title, cause: m.cause ?? 'Probá de nuevo en un rato.' };
 }
 
+/** Disco de la línea a 32 (`md`) sobre la placa: el borde se decide contra `bg.card`. */
+function DiscoLinea({
+  linea,
+  size = 'md',
+}: {
+  linea: Pick<LineaSubte, 'badge' | 'color' | 'colorTexto' | 'nombre'>;
+  size?: 'sm' | 'md';
+}) {
+  const { colors } = useTheme();
+  return (
+    <LineBadge
+      kind="subte"
+      label={linea.badge}
+      color={linea.color}
+      textColor={linea.colorTexto}
+      size={size}
+      surface={colors.bg.card}
+      accessibilityLabel={linea.nombre}
+    />
+  );
+}
+
 function LineaRow({ item, onPress }: { item: LineaConEstado; onPress: () => void }) {
   const { linea, estado, resumen } = item;
   const label = [`${linea.nombre}, ${STATUS[estado].label.toLowerCase()}`, linea.cabeceras, resumen]
     .filter((x) => x !== undefined && x !== '')
     .join('. ');
   return (
-    <FilaTocable onPress={onPress} accessibilityLabel={label} testID={`linea-${linea.key}`}>
-      <LineaBadge linea={linea} />
-      <View style={{ flex: 1, gap: 4 }}>
-        <Text variant="headline.sm">{linea.cabeceras}</Text>
-        <EstadoChip estado={estado} />
-        {resumen !== undefined && resumen !== '' ? (
-          <Text variant="text.sm" tone="secondary" numberOfLines={1}>
-            {resumen}
-          </Text>
-        ) : null}
-      </View>
-    </FilaTocable>
-  );
-}
-
-function FilasSkeleton() {
-  return (
-    <SkeletonGroup accessibilityLabel="Cargando el estado de las líneas…" testID="subtes-skeleton">
-      <View style={{ gap: 8 }}>
-        {Array.from({ length: 7 }, (_, i) => (
-          <Skeleton key={i} height={72} radius={16} />
-        ))}
-      </View>
-    </SkeletonGroup>
+    <Board.Row
+      testID={`linea-${linea.key}`}
+      leading={<DiscoLinea linea={linea} />}
+      title={linea.nombre}
+      subtitle={linea.cabeceras}
+      note={
+        resumen === undefined || resumen === ''
+          ? undefined
+          : { text: resumen, tone: tonoNota(estado) }
+      }
+      trailing={<EstadoBoard estado={estado} testID={`linea-${linea.key}-estado`} />}
+      accessibilityLabel={label}
+      onPress={onPress}
+    />
   );
 }
 
@@ -156,7 +184,9 @@ function Resultados({ red, consulta }: { red: RedSubte | undefined; consulta: st
     () => (red === undefined ? [] : buscarEstaciones(red.estaciones, consulta)),
     [red, consulta],
   );
-  if (red === undefined) return <FilasSkeleton />;
+  if (red === undefined) {
+    return <Board.Skeleton rows={3} accessibilityLabel="Cargando las estaciones…" />;
+  }
   if (resultados.length === 0) {
     return (
       <EmptyState
@@ -165,7 +195,7 @@ function Resultados({ red, consulta }: { red: RedSubte | undefined; consulta: st
     );
   }
   return (
-    <View style={{ gap: 8 }} accessibilityRole="list">
+    <Board testID="subtes-resultados">
       {resultados.map((e) => (
         <EstacionResultado
           key={e.id}
@@ -176,7 +206,7 @@ function Resultados({ red, consulta }: { red: RedSubte | undefined; consulta: st
           }}
         />
       ))}
-    </View>
+    </Board>
   );
 }
 
@@ -191,15 +221,13 @@ function EstacionResultado({
 }) {
   const linea = red.lineaPorKey.get(estacion.linea);
   return (
-    <FilaTocable
-      onPress={onPress}
-      accessibilityLabel={`${estacion.nombre}, ${linea?.nombre ?? ''}`}
+    <Board.Row
       testID={`resultado-${estacion.id}`}
-    >
-      {linea !== undefined ? <LineaBadge linea={linea} size="sm" /> : null}
-      <Text variant="text.md" style={{ flex: 1 }}>
-        {estacion.nombre}
-      </Text>
-    </FilaTocable>
+      leading={linea === undefined ? undefined : <DiscoLinea linea={linea} size="sm" />}
+      title={estacion.nombre}
+      subtitle={linea?.nombre}
+      accessibilityLabel={`${estacion.nombre}, ${linea?.nombre ?? ''}`}
+      onPress={onPress}
+    />
   );
 }

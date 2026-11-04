@@ -11,13 +11,19 @@ export {
 } from './hooks';
 export {
   AvisoAlert,
+  ESTADO_BOARD,
+  EstadoBoard,
+  estadoBanda,
   EstadoChip,
   FilaTocable,
   LineaBadge,
   REFRESH_ERROR_MESSAGE,
   RefreshErrorAlert,
   ScreenScroll,
+  Rotulo,
   Seccion,
+  tonoNota,
+  useFondo,
 } from './components';
 export { LineaScreen } from './LineaScreen';
 export {

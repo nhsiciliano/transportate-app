@@ -1,26 +1,38 @@
-// Detalle de línea (brief 03-subtes §3): encabezado, alertas completas y estaciones en orden de
-// recorrido con un diagrama vertical del color de la línea.
+// Detalle de línea con la dirección «Señalética de terminal» (Fase 5): arriba una banda fija con
+// el estado de la línea (se vuelve a señalizar con fundido si cambia), la estrella en el header
+// nativo, las alertas completas y las estaciones en una placa con el trazo del color de la línea.
 import type { AlertaV1 } from '@transportate/contracts';
 import { Stack, useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { FavoriteToggle } from '@/features/favoritos';
-import { Icon } from '@/shared/icons';
 import { useRefreshInterval } from '@/shared/query';
 import { useTheme } from '@/shared/theme';
-import { EmptyState, ErrorState, FreshnessLabel, Skeleton, SkeletonGroup, Text } from '@/shared/ui';
+import {
+  Board,
+  EmptyState,
+  ErrorState,
+  FreshnessLabel,
+  SignBand,
+  Skeleton,
+  SkeletonGroup,
+  STATUS,
+  Text,
+} from '@/shared/ui';
 
 import {
   AvisoAlert,
-  EstadoChip,
-  LineaBadge,
+  estadoBanda,
   RefreshErrorAlert,
+  Rotulo,
   ScreenScroll,
-  Seccion,
+  useFondo,
 } from './components';
 import { useLineaDetalle, usePullToRefresh } from './hooks';
 import { isLineaKey, nombreLinea, periodoAlerta, type LineaSubte, type RedSubte } from './model';
+
+/** Ancho del riel (trazo + punto) a la izquierda de cada estación. */
+const RIEL = 24;
 
 export function LineaScreen({ lineaParam }: { lineaParam: string | undefined }) {
   const key = lineaParam !== undefined && isLineaKey(lineaParam) ? lineaParam : undefined;
@@ -54,33 +66,34 @@ export function LineaScreen({ lineaParam }: { lineaParam: string | undefined }) 
     body = <LineaSkeleton />;
   } else {
     const alertasError = alertas.isLoadingError;
+    const e = estadoLinea?.estado ?? 'sin_datos';
+    const n = alertasLinea.length;
+    const cuantas = n === 0 ? STATUS[e].label : n === 1 ? '1 alerta' : `${n} alertas`;
     body = (
       <>
-        <View style={styles.encabezado}>
-          <LineaBadge linea={linea} size="lg" />
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text variant="headline.lg" accessibilityRole="header">
-              {linea.cabeceras}
-            </Text>
-            {estado.isPending ? (
-              <Skeleton width={120} height={24} />
-            ) : (
-              <EstadoChip estado={estadoLinea?.estado ?? 'sin_datos'} testID="linea-estado" />
-            )}
-          </View>
-          <FavoriteToggle
-            tipo="linea_subte"
-            refId={linea.key}
-            nombre={linea.nombre}
-            subtitulo={linea.cabeceras}
-          />
-        </View>
+        <SignBand
+          testID="linea-banda"
+          variant="lead"
+          icon="subtes"
+          message={`${linea.nombre} · ${linea.cabeceras}`}
+          value={estado.isPending ? null : STATUS[e].label}
+          valueStyle="text"
+          status={estadoBanda(e, cuantas)}
+          transitionKey={estado.isPending ? undefined : e}
+          accessibilityLabel={[
+            `${linea.nombre}, ${linea.cabeceras}`,
+            estado.isPending ? 'cargando el estado' : `Estado: ${STATUS[e].label.toLowerCase()}`,
+            n > 0 ? cuantas : undefined,
+          ]
+            .filter((x) => x !== undefined)
+            .join('. ')}
+        />
 
         {estado.isRefreshError || alertas.isRefreshError ? (
           <RefreshErrorAlert onRetry={onRefresh} />
         ) : null}
 
-        <Seccion>Alertas</Seccion>
+        <Rotulo>Alertas</Rotulo>
         {alertas.isPending ? (
           <SkeletonGroup accessibilityLabel="Cargando las alertas…">
             <Skeleton height={64} radius={6} />
@@ -109,16 +122,39 @@ export function LineaScreen({ lineaParam }: { lineaParam: string | undefined }) 
           <FreshnessLabel sourceTimestamp={alertas.sourceTimestamp} intervalSeconds={seconds} />
         ) : null}
 
-        <Seccion>Estaciones</Seccion>
         <Diagrama linea={linea} red={red.red} alertas={alertasLinea} />
       </>
     );
   }
 
+  const fondo = useFondo();
   return (
     <>
-      <Stack.Screen options={{ title }} />
-      <ScreenScroll refreshing={refreshing} onRefresh={onRefresh} testID="linea-screen">
+      <Stack.Screen
+        options={{
+          title,
+          // La estrella vive en el header nativo (44×44), no en el contenido.
+          ...(linea === undefined
+            ? {}
+            : {
+                headerRight: () => (
+                  <FavoriteToggle
+                    tipo="linea_subte"
+                    refId={linea.key}
+                    nombre={linea.nombre}
+                    subtitulo={linea.cabeceras}
+                  />
+                ),
+              }),
+        }}
+      />
+      <ScreenScroll
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        testID="linea-screen"
+        backgroundColor={fondo}
+        gap={12}
+      >
         {body}
       </ScreenScroll>
     </>
@@ -144,7 +180,11 @@ function AlertaCompleta({ alerta, interrumpida }: { alerta: AlertaV1; interrumpi
   );
 }
 
-/** Trazo vertical del color de la línea con un punto por estación; cada fila es tocable. */
+/**
+ * Estaciones en orden de recorrido, en una placa: a la izquierda de cada fila, el trazo vertical
+ * del color de la línea (continuo entre filas: el separador arranca después del riel) con un
+ * punto por estación. Cada fila abre la estación (flecha al borde).
+ */
 function Diagrama({
   linea,
   red,
@@ -155,11 +195,10 @@ function Diagrama({
   alertas: readonly AlertaV1[];
 }) {
   const router = useRouter();
-  const { colors, space } = useTheme();
   const afectadas = new Set(alertas.flatMap((a) => a.estacionIds ?? []));
   const total = linea.estaciones.length;
   return (
-    <View accessibilityRole="list">
+    <Board label="Estaciones" separatorInset={12 + RIEL + 12} testID="linea-estaciones">
       {linea.estaciones.map((e, i) => {
         const estacion = red.estacionPorId.get(e.id);
         const nombre = estacion?.nombre ?? e.id;
@@ -168,99 +207,66 @@ function Diagrama({
         const primera = i === 0 || ramalNuevo;
         const ultima = i === total - 1 || linea.estaciones[i + 1]?.ramal !== e.ramal;
         return (
-          <View key={e.id}>
-            {ramalNuevo ? (
-              <Text variant="text.sm" tone="secondary" style={{ marginTop: space[3] }}>
-                {e.ramal}
-              </Text>
-            ) : null}
-            <PressableRow
-              pressedColor={colors.bg.pressed}
-              label={`${nombre}${afectada ? ', con novedades' : ''}`}
-              testID={`estacion-${e.id}`}
-              onPress={() => {
-                router.push({ pathname: '/subtes/estacion/[id]', params: { id: e.id } });
-              }}
-            >
-              <View style={styles.riel}>
-                <View
-                  style={[
-                    styles.trazo,
-                    {
-                      backgroundColor: linea.color,
-                      top: primera ? 22 : 0,
-                      bottom: ultima ? 22 : 0,
-                    },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.punto,
-                    { backgroundColor: colors.bg.base, borderColor: linea.color },
-                  ]}
-                >
-                  <View style={[styles.puntoBorde, { borderColor: colors.text.primary }]} />
-                </View>
-              </View>
-              <Text variant="text.md" style={{ flex: 1 }}>
-                {nombre}
-              </Text>
-              {afectada ? <Icon name="alerta" size={20} color={colors.role.warning.text} /> : null}
-              <Icon name="chevron" size={24} color={colors.text.secondary} />
-            </PressableRow>
-          </View>
+          <Board.Row
+            key={e.id}
+            testID={`estacion-${e.id}`}
+            leading={<Riel color={linea.color} primera={primera} ultima={ultima} />}
+            title={nombre}
+            // Premetro: el ramal se nombra en la primera estación de cada uno.
+            subtitle={ramalNuevo ? e.ramal : undefined}
+            note={afectada ? { text: 'Con novedades', tone: 'warning' } : undefined}
+            accessibilityLabel={[
+              nombre,
+              ramalNuevo ? e.ramal : undefined,
+              afectada ? 'con novedades' : undefined,
+            ]
+              .filter((x) => x !== undefined)
+              .join(', ')}
+            onPress={() => {
+              router.push({ pathname: '/subtes/estacion/[id]', params: { id: e.id } });
+            }}
+          />
         );
       })}
+    </Board>
+  );
+}
+
+/** Trazo del color de la línea (dato GTFS) a todo el alto de la fila, con el punto de la estación. */
+function Riel({ color, primera, ultima }: { color: string; primera: boolean; ultima: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.riel} accessible={false} importantForAccessibility="no-hide-descendants">
+      <View
+        style={[
+          styles.trazo,
+          { backgroundColor: color, top: primera ? '50%' : 0, bottom: ultima ? '50%' : 0 },
+        ]}
+      />
+      <View style={[styles.punto, { backgroundColor: colors.bg.card, borderColor: color }]}>
+        <View style={[styles.puntoBorde, { borderColor: colors.text.primary }]} />
+      </View>
     </View>
   );
 }
 
-function PressableRow({
-  label,
-  onPress,
-  children,
-  testID,
-  pressedColor,
-}: {
-  label: string;
-  onPress: () => void;
-  children: ReactNode;
-  testID: string;
-  pressedColor: string;
-}) {
-  return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      accessible
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [styles.fila, pressed ? { backgroundColor: pressedColor } : null]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
+/** Silueta de la línea: la banda del estado y la placa de estaciones. */
 function LineaSkeleton() {
   return (
-    <SkeletonGroup accessibilityLabel="Cargando la línea…" testID="linea-skeleton">
-      <View style={{ gap: 12 }}>
-        <Skeleton height={44} width={200} />
-        <Skeleton height={64} radius={6} />
-        {Array.from({ length: 6 }, (_, i) => (
-          <Skeleton key={i} height={44} />
-        ))}
-      </View>
+    <SkeletonGroup
+      accessibilityLabel="Cargando la línea…"
+      testID="linea-skeleton"
+      style={{ gap: 12 }}
+    >
+      <SignBand.Skeleton variant="lead" />
+      <Board.Skeleton rows={6} />
     </SkeletonGroup>
   );
 }
 
 const styles = StyleSheet.create({
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  fila: { flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: 12, borderRadius: 8 },
-  riel: { width: 24, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
-  trazo: { position: 'absolute', width: 6, left: 9 },
+  riel: { width: RIEL, flex: 1, alignItems: 'center', justifyContent: 'center' },
+  trazo: { position: 'absolute', width: 6, left: (RIEL - 6) / 2 },
   punto: { width: 16, height: 16, borderRadius: 8, borderWidth: 4 },
   puntoBorde: { position: 'absolute', inset: -5, borderRadius: 13, borderWidth: 1 },
 });
