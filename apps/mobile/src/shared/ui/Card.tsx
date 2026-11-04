@@ -1,5 +1,6 @@
 // Card Obelisco (docs/02-obelisco-tokens.md §4 Card): sin sombra, outline de 2 px slate-100.
-// Radio: 32 en web; en nativo 16 (DESIGN.md §4.2; component.card.radius). Outline decorativo border.subtle.
+// Radio: 32 en web; en nativo 6 (dirección «Señalética de terminal», Fase 5; component.card.radius).
+// Outline decorativo border.subtle.
 import type { ReactNode } from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme, type Theme } from '../theme';

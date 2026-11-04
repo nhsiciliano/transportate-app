@@ -48,6 +48,16 @@ describe('SignBand', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('sin onPress es una señal fija: no es botón y no lleva la flecha al borde', async () => {
+    const fija = { icon: base.icon, testID: base.testID };
+    await renderThemed(
+      <SignBand {...fija} variant="lead" label="Próximo" value="4 min" message="Hacia Alem" />,
+    );
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByTestId('banda-flecha', { includeHiddenElements: true })).toBeNull();
+    expect(screen.getByLabelText('Hacia Alem, Próximo 4 min')).toBeTruthy();
+  });
+
   it('el cuadrado del pictograma es decorativo: la banda es el único elemento accesible', async () => {
     await renderThemed(<SignBand {...base} variant="lead" value="4 min" />);
     const cuadrado = screen.getByTestId('signband-pictograma', { includeHiddenElements: true });

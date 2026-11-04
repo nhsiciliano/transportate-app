@@ -25,5 +25,5 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## Decisiones abiertas
 
-- Alcance del rediseño fuera de Inicio (Colectivos, Subtes, Favoritos, detalles): pendiente del usuario.
+- Alcance del rediseño fuera de Inicio: **resuelto el 2026-11-04**. El usuario validó el piloto en el iPhone y pidió extender la dirección a toda la app; cada tab tiene su brief de superficie en esta carpeta (Subtes, Colectivos, Favoritos, Ajustes).
 - DESIGN.md se reescribe al final de la construcción (documenter), no antes.

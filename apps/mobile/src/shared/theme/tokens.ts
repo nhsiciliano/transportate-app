@@ -568,9 +568,11 @@ export const component = {
   },
   card: {
     padding: 16, // §4 Card body 24 en web (c/cards:2); en teléfono 16 (§3.1 spacer 3)
-    // §4 Card radio 32 (`6xl`, c/cards:63-70) en web. En nativo 16 (`3xl`, DESIGN.md §4.2,
-    // suposición): en una pantalla de 360 pt el radio web recorta el contenido y se ve inflado.
-    radius: radius['3xl'],
+    // §4 Card radio 32 (`6xl`, c/cards:63-70) en web. En nativo, 6 (`lg`): la dirección
+    // «Señalética de terminal» (Fase 5) fija radio 6 y sin sombra para toda superficie elevada
+    // (bandas, tira «Subte ahora», tarjetas), para que las placas se lean como señales y no como
+    // tarjetas infladas. Antes de la Fase 5 era 16 (`3xl`).
+    radius: radius.lg,
     webRadius: radius['6xl'],
     outlineWidth: borderWidth.control, // §3.3 card outline 0.125rem (colors:219)
   },

@@ -58,7 +58,12 @@ export interface SignBandProps {
   accessibilityLabel?: string | undefined;
   /** Cuando cambia (y no es el primer render), el contenido cruza en fundido de 200 ms. */
   transitionKey?: string | undefined;
-  onPress: () => void;
+  /**
+   * Abre el detalle. Sin `onPress` la banda es una señal fija (por ejemplo, el próximo arribo por
+   * sentido en una estación): no es botón y no lleva la flecha al borde, porque la flecha promete
+   * un destino.
+   */
+  onPress?: (() => void) | undefined;
   style?: StyleProp<ViewStyle>;
   testID?: string | undefined;
 }
@@ -191,24 +196,31 @@ export function SignBand({
   const outgoing = useAnimatedStyle(() => ({ opacity: 1 - progress.get() }));
 
   const isLead = variant === 'lead';
+  const pressable = onPress !== undefined;
+  const bandStyle = (pressed: boolean) => [
+    styles.band,
+    {
+      minHeight: SIGN_BAND.minHeight[variant],
+      backgroundColor: pressed ? palette.pressed : palette.background,
+    },
+    style,
+  ];
+  const Band = pressable ? Pressable : View;
   return (
-    <Pressable
+    <Band
       testID={testID}
-      onPress={onPress}
       accessible
-      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? defaultLabel(content)}
-      style={({ pressed }) => [
-        styles.band,
-        {
-          minHeight: SIGN_BAND.minHeight[variant],
-          backgroundColor: pressed ? palette.pressed : palette.background,
-        },
-        style,
-      ]}
+      {...(pressable
+        ? {
+            onPress,
+            accessibilityRole: 'button' as const,
+            style: ({ pressed }) => bandStyle(pressed),
+          }
+        : { style: bandStyle(false) })}
     >
       <Animated.View style={[styles.layer, ghost === null ? null : incoming]}>
-        <BandContent {...content} palette={palette} />
+        <BandContent {...content} palette={palette} pressable={pressable} />
       </Animated.View>
       {ghost === null ? null : (
         <Animated.View
@@ -218,18 +230,20 @@ export function SignBand({
           importantForAccessibility="no-hide-descendants"
           style={[StyleSheet.absoluteFill, outgoing]}
         >
-          <BandContent {...ghost} palette={palette} />
+          <BandContent {...ghost} palette={palette} pressable={pressable} />
         </Animated.View>
       )}
-      {/* Flecha clavada al borde: abajo a la derecha en lead, centrada en next. */}
-      <View
-        pointerEvents="none"
-        style={[styles.arrow, isLead ? styles.arrowLead : styles.arrowNext]}
-        testID={testID === undefined ? undefined : `${testID}-flecha`}
-      >
-        <Icon name="irA" size={isLead ? 24 : 20} color={palette.foreground} />
-      </View>
-    </Pressable>
+      {/* Flecha clavada al borde: abajo a la derecha en lead, centrada en next. Solo si abre algo. */}
+      {pressable ? (
+        <View
+          pointerEvents="none"
+          style={[styles.arrow, isLead ? styles.arrowLead : styles.arrowNext]}
+          testID={testID === undefined ? undefined : `${testID}-flecha`}
+        >
+          <Icon name="irA" size={isLead ? 24 : 20} color={palette.foreground} />
+        </View>
+      ) : null}
+    </Band>
   );
 }
 
@@ -242,7 +256,8 @@ function BandContent({
   valueStyle,
   status,
   palette,
-}: ContentProps & { palette: Palette }) {
+  pressable,
+}: ContentProps & { palette: Palette; pressable: boolean }) {
   const { fontFamily } = useTheme();
   const isLead = variant === 'lead';
   const display = isLead && valueStyle === 'display';
@@ -284,7 +299,13 @@ function BandContent({
     );
 
   return (
-    <View style={[styles.content, isLead ? styles.contentLead : styles.contentNext]}>
+    <View
+      style={[
+        styles.content,
+        isLead ? styles.contentLead : styles.contentNext,
+        pressable ? null : styles.contentStatic,
+      ]}
+    >
       {/* Contenedor decorativo: la información la lleva el pictograma (16,69:1 contra el cuadrado).
           No es un elemento accesible aparte: la banda entera es el único (F5-inicio-7). */}
       <View
@@ -390,6 +411,7 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     paddingRight: SIGN_BAND.textInsetRight,
   },
+  contentStatic: { paddingRight: 12 },
   contentLead: { alignItems: 'flex-start', paddingTop: 16, paddingBottom: 14 },
   contentNext: { alignItems: 'center', paddingVertical: 12 },
   pictogram: {
