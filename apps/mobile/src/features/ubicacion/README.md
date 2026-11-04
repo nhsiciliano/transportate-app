@@ -30,17 +30,18 @@ Ubicación compartida (Fase 4, tarea 4.7 y fila de Ajustes). La usan Colectivos 
 
 ## Archivos
 
-| Archivo                      | Qué hay                                                                                   |
-| ---------------------------- | ----------------------------------------------------------------------------------------- |
-| `geo.ts`                     | `CABA_BBOX`, `isInsideCaba(lat, lon)` y `distanceMeters(a, b)` (haversine)                |
+| Archivo                      | Qué hay                                                                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `geo.ts`                     | `CABA_BBOX`, `isInsideCaba(lat, lon)` y `distanceMeters(a, b)` (haversine)                                               |
 | `useUbicacion.ts`            | `usePermisoUbicacion()` (permiso + `checked`) y `useUbicacion()` (permiso + posición en memoria + `positionUnavailable`) |
-| `PermisoUbicacionBloque.tsx` | Bloque con el texto, "Activar" / "Abrir configuración" y "Buscar a mano"                  |
-| `index.ts`                   | Exports públicos                                                                          |
+| `PermisoUbicacionBloque.tsx` | Bloque con el texto, "Activar" / "Abrir configuración" y "Buscar a mano"                                                 |
+| `index.ts`                   | Exports públicos                                                                                                         |
 
 ## Uso
 
 ```tsx
-const { permission, checked, position, positionUnavailable, request, openSettings } = useUbicacion();
+const { permission, checked, position, positionUnavailable, request, openSettings } =
+  useUbicacion();
 // Antes de leer el permiso real, `permission` es `undetermined` por default: esperá a `checked`
 // para no mostrar el bloque de permiso de más.
 if (checked && permission !== 'granted') {
@@ -56,9 +57,9 @@ if (checked && permission !== 'granted') {
 // Con permiso: `position === null && !positionUnavailable` → "buscando…"; `positionUnavailable` → buscar a mano.
 ```
 
-| Campo | Qué es |
-|---|---|
-| `checked` | Ya se leyó el permiso real al menos una vez (desde `usePermisoUbicacion`, que también usa `useUbicacion`) |
+| Campo                 | Qué es                                                                                                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checked`             | Ya se leyó el permiso real al menos una vez (desde `usePermisoUbicacion`, que también usa `useUbicacion`)                                                        |
 | `positionUnavailable` | Con permiso, la última lectura falló y no hay posición (servicios apagados, sin señal): deja de mostrarse "buscando…" y se ofrece buscar a mano (F4-ubicacion-5) |
 
 `useUbicacion({ watch: false })` lee el permiso y la posición una sola vez, sin suscripción (para pantallas que solo necesitan "dónde estoy ahora", como Colectivos). El `watch` queda para el mapa. Ajustes usa solo `usePermisoUbicacion()`, que no lee la posición. Los tests cambian el estado con `locationMock` (`test/mocks/expo-location.ts`).

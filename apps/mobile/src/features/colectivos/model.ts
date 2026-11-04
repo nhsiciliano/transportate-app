@@ -107,6 +107,21 @@ export function numerosDeParada(parada: Pick<ParadaV1, 'lineas'>): string[] {
   return [...set].sort(compareNumero);
 }
 
+/** Cuántas líneas se nombran en una fila de parada antes de resumir con «y N más». */
+export const LINEAS_VISIBLES_MAX = 6;
+/** Cuántas quedan nombradas cuando se resume. */
+export const LINEAS_VISIBLES_RESUMEN = 3;
+
+/**
+ * Las líneas que paran, para el subtítulo de una fila: «60 · 152 · 168». Con más de 6 se nombran
+ * 3 y el resto se resume: «60 · 152 · 168 y 4 más».
+ */
+export function textoDeLineas(numeros: readonly string[]): string {
+  if (numeros.length <= LINEAS_VISIBLES_MAX) return numeros.join(' · ');
+  const visibles = numeros.slice(0, LINEAS_VISIBLES_RESUMEN);
+  return `${visibles.join(' · ')} y ${String(numeros.length - visibles.length)} más`;
+}
+
 /** "Líneas 28, 117" (para el subtítulo del favorito y el lector). */
 export function describirLineas(numeros: readonly string[]): string {
   if (numeros.length === 0) return 'Sin líneas informadas';

@@ -2,7 +2,9 @@
 export { CABA_BBOX, distanceMeters, isInsideCaba, type LatLon } from './geo';
 export {
   PERMISO_BLOCKED_MESSAGE,
+  PERMISO_DETAIL,
   PERMISO_MESSAGE,
+  PERMISO_TITLE,
   PermisoUbicacionBloque,
   type PermisoUbicacionBloqueProps,
 } from './PermisoUbicacionBloque';
