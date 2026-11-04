@@ -50,6 +50,9 @@ Resumen de [`../apps/mobile/src/shared/ui/README.md`](../apps/mobile/src/shared/
 | `ErrorState` | Error de carga sin datos que mostrar, con "Volver a intentar" si es reintentable |
 | `FreshnessLabel` | Junto a todo dato en tiempo real. Calcula la edad con `meta.sourceTimestamp` y el intervalo R de Ajustes |
 | `OfflineBanner` | Arriba del contenido cuando no hay conexión; la app sigue mostrando lo guardado |
+| `SignBand` | Una **decisión viva** (arribo, estado, conteo) en la dirección «Señalética de terminal» (Fase 5): `lead` para la decisión en curso, `next` para las siguientes. Con `onPress` lleva la flecha al borde; sin él es una señal fija. Slots `leading`/`trailing` para la edición de Favoritos (manija, «Quitar») |
+| `Board` (+ `Board.Row`, `Board.Status`, `Board.Skeleton`) | La **placa de tablero** (Fase 5): todo lo que no es una decisión viva (listas, búsqueda, recorridos, ajustes). Placa `bg.card`, outline 1 px, radio 6; filas ≥ 56 pt con hairline entre ellas; flecha `irA` solo en las filas que abren algo; `Board.Status` es el estado a la derecha (cuadrado ámbar/rojo con texto) |
+| `Pictogram` | El pictograma en cuadrado de 40/32: `tone="band"` sobre una `SignBand`, `tone="board"` sobre una placa (`role.primary.base` con ícono `on`). Decorativo |
 
 **Estados de una pantalla con datos** (patrones de `briefs/README.md`):
 

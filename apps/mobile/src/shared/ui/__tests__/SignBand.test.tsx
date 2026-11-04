@@ -1,6 +1,13 @@
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
-import { AccessibilityInfo, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  AccessibilityInfo,
+  Pressable,
+  StyleSheet,
+  Text as RNText,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { SIGN_BAND, SignBand, SkeletonGroup, signBandPalette } from '..';
 import { createMemoryPreferenceStore, dark, light, ThemeProvider } from '../../theme';
@@ -218,6 +225,89 @@ describe('SignBand', () => {
     const next = screen.getByTestId('sk-next', { includeHiddenElements: true });
     expect(lead.children[0]).toHaveStyle({ height: 148, borderRadius: 6 });
     expect(next.children[0]).toHaveStyle({ height: 72, borderRadius: 6 });
+  });
+
+  describe('slots de edición', () => {
+    const manija = (
+      <Pressable accessibilityRole="button" accessibilityLabel="Reordenar" testID="manija">
+        <RNText>≡</RNText>
+      </Pressable>
+    );
+    const quitar = (onPress: () => void) => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Quitar"
+        onPress={onPress}
+        testID="quitar"
+      >
+        <RNText>x</RNText>
+      </Pressable>
+    );
+
+    it('con leading/trailing y sin onPress: cada control y el texto son elementos separados', async () => {
+      const onQuitar = jest.fn();
+      const onAlias = jest.fn();
+      await renderThemed(
+        <SignBand
+          {...base}
+          onPress={undefined}
+          variant="next"
+          value="4 min"
+          leading={manija}
+          trailing={quitar(onQuitar)}
+          onPressContent={onAlias}
+          contentAccessibilityHint="Cambiar nombre"
+          messageIcon="editar"
+          accessibilityLabel="Casa. Parada Cabildo y Juramento, 4 min"
+        />,
+      );
+      expect(screen.getByTestId('banda').props.accessible).toBeFalsy();
+      expect(screen.getByRole('button', { name: 'Reordenar' })).toBeOnTheScreen();
+      const contenido = screen.getByRole('button', {
+        name: 'Casa. Parada Cabildo y Juramento, 4 min',
+      });
+      expect(contenido.props.accessibilityHint).toBe('Cambiar nombre');
+      await fireEvent.press(contenido);
+      expect(onAlias).toHaveBeenCalledTimes(1);
+      await fireEvent.press(screen.getByRole('button', { name: 'Quitar' }));
+      expect(onQuitar).toHaveBeenCalledTimes(1);
+      // `trailing` reemplaza a la flecha; el ícono chico va junto al mensaje.
+      expect(screen.queryByTestId('banda-flecha', { includeHiddenElements: true })).toBeNull();
+      expect(
+        screen.getByTestId('signband-icono-mensaje', { includeHiddenElements: true }),
+      ).toBeOnTheScreen();
+    });
+
+    it('sin onPressContent, el texto es un elemento accesible que no es botón', async () => {
+      await renderThemed(
+        <SignBand
+          {...base}
+          onPress={undefined}
+          variant="next"
+          value="4 min"
+          trailing={quitar(jest.fn())}
+        />,
+      );
+      const contenido = screen.getByTestId('banda-contenido');
+      expect(contenido.props.accessible).toBe(true);
+      expect(contenido.props.accessibilityRole).toBeUndefined();
+      expect(contenido.props.accessibilityLabel).toBe('Parada · Cabildo y Juramento, 4 min');
+    });
+
+    it('con onPress y trailing: la banda es el botón y el trailing reemplaza a la flecha', async () => {
+      await renderThemed(
+        <SignBand {...base} variant="next" value="4 min" trailing={<RNText>extra</RNText>} />,
+      );
+      expect(screen.getByTestId('banda').props.accessibilityRole).toBe('button');
+      expect(screen.queryByTestId('banda-flecha', { includeHiddenElements: true })).toBeNull();
+      expect(screen.getByText('extra')).toBeOnTheScreen();
+    });
+
+    it('sin slots, la banda sigue siendo un solo elemento (fija o botón)', async () => {
+      await renderThemed(<SignBand {...base} onPress={undefined} variant="lead" value="4 min" />);
+      expect(screen.getByTestId('banda').props.accessible).toBe(true);
+      expect(screen.queryByTestId('banda-contenido')).toBeNull();
+    });
   });
 
   describe('movimiento firma', () => {

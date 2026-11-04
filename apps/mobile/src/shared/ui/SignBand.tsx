@@ -13,7 +13,7 @@
 //   estado nunca (el valor grande se achica para entrar en una línea antes que cortarse).
 // - Movimiento firma: si cambia `transitionKey` (otro favorito u otro valor), el contenido cruza
 //   en fundido de 200 ms; con «Reducir movimiento», corte seco. El fondo de la banda no se mueve.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -24,6 +24,7 @@ import Animated, {
 
 import { Icon, type IconName } from '../icons';
 import { useTheme, type ColorScheme, type SchemeName } from '../theme';
+import { Pictogram, pictogramPalette } from './Pictogram';
 import { Skeleton } from './Skeleton';
 import { Text } from './Text';
 import { useReduceMotion } from './useReduceMotion';
@@ -64,6 +65,22 @@ export interface SignBandProps {
    * un destino.
    */
   onPress?: (() => void) | undefined;
+  /**
+   * Slot antes del pictograma (por ejemplo, la manija «Reordenar» de 44×44 en la edición de
+   * Favoritos). Se dibuja en el color que elija quien lo pasa (usá `signBandPalette().foreground`).
+   */
+  leading?: ReactNode;
+  /** Slot al borde derecho; reemplaza a la flecha (por ejemplo, el botón «Quitar» de 44×44). */
+  trailing?: ReactNode;
+  /**
+   * Con `leading`/`trailing` y sin `onPress`, cada control es accesible por separado y el texto
+   * lleva su propia etiqueta. Con `onPressContent`, ese texto es un botón (abre el alias).
+   */
+  onPressContent?: (() => void) | undefined;
+  /** Pista del lector para `onPressContent` («Cambiar nombre»). */
+  contentAccessibilityHint?: string | undefined;
+  /** Ícono chico (16) en el color de la banda junto al mensaje (p. ej. `editar`). */
+  messageIcon?: IconName | undefined;
   style?: StyleProp<ViewStyle>;
   testID?: string | undefined;
 }
@@ -86,16 +103,16 @@ export const SIGN_BAND = {
 /** Colores de la banda por variante y esquema. Exportado para los tests y el README. */
 export function signBandPalette(colors: ColorScheme, scheme: SchemeName, variant: SignBandVariant) {
   const role = variant === 'lead' ? colors.role.secondary : colors.role.primary;
-  const light = scheme === 'light';
+  const pictogram = pictogramPalette(colors, scheme, 'band');
   return {
     background: role.base,
     pressed: role.hover,
     /** Texto, rótulo, valor y flecha. */
     foreground: role.on,
     /** Cuadrado del pictograma: el más oscuro del esquema en claro, el fondo de la app en oscuro. */
-    pictogram: light ? colors.text.primary : colors.bg.base,
+    pictogram: pictogram.square,
     /** Pictograma en el color contrario al cuadrado. */
-    pictogramIcon: light ? colors.bg.base : colors.text.primary,
+    pictogramIcon: pictogram.icon,
     warning: colors.role.warning.base,
     danger: colors.role.danger.base,
   };
@@ -111,6 +128,7 @@ interface ContentProps {
   value: string | null;
   valueStyle: 'display' | 'text';
   status: SignBandStatus | undefined;
+  messageIcon: IconName | undefined;
 }
 
 /** Firma del contenido visible: si no cambia, no hay nada que redibujar ni animar. */
@@ -124,6 +142,7 @@ function signature(c: ContentProps): string {
     c.valueStyle,
     c.status?.text,
     c.status?.tone,
+    c.messageIcon,
   ]);
 }
 
@@ -143,13 +162,27 @@ export function SignBand({
   accessibilityLabel,
   transitionKey,
   onPress,
+  leading,
+  trailing,
+  onPressContent,
+  contentAccessibilityHint,
+  messageIcon,
   style,
   testID,
 }: SignBandProps) {
   const { colors, scheme } = useTheme();
   const palette = signBandPalette(colors, scheme, variant);
   const reduceMotion = useReduceMotion();
-  const content: ContentProps = { variant, icon, message, label, value, valueStyle, status };
+  const content: ContentProps = {
+    variant,
+    icon,
+    message,
+    label,
+    value,
+    valueStyle,
+    status,
+    messageIcon,
+  };
   const sig = signature(content);
 
   // Movimiento firma. Estado derivado durante el render (patrón de React para "ajustar el estado
@@ -197,6 +230,10 @@ export function SignBand({
 
   const isLead = variant === 'lead';
   const pressable = onPress !== undefined;
+  const hasSlots = leading !== undefined || trailing !== undefined;
+  // Con controles propios y sin destino, la banda no es un elemento accesible como conjunto.
+  const grouped = pressable || !hasSlots;
+  const a11yLabel = accessibilityLabel ?? defaultLabel(content);
   const bandStyle = (pressed: boolean) => [
     styles.band,
     {
@@ -205,22 +242,16 @@ export function SignBand({
     },
     style,
   ];
-  const Band = pressable ? Pressable : View;
-  return (
-    <Band
-      testID={testID}
-      accessible
-      accessibilityLabel={accessibilityLabel ?? defaultLabel(content)}
-      {...(pressable
-        ? {
-            onPress,
-            accessibilityRole: 'button' as const,
-            style: ({ pressed }) => bandStyle(pressed),
-          }
-        : { style: bandStyle(false) })}
-    >
+  const inner = {
+    // Reserva de 44 pt a la derecha solo si se dibuja la flecha.
+    pressable: pressable && trailing === undefined,
+    hasLeading: leading !== undefined,
+    palette,
+  };
+  const layers = (
+    <>
       <Animated.View style={[styles.layer, ghost === null ? null : incoming]}>
-        <BandContent {...content} palette={palette} pressable={pressable} />
+        <BandContent {...content} {...inner} />
       </Animated.View>
       {ghost === null ? null : (
         <Animated.View
@@ -230,11 +261,53 @@ export function SignBand({
           importantForAccessibility="no-hide-descendants"
           style={[StyleSheet.absoluteFill, outgoing]}
         >
-          <BandContent {...ghost} palette={palette} pressable={pressable} />
+          <BandContent {...ghost} {...inner} />
         </Animated.View>
       )}
-      {/* Flecha clavada al borde: abajo a la derecha en lead, centrada en next. Solo si abre algo. */}
-      {pressable ? (
+    </>
+  );
+  // El texto como elemento propio (solo cuando la banda no se agrupa): botón si abre el alias.
+  const contentArea = grouped ? (
+    <View style={styles.contentArea}>{layers}</View>
+  ) : onPressContent !== undefined ? (
+    <Pressable
+      testID={testID === undefined ? undefined : `${testID}-contenido`}
+      onPress={onPressContent}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={contentAccessibilityHint}
+      style={styles.contentArea}
+    >
+      {layers}
+    </Pressable>
+  ) : (
+    <View
+      testID={testID === undefined ? undefined : `${testID}-contenido`}
+      accessible
+      accessibilityLabel={a11yLabel}
+      style={styles.contentArea}
+    >
+      {layers}
+    </View>
+  );
+
+  const children = (
+    <>
+      {leading === undefined ? null : (
+        <Animated.View style={[styles.slot, styles.slotLeading, ghost === null ? null : incoming]}>
+          {leading}
+        </Animated.View>
+      )}
+      {contentArea}
+      {trailing === undefined ? null : (
+        <Animated.View style={[styles.slot, styles.slotTrailing, ghost === null ? null : incoming]}>
+          {trailing}
+        </Animated.View>
+      )}
+      {/* Flecha clavada al borde: abajo a la derecha en lead, centrada en next. Solo si abre algo
+          y no hay un control propio al borde. */}
+      {pressable && trailing === undefined ? (
         <View
           pointerEvents="none"
           style={[styles.arrow, isLead ? styles.arrowLead : styles.arrowNext]}
@@ -243,7 +316,31 @@ export function SignBand({
           <Icon name="irA" size={isLead ? 24 : 20} color={palette.foreground} />
         </View>
       ) : null}
-    </Band>
+    </>
+  );
+
+  if (pressable) {
+    return (
+      <Pressable
+        testID={testID}
+        onPress={onPress}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={a11yLabel}
+        style={({ pressed }) => bandStyle(pressed)}
+      >
+        {children}
+      </Pressable>
+    );
+  }
+  return (
+    <View
+      testID={testID}
+      {...(grouped ? { accessible: true, accessibilityLabel: a11yLabel } : {})}
+      style={bandStyle(false)}
+    >
+      {children}
+    </View>
   );
 }
 
@@ -255,9 +352,11 @@ function BandContent({
   value,
   valueStyle,
   status,
+  messageIcon,
   palette,
   pressable,
-}: ContentProps & { palette: Palette; pressable: boolean }) {
+  hasLeading,
+}: ContentProps & { palette: Palette; pressable: boolean; hasLeading: boolean }) {
   const { fontFamily } = useTheme();
   const isLead = variant === 'lead';
   const display = isLead && valueStyle === 'display';
@@ -304,31 +403,29 @@ function BandContent({
         styles.content,
         isLead ? styles.contentLead : styles.contentNext,
         pressable ? null : styles.contentStatic,
+        hasLeading ? styles.contentWithLeading : null,
       ]}
     >
       {/* Contenedor decorativo: la información la lleva el pictograma (16,69:1 contra el cuadrado).
           No es un elemento accesible aparte: la banda entera es el único (F5-inicio-7). */}
-      <View
-        testID="signband-pictograma"
-        accessible={false}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={[
-          styles.pictogram,
-          { backgroundColor: palette.pictogram, borderRadius: SIGN_BAND.pictogramRadius },
-        ]}
-      >
-        <Icon name={icon} size={24} color={palette.pictogramIcon} />
-      </View>
+      <Pictogram icon={icon} tone="band" testID="signband-pictograma" />
       <View style={[styles.texts, isLead ? styles.textsLead : null]}>
-        <Text
-          variant="text.md"
-          color={fg}
-          numberOfLines={1}
-          style={{ fontFamily: fontFamily.text[600], fontSize: 17, lineHeight: 22 }}
-        >
-          {message}
-        </Text>
+        <View style={styles.messageRow}>
+          <Text
+            variant="text.md"
+            color={fg}
+            numberOfLines={1}
+            style={[
+              styles.message,
+              { fontFamily: fontFamily.text[600], fontSize: 17, lineHeight: 22 },
+            ]}
+          >
+            {message}
+          </Text>
+          {messageIcon === undefined ? null : (
+            <Icon name={messageIcon} size={16} color={fg} testID="signband-icono-mensaje" />
+          )}
+        </View>
         <View style={isLead ? styles.valueGroupLead : styles.valueGroupNext}>
           {label !== undefined && label !== '' ? (
             <Text
@@ -399,11 +496,18 @@ SignBand.Skeleton = SignBandSkeleton;
 
 const styles = StyleSheet.create({
   band: {
+    flexDirection: 'row',
     borderRadius: SIGN_BAND.radius,
     overflow: 'hidden',
-    justifyContent: 'center',
   },
   layer: { flexGrow: 1 },
+  contentArea: { flex: 1, alignSelf: 'stretch' },
+  slot: { justifyContent: 'center' },
+  slotLeading: { paddingLeft: 4 },
+  slotTrailing: { paddingRight: 4 },
+  contentWithLeading: { paddingLeft: 0 },
+  messageRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  message: { flexShrink: 1 },
   content: {
     flexGrow: 1,
     flexDirection: 'row',
@@ -414,12 +518,6 @@ const styles = StyleSheet.create({
   contentStatic: { paddingRight: 12 },
   contentLead: { alignItems: 'flex-start', paddingTop: 16, paddingBottom: 14 },
   contentNext: { alignItems: 'center', paddingVertical: 12 },
-  pictogram: {
-    width: SIGN_BAND.pictogram,
-    height: SIGN_BAND.pictogram,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   texts: { flex: 1, minWidth: 0 },
   textsLead: { alignSelf: 'stretch' },
   // En lead, rótulo + valor van abajo (el mensaje arriba): `marginTop: 'auto'` los empuja.

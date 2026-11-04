@@ -29,6 +29,25 @@ export {
 } from './FreshnessLabel';
 export { triggerHaptic, type HapticKind } from './haptics';
 export { LineBadge, type LineBadgeProps, type LineBadgeSize } from './LineBadge';
+export {
+  BOARD,
+  Board,
+  boardStatusLabel,
+  boardStatusPalette,
+  type BoardNoteTone,
+  type BoardProps,
+  type BoardRowProps,
+  type BoardStatusProps,
+  type BoardStatusTone,
+} from './Board';
+export {
+  Pictogram,
+  PICTOGRAM_RADIUS,
+  pictogramPalette,
+  type PictogramProps,
+  type PictogramSize,
+  type PictogramTone,
+} from './Pictogram';
 export { OFFLINE_MESSAGE, OfflineBanner, type OfflineBannerProps } from './OfflineBanner';
 export { SearchInput, type SearchInputProps } from './SearchInput';
 export {
