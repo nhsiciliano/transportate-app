@@ -31,6 +31,7 @@ import {
   CLUSTER_MAX_ZOOM,
   CLUSTER_MIN_VEHICULOS,
   FEED_VIEJO_S,
+  mensajeDeLinea,
   ordenarVehiculos,
   POSICIONES_NO_DISPONIBLES,
   recorridoDe,
@@ -91,6 +92,11 @@ export function LineaScreen() {
         numero: lineaIndice.numero,
         nombre: `Línea ${lineaIndice.linea}`,
         descripcion: lineaIndice.descripcion,
+        mensaje: mensajeDeLinea({
+          numero: lineaIndice.numero,
+          ramal: lineaIndice.ramal,
+          cabecera: lineaIndice.cabeceras.join(' – '),
+        }),
       };
     }
     if (indice.indice === undefined && vehiculoLinea === undefined) return null;
@@ -100,6 +106,7 @@ export function LineaScreen() {
       numero: numeroDeLinea(visible),
       nombre: `Línea ${visible}`,
       descripcion: `Línea ${visible}`,
+      mensaje: mensajeDeLinea({ numero: numeroDeLinea(visible) }),
     };
   }, [lineaIndice, indice.indice, vehiculoLinea, lineaId]);
 
@@ -130,6 +137,8 @@ export function LineaScreen() {
     posiciones.sourceTimestamp === null
       ? null
       : Math.max(0, (now - Date.parse(posiciones.sourceTimestamp)) / 1000);
+  // El dato más viejo de las posiciones: lo que dice la banda del panel («hace 25 s»).
+  const edadMasVieja = vistas.length === 0 ? null : Math.max(...vistas.map((v) => v.edad));
   const feedViejo = feedEdad !== null && feedEdad > FEED_VIEJO_S;
   const todosAtenuados = feedViejo || !online || posiciones.isRefreshError || posiciones.isPaused;
 
@@ -278,6 +287,7 @@ export function LineaScreen() {
               linea={linea}
               estado={estado}
               cantidad={vistas.length}
+              edadMasVieja={edadMasVieja}
               sourceTimestamp={posiciones.sourceTimestamp}
               intervalSeconds={seconds}
               refreshing={posiciones.isFetching}

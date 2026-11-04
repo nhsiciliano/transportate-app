@@ -48,9 +48,14 @@ function pressEvent(...properties: Record<string, unknown>[]) {
 describe('Detalle de línea: datos', () => {
   it('dibuja recorrido, paradas y vehículos, con el encabezado de la línea', async () => {
     await renderLinea();
-    expect(await screen.findByText('2 colectivos en servicio')).toBeOnTheScreen();
-    // En el encabezado y en el chip del ramal elegido.
-    expect(screen.getAllByText('Ramal A · a Constitución')).toHaveLength(2);
+    expect(await screen.findByLabelText(/2 colectivos en servicio/)).toBeOnTheScreen();
+    // La banda fija del panel: línea y ramal, rótulo, conteo monumental y antigüedad del dato.
+    const banda = screen.getByTestId('linea-banda');
+    expect(banda).toHaveTextContent(/Línea 60 · Ramal A/);
+    expect(banda).toHaveTextContent(/En servicio/);
+    expect(banda).toHaveTextContent(/2.*hace \d+ s/);
+    // El chip del ramal elegido sigue en el cuerpo del panel.
+    expect(screen.getAllByText('Ramal A · a Constitución')).toHaveLength(1);
 
     await waitFor(() => {
       expect(source(SOURCE.recorrido)).toBeOnTheScreen();
@@ -81,7 +86,7 @@ describe('Detalle de línea: datos', () => {
 
   it('el polling pide solo la línea abierta (S10)', async () => {
     const { fetchMock } = await renderLinea();
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     const urls = fetchMock.mock.calls.map(([url]) => new URL(url).pathname);
     expect(urls).toContain(RUTA_601);
     expect(urls).not.toContain(RUTA_602);
@@ -92,8 +97,12 @@ describe('Detalle de línea: datos', () => {
       '/colectivos/601',
       lineaRoutes({ [RUTA_601]: () => jsonResponse(posicionesDe('601', [])) }),
     );
-    expect(await screen.findByText(SIN_VEHICULOS)).toBeOnTheScreen();
-    expect(screen.getByText('0 colectivos en servicio')).toBeOnTheScreen();
+    // El vacío lo dice la banda («Sin colectivos con GPS ahora»), sin repetirlo abajo.
+    const banda = await screen.findByTestId('linea-banda');
+    expect(banda).toHaveTextContent(/Sin colectivos con GPS ahora/);
+    expect(banda.props).toMatchObject({
+      accessibilityLabel: expect.stringContaining(SIN_VEHICULOS) as string,
+    });
     expect(screen.getByText(/Actualizado hace/)).toBeOnTheScreen();
   });
 
@@ -103,7 +112,7 @@ describe('Detalle de línea: datos', () => {
       '/colectivos/601',
       lineaRoutes({ [RUTA_601]: () => jsonResponse(posicionesDe('601', muchos)) }),
     );
-    await screen.findByText('81 colectivos en servicio');
+    await screen.findByLabelText(/81 colectivos en servicio/);
     expect(source(SOURCE.vehiculos).props).toMatchObject({ cluster: true });
   });
 });
@@ -122,12 +131,14 @@ describe('Detalle de línea: frescura y errores', () => {
           ),
       }),
     );
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     expect(vehiculosData().map((f) => [f.properties.id, f.properties.atenuado])).toEqual([
       ['1404', false],
       ['1499', true],
     ]);
     expect(screen.queryByText(POSICIONES_VIEJAS)).toBeNull();
+    // Sin aviso, el estado de la banda es la antigüedad del dato más viejo.
+    expect(screen.getByTestId('linea-banda')).toHaveTextContent(/hace 6 min/);
   });
 
   it('feed de más de 10 min: todos atenuados y aviso', async () => {
@@ -142,7 +153,10 @@ describe('Detalle de línea: frescura y errores', () => {
           ),
       }),
     );
+    // El aviso vive en la banda como estado de advertencia, con su cuadrado ámbar y el texto.
     expect(await screen.findByText(POSICIONES_VIEJAS)).toBeOnTheScreen();
+    expect(screen.getByTestId('linea-banda')).toHaveTextContent(new RegExp(POSICIONES_VIEJAS));
+    expect(screen.getByTestId('signband-estado-cuadrado')).toBeOnTheScreen();
     expect(vehiculosData().every((f) => f.properties.atenuado)).toBe(true);
   });
 
@@ -161,7 +175,7 @@ describe('Detalle de línea: frescura y errores', () => {
     expect(vehiculosData()).toHaveLength(0);
     falla = false;
     await fireEvent.press(screen.getByRole('button', { name: 'Volver a intentar' }));
-    expect(await screen.findByText('1 colectivo en servicio')).toBeOnTheScreen();
+    expect(await screen.findByLabelText(/1 colectivo en servicio/)).toBeOnTheScreen();
   });
 
   it('feed no disponible (sin reintento): lo dice y no ofrece reintentar', async () => {
@@ -177,13 +191,15 @@ describe('Detalle de línea: frescura y errores', () => {
 describe('Detalle de línea: interacción', () => {
   it('tocar un vehículo en el mapa lo resalta y "Seguir" mueve la cámara con él', async () => {
     await renderLinea();
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     await fireEvent.press(source(SOURCE.vehiculos), pressEvent({ id: '1410' }));
 
-    // La tarjeta del elegido (la lista también lo nombra).
-    expect(await screen.findByTestId('linea-seleccionado')).toHaveTextContent(
-      /Interno 1410 · actualizado hace 50 s/,
-    );
+    // La banda se vuelve a señalizar con el vehículo elegido.
+    await screen.findByTestId('linea-seleccionado');
+    const banda = screen.getByTestId('linea-banda');
+    expect(banda).toHaveTextContent(/Interno 1410/);
+    expect(banda).toHaveTextContent(/Actualizado/);
+    expect(banda).toHaveTextContent(/hace 50 s/);
     expect(vehiculosData().find((f) => f.properties.id === '1410')?.properties.seleccionado).toBe(
       true,
     );
@@ -205,11 +221,16 @@ describe('Detalle de línea: interacción', () => {
       await screen.findByRole('button', { name: 'Interno 1404, actualizado hace 25 segundos' }),
     );
     expect(screen.getByTestId('linea-seleccionado')).toBeOnTheScreen();
+    expect(screen.getByTestId('linea-banda')).toHaveTextContent(/Interno 1404/);
+    // «Cerrar» devuelve la banda al conteo.
+    await fireEvent.press(screen.getByRole('button', { name: 'Dejar de mostrar Interno 1404' }));
+    expect(screen.queryByTestId('linea-seleccionado')).toBeNull();
+    expect(screen.getByTestId('linea-banda')).toHaveTextContent(/En servicio/);
   });
 
   it('tocar un grupo acerca la cámara', async () => {
     await renderLinea();
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     await fireEvent.press(
       source(SOURCE.vehiculos),
       pressEvent({ cluster: true, point_count: 12, cluster_id: 1 }),
@@ -219,9 +240,9 @@ describe('Detalle de línea: interacción', () => {
 
   it('cambiar de ramal pide las posiciones del otro', async () => {
     const { fetchMock } = await renderLinea();
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     await fireEvent.press(await screen.findByTestId('linea-ramal-602'));
-    expect(await screen.findByText('1 colectivo en servicio')).toBeOnTheScreen();
+    expect(await screen.findByLabelText(/1 colectivo en servicio/)).toBeOnTheScreen();
     expect(fetchMock.mock.calls.map(([url]) => new URL(url).pathname)).toContain(RUTA_602);
   });
 
@@ -236,7 +257,7 @@ describe('Detalle de línea: interacción', () => {
 
   it('"Centrar en mí" pide el permiso en contexto y, con permiso, suma la distancia', async () => {
     await renderLinea();
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByRole('button', { name: 'Centrar en mi ubicación' }));
     await waitFor(() => {
@@ -261,7 +282,7 @@ describe('Detalle de línea: interacción', () => {
 
   it('"Actualizar" vuelve a pedir las posiciones', async () => {
     const { fetchMock } = await renderLinea();
-    await screen.findByText('2 colectivos en servicio');
+    await screen.findByLabelText(/2 colectivos en servicio/);
     const antes = fetchMock.mock.calls.filter(([u]) => new URL(u).pathname === RUTA_601).length;
     await fireEvent.press(screen.getByRole('button', { name: 'Actualizar' }));
     await waitFor(() => {

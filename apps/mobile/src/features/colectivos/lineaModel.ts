@@ -4,7 +4,7 @@ import type { GeoJsonFeatureCollectionV1, VehiculoV1 } from '@transportate/contr
 
 import type { LatLon } from '@/features/ubicacion';
 import { distanceMeters } from '@/features/ubicacion';
-import { formatAge } from '@/shared/ui';
+import { formatAge, type SignBandStatus } from '@/shared/ui';
 
 /** S31: un vehículo con más de 5 min sin reportar se atenúa. */
 export const VEHICULO_VIEJO_S = 5 * 60;
@@ -82,6 +82,121 @@ export function vistaVehiculo(
       .join(', '),
     rumbo: v.rumbo ?? null,
     metros,
+  };
+}
+
+/** Rótulo de la banda del panel cuando muestra el conteo. */
+export const ROTULO_EN_SERVICIO = 'En servicio';
+export const ROTULO_ACTUALIZADO = 'Actualizado';
+export const VALOR_SIN_COLECTIVOS = 'Sin colectivos con GPS ahora';
+export const VALOR_SIN_DATOS = 'Sin datos';
+
+/** «Línea 152 · Ramal A»; sin ramal, la cabecera («Línea 152 · Constitución – Retiro»). */
+export function mensajeDeLinea(l: {
+  numero: string;
+  ramal?: string | undefined;
+  cabecera?: string | undefined;
+}): string {
+  const detalle = l.ramal !== undefined && l.ramal !== '' ? `Ramal ${l.ramal}` : l.cabecera;
+  return [`Línea ${l.numero}`, detalle].filter((x) => x !== undefined && x !== '').join(' · ');
+}
+
+export interface BandaPanelEntrada {
+  /** Mensaje de la línea (`mensajeDeLinea`). */
+  mensaje: string;
+  /** `cargando`: sin respuesta todavía; `error`: sin datos y con falla. */
+  estado: 'cargando' | 'error' | 'vacio' | 'datos';
+  cantidad: number;
+  /** Segundos del dato más viejo de las posiciones; `null` sin vehículos. */
+  edadMasVieja: number | null;
+  /** Feed con más de 10 min (S31). */
+  feedViejo: boolean;
+  seleccionado: VehiculoVista | null;
+}
+
+export interface BandaPanel {
+  message: string;
+  label: string;
+  /** `null` = cargando. */
+  value: string | null;
+  valueStyle: 'display' | 'text';
+  status: SignBandStatus | undefined;
+  /** Cambia con el conteo o con el vehículo elegido: la banda cruza en fundido. */
+  transitionKey: string;
+  accessibilityLabel: string;
+}
+
+/**
+ * Contenido de la banda fija del panel (F5-MID-B). Sin vehículo elegido responde «¿cuántos
+ * hay?»; con uno elegido se vuelve a señalizar con «Interno 1404 · Actualizado · hace 25 s».
+ * Si el feed está viejo, el aviso (warning) manda sobre la antigüedad o la distancia.
+ */
+export function bandaDelPanel(e: BandaPanelEntrada): BandaPanel {
+  const aviso: SignBandStatus | undefined = e.feedViejo
+    ? { text: POSICIONES_VIEJAS, tone: 'warning' }
+    : undefined;
+
+  if (e.seleccionado !== null) {
+    const v = e.seleccionado;
+    const distancia = v.metros === null ? undefined : formatDistancia(v.metros);
+    return {
+      message: v.nombre,
+      label: ROTULO_ACTUALIZADO,
+      value: `hace ${formatAge(v.edad).short}`,
+      valueStyle: 'text',
+      status:
+        aviso ??
+        (distancia === undefined ? undefined : { text: distancia.short, tone: 'muted' as const }),
+      transitionKey: `interno-${v.id}`,
+      accessibilityLabel: [v.hablado, aviso?.text].filter((x) => x !== undefined).join(', '),
+    };
+  }
+
+  const base = { message: e.mensaje, label: ROTULO_EN_SERVICIO };
+  if (e.estado === 'cargando') {
+    return {
+      ...base,
+      value: null,
+      valueStyle: 'display',
+      status: undefined,
+      transitionKey: 'cargando',
+      accessibilityLabel: `${e.mensaje}, buscando colectivos`,
+    };
+  }
+  if (e.estado === 'error') {
+    return {
+      ...base,
+      value: VALOR_SIN_DATOS,
+      valueStyle: 'text',
+      status: undefined,
+      transitionKey: 'error',
+      accessibilityLabel: `${e.mensaje}, ${POSICIONES_NO_DISPONIBLES.toLowerCase()}`,
+    };
+  }
+  const antiguedad =
+    e.edadMasVieja === null
+      ? undefined
+      : { short: formatAge(e.edadMasVieja).short, spoken: formatAge(e.edadMasVieja).spoken };
+  const status =
+    aviso ??
+    (antiguedad === undefined
+      ? undefined
+      : { text: `hace ${antiguedad.short}`, tone: 'muted' as const });
+  const hablado = [
+    e.mensaje,
+    e.estado === 'vacio' ? SIN_VEHICULOS : enServicio(e.cantidad),
+    antiguedad === undefined ? undefined : `dato más viejo de hace ${antiguedad.spoken}`,
+    aviso?.text,
+  ]
+    .filter((x) => x !== undefined)
+    .join(', ');
+  return {
+    ...base,
+    value: e.estado === 'vacio' ? VALOR_SIN_COLECTIVOS : String(e.cantidad),
+    valueStyle: e.estado === 'vacio' ? 'text' : 'display',
+    status,
+    transitionKey: `conteo-${String(e.cantidad)}`,
+    accessibilityLabel: hablado,
   };
 }
 
