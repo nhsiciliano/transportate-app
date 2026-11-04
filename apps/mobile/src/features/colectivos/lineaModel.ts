@@ -259,3 +259,36 @@ export function ordenarVehiculos(vehiculos: readonly VehiculoVista[]): VehiculoV
       a.id.localeCompare(b.id, 'es'),
   );
 }
+
+// ---- lista a menos de 3 km (F5-MID-C, F5-colectivos-12)
+
+/** Hasta dónde llega la lista de colectivos cuando se conoce la posición de la persona. */
+export const RADIO_LISTA_METROS = 3000;
+export const ROTULO_LISTA_TODOS = 'Colectivos en servicio';
+export const ROTULO_LISTA_CERCA = 'Colectivos a menos de 3 km';
+
+/**
+ * Los colectivos que entran en la lista: los que están a ≤ `RADIO_LISTA_METROS`. El vehículo
+ * `seleccionado` (o seguido) se queda aunque se haya alejado, para no sacarlo de abajo del dedo.
+ * Sin distancia (`metros === null`: sin permiso o sin posición) no hay con qué filtrar y pasa
+ * todo. Conserva el orden de entrada.
+ */
+export function filtrarCercanos(
+  vehiculos: readonly VehiculoVista[],
+  { seleccionado }: { seleccionado: string | null },
+): VehiculoVista[] {
+  return vehiculos.filter(
+    (v) => v.metros === null || v.metros <= RADIO_LISTA_METROS || v.id === seleccionado,
+  );
+}
+
+/** «3 de 7 en servicio»: cuántos de los de la línea muestra la lista. */
+export function resumenDeLista(visibles: number, total: number): string {
+  return `${String(visibles)} de ${String(total)} en servicio`;
+}
+
+/** El vacío de la lista cuando hay colectivos pero ninguno a menos de 3 km. */
+export function mensajeSinCercanos(total: number): string {
+  const hay = total === 1 ? 'Hay 1 en servicio' : `Hay ${String(total)} en servicio`;
+  return `Ningún colectivo a menos de 3 km. ${hay} más lejos.`;
+}

@@ -4,11 +4,15 @@ import {
   bandaDelPanel,
   edadVehiculo,
   enServicio,
+  filtrarCercanos,
   formatDistancia,
   mensajeDeLinea,
+  mensajeSinCercanos,
   ordenarVehiculos,
   POSICIONES_VIEJAS,
+  RADIO_LISTA_METROS,
   recorridoDe,
+  resumenDeLista,
   vehiculosCollection,
   vistaVehiculo,
 } from '../lineaModel';
@@ -216,6 +220,71 @@ describe('bandaDelPanel', () => {
     expect(bandaDelPanel({ ...base, seleccionado: v }).status).toBeUndefined();
     expect(bandaDelPanel({ ...base, seleccionado: v, feedViejo: true }).status?.tone).toBe(
       'warning',
+    );
+  });
+});
+
+describe('lista a menos de 3 km', () => {
+  // Un grado de latitud son ~111,2 km: 0,0269° ≈ 2.990 m y 0,0271° ≈ 3.013 m.
+  const posicion = { lat: -34.6, lon: -58.39 };
+  const a = (id: string, dLat: number) =>
+    vistaVehiculo(vehiculo(id, 20, { lat: -34.6 + dLat }), { now: NOW, posicion });
+
+  it('el radio es de 3.000 m', () => {
+    expect(RADIO_LISTA_METROS).toBe(3000);
+  });
+
+  it('incluye hasta 3.000 m y excluye lo que está más lejos', () => {
+    const vistas = [a('encima', 0), a('justo-dentro', 0.0269), a('justo-fuera', 0.0271)];
+    expect(vistas[1]?.metros).toBeLessThanOrEqual(RADIO_LISTA_METROS);
+    expect(vistas[2]?.metros).toBeGreaterThan(RADIO_LISTA_METROS);
+    expect(filtrarCercanos(vistas, { seleccionado: null }).map((v) => v.id)).toEqual([
+      'encima',
+      'justo-dentro',
+    ]);
+  });
+
+  it('un vehículo a exactamente 3.000 m entra', () => {
+    const exacto = { ...a('exacto', 0), metros: RADIO_LISTA_METROS };
+    expect(filtrarCercanos([exacto], { seleccionado: null })).toHaveLength(1);
+  });
+
+  it('el seleccionado (o seguido) se queda aunque esté a más de 3 km', () => {
+    const vistas = [a('cerca', 0.001), a('lejos', 0.05), a('otro-lejos', 0.06)];
+    expect(filtrarCercanos(vistas, { seleccionado: 'lejos' }).map((v) => v.id)).toEqual([
+      'cerca',
+      'lejos',
+    ]);
+  });
+
+  it('un seleccionado que ya no está en la lista no inventa nada', () => {
+    const vistas = [a('cerca', 0.001)];
+    expect(filtrarCercanos(vistas, { seleccionado: 'se-fue' }).map((v) => v.id)).toEqual(['cerca']);
+  });
+
+  it('sin distancia (metros null en todos) devuelve todos', () => {
+    const vistas = ['a', 'b', 'c'].map((id) =>
+      vistaVehiculo(vehiculo(id, 20, { lat: -35 }), { now: NOW, posicion: null }),
+    );
+    expect(filtrarCercanos(vistas, { seleccionado: null })).toEqual(vistas);
+  });
+
+  it('conserva el orden de entrada', () => {
+    const vistas = [a('b', 0.01), a('a', 0.001), a('c', 0.02)];
+    expect(filtrarCercanos(vistas, { seleccionado: null }).map((v) => v.id)).toEqual([
+      'b',
+      'a',
+      'c',
+    ]);
+  });
+
+  it('textos: «N de M en servicio» y el vacío con singular y plural', () => {
+    expect(resumenDeLista(3, 7)).toBe('3 de 7 en servicio');
+    expect(mensajeSinCercanos(7)).toBe(
+      'Ningún colectivo a menos de 3 km. Hay 7 en servicio más lejos.',
+    );
+    expect(mensajeSinCercanos(1)).toBe(
+      'Ningún colectivo a menos de 3 km. Hay 1 en servicio más lejos.',
     );
   });
 });

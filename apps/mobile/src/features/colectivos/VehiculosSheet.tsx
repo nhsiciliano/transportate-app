@@ -6,6 +6,7 @@
 // - Cuerpo (al subir el panel): ramales y la lista de vehículos, que es la vía principal para el
 //   lector de pantalla y para quien no quiere el mapa.
 import { StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { FavoriteToggle } from '@/features/favoritos';
 import { Icon } from '@/shared/icons';
@@ -23,9 +24,22 @@ import {
   Skeleton,
   SkeletonGroup,
   Text,
+  useReduceMotion,
 } from '@/shared/ui';
 
-import { bandaDelPanel, formatDistancia, REFRESH_FALLIDO, type VehiculoVista } from './lineaModel';
+import {
+  bandaDelPanel,
+  formatDistancia,
+  mensajeSinCercanos,
+  REFRESH_FALLIDO,
+  resumenDeLista,
+  ROTULO_LISTA_CERCA,
+  ROTULO_LISTA_TODOS,
+  type VehiculoVista,
+} from './lineaModel';
+
+/** Fundido de entrada y salida de las filas de la lista (seco con Reducir movimiento). */
+export const FILA_FUNDIDO_MS = 200;
 
 export const SENTIDO_NOTA =
   'El GPS de los colectivos no informa el sentido: ves los de las dos direcciones.';
@@ -193,7 +207,12 @@ export function VehiculosSheetHeader({
 export interface VehiculosSheetBodyProps {
   ramales: readonly RamalOpcion[];
   onSelectRamal: (lineaId: string) => void;
+  /** Los que muestra la lista: con ubicación, los de ≤ 3 km más el elegido (`filtrarCercanos`). */
   vehiculos: readonly VehiculoVista[];
+  /** Cuántos colectivos en servicio tiene la línea (la «M» de «N de M»). */
+  total: number;
+  /** Se conoce la posición de la persona: la lista es «a menos de 3 km». Si no, es la completa. */
+  conUbicacion: boolean;
   seleccionadoId: string | null;
   onSelectVehiculo: (id: string) => void;
   /** «Ramal A»: el subtítulo de cada colectivo cuando no hay ubicación para decir la distancia. */
@@ -204,11 +223,24 @@ export function VehiculosSheetBody({
   ramales,
   onSelectRamal,
   vehiculos,
+  total,
+  conUbicacion,
   seleccionadoId,
   onSelectVehiculo,
   ramal,
 }: VehiculosSheetBodyProps) {
   const { space, colors, fontFamily } = useTheme();
+  const reduceMotion = useReduceMotion();
+  const rotulo = conUbicacion ? ROTULO_LISTA_CERCA : ROTULO_LISTA_TODOS;
+  // Fundido corto al entrar, salir y reacomodarse; sin nada con Reducir movimiento.
+  const animacion = reduceMotion
+    ? {}
+    : {
+        entering: FadeIn.duration(FILA_FUNDIDO_MS),
+        exiting: FadeOut.duration(FILA_FUNDIDO_MS),
+        layout: LinearTransition.duration(FILA_FUNDIDO_MS),
+      };
+  const style15 = { fontFamily: fontFamily.text[400], fontSize: 15, lineHeight: 20 };
   return (
     <>
       {ramales.length > 1 ? (
@@ -235,46 +267,76 @@ export function VehiculosSheetBody({
         {SENTIDO_NOTA}
       </Text>
 
-      {vehiculos.length > 0 ? (
-        <Board label="Colectivos en servicio" testID="linea-vehiculos">
-          {vehiculos.map((v) => {
-            const selected = v.id === seleccionadoId;
-            const distancia = v.metros === null ? undefined : formatDistancia(v.metros).short;
-            return (
-              // El vehículo elegido se marca con el fondo de "apretado"; el que no reporta hace
-              // rato, atenuado (S31). La fila no navega: es un botón que selecciona, sin flecha.
-              <View
-                key={v.id}
-                style={{
-                  backgroundColor: selected ? colors.bg.pressed : 'transparent',
-                  opacity: v.viejo ? 0.7 : 1,
-                }}
+      {total > 0 ? (
+        <View style={{ gap: space[2] }}>
+          <View style={[styles.row, styles.between, styles.wrap, { columnGap: space[2] }]}>
+            <Text
+              variant="text.sm"
+              tone="secondary"
+              accessibilityRole="header"
+              style={{ fontFamily: fontFamily.text[600], fontSize: 13, lineHeight: 16 }}
+            >
+              {rotulo}
+            </Text>
+            {conUbicacion ? (
+              <Text
+                variant="text.sm"
+                tone="secondary"
+                testID="linea-vehiculos-resumen"
+                style={{ fontFamily: fontFamily.text[400], fontSize: 13, lineHeight: 16 }}
               >
-                <Board.Row
-                  testID={`linea-vehiculo-${v.id}`}
-                  leading={<Pictogram icon="colectivos" size={32} tone="board" />}
-                  title={v.nombre}
-                  subtitle={distancia ?? ramal}
-                  trailing={
-                    <Text
-                      variant="text.md"
-                      tone="secondary"
-                      style={{ fontFamily: fontFamily.text[400], fontSize: 15, lineHeight: 20 }}
-                    >
-                      {`hace ${formatAge(v.edad).short}`}
-                    </Text>
-                  }
-                  arrow={false}
-                  onPress={() => {
-                    onSelectVehiculo(v.id);
-                  }}
-                  accessibilityLabel={selected ? `${v.hablado}, Seleccionado` : v.hablado}
-                  accessibilityHint="Lo muestra en el mapa"
-                />
+                {resumenDeLista(vehiculos.length, total)}
+              </Text>
+            ) : null}
+          </View>
+          {vehiculos.length === 0 ? (
+            <Board testID="linea-vehiculos-vacio">
+              <View style={{ padding: space[3] }}>
+                <Text variant="text.md" tone="secondary" style={style15}>
+                  {mensajeSinCercanos(total)}
+                </Text>
               </View>
-            );
-          })}
-        </Board>
+            </Board>
+          ) : (
+            <Board testID="linea-vehiculos">
+              {vehiculos.map((v) => {
+                const selected = v.id === seleccionadoId;
+                const distancia = v.metros === null ? undefined : formatDistancia(v.metros).short;
+                return (
+                  // El vehículo elegido se marca con el fondo de "apretado"; el que no reporta hace
+                  // rato, atenuado (S31). La fila no navega: es un botón que selecciona, sin
+                  // flecha. Entra y sale con un fundido corto cuando cruza los 3 km.
+                  <Animated.View
+                    key={v.id}
+                    {...animacion}
+                    style={{
+                      backgroundColor: selected ? colors.bg.pressed : 'transparent',
+                      opacity: v.viejo ? 0.7 : 1,
+                    }}
+                  >
+                    <Board.Row
+                      testID={`linea-vehiculo-${v.id}`}
+                      leading={<Pictogram icon="colectivos" size={32} tone="board" />}
+                      title={v.nombre}
+                      subtitle={distancia ?? ramal}
+                      trailing={
+                        <Text variant="text.md" tone="secondary" style={style15}>
+                          {`hace ${formatAge(v.edad).short}`}
+                        </Text>
+                      }
+                      arrow={false}
+                      onPress={() => {
+                        onSelectVehiculo(v.id);
+                      }}
+                      accessibilityLabel={selected ? `${v.hablado}, Seleccionado` : v.hablado}
+                      accessibilityHint="Lo muestra en el mapa"
+                    />
+                  </Animated.View>
+                );
+              })}
+            </Board>
+          )}
+        </View>
       ) : null}
     </>
   );

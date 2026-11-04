@@ -3,6 +3,7 @@
 import { fireEvent, waitFor } from '@testing-library/react-native';
 import { screen } from 'expo-router/testing-library';
 import * as Location from 'expo-location';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import {
   FEED_VIEJO_S,
@@ -20,6 +21,16 @@ import { lineaRoutes, posicionesDe, renderLinea, RUTA_601, RUTA_602 } from './li
 
 // Router, providers reales y descarga del índice: con la máquina cargada pasan los 5 s.
 jest.setTimeout(30_000);
+
+// El router de prueba trae su propio `SafeAreaProvider` con insets en 0: se fija el de iOS con tab
+// bar (34 pt de indicador de inicio) para probar que el panel lo suma.
+const INSET_ABAJO = 34;
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual<typeof import('react-native-safe-area-context')>(
+    'react-native-safe-area-context',
+  ),
+  useSafeAreaInsets: () => ({ top: 47, left: 0, right: 0, bottom: 34 }),
+}));
 
 type Props = Record<string, unknown>;
 const props = (testID: string): Props => screen.getByTestId(testID).props as Props;
@@ -300,11 +311,112 @@ describe('Detalle de línea: interacción', () => {
     });
   });
 
+  it('el panel colapsado deja lugar abajo para la tab bar nativa (inset de iOS)', async () => {
+    await renderLinea();
+    await screen.findByRole('button', { name: 'Ver más' });
+    const alto = StyleSheet.flatten(
+      screen.getByTestId('linea-panel').props.style as StyleProp<ViewStyle>,
+    )?.height;
+    // manija 28 + encabezado (120 hasta que se mide) + el inset de abajo.
+    expect(alto).toBe(28 + 120 + INSET_ABAJO);
+  });
+
   it('el panel tiene un botón que lo sube y lo baja', async () => {
     await renderLinea();
     await fireEvent.press(await screen.findByRole('button', { name: 'Ver más' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Ver la lista completa' }));
     expect(screen.getByRole('button', { name: 'Ver menos', expanded: true })).toBeOnTheScreen();
+  });
+});
+
+describe('Detalle de línea: lista a menos de 3 km', () => {
+  // Posición de la persona: encima del interno 1404 (lat -34,6). 0,05° de latitud ≈ 5,6 km.
+  const CERCA = { latitude: -34.6, longitude: -58.39 };
+  const rutaCon = (vehiculos: Parameters<typeof posicionesDe>[1]) =>
+    lineaRoutes({ [RUTA_601]: () => jsonResponse(posicionesDe('601', vehiculos)) });
+  const idsLista = () =>
+    screen
+      .queryAllByTestId(/^linea-vehiculo-\d+$/)
+      .map((el) => (el.props as { testID: string }).testID);
+
+  it('con ubicación, la lista deja solo los de ≤ 3 km y dice «N de M en servicio»', async () => {
+    locationMock.setPermission('granted');
+    locationMock.setPosition(CERCA);
+    await renderLinea(
+      '/colectivos/601',
+      rutaCon([
+        { id: '1404', lat: -34.6, lon: -58.39 },
+        { id: '1410', lat: -34.61, lon: -58.39 },
+        { id: '1500', lat: -34.65, lon: -58.39 },
+        { id: '1501', lat: -34.66, lon: -58.39 },
+      ]),
+    );
+    await screen.findByRole('button', { name: /Interno 1410, actualizado hace .*, a .* de vos/ });
+    expect(idsLista()).toEqual(['linea-vehiculo-1404', 'linea-vehiculo-1410']);
+    expect(screen.getByText('Colectivos a menos de 3 km')).toBeOnTheScreen();
+    expect(screen.getByTestId('linea-vehiculos-resumen')).toHaveTextContent('2 de 4 en servicio');
+    // La banda sigue diciendo el total de la línea, y el mapa no se filtra.
+    expect(screen.getByTestId('linea-banda')).toHaveTextContent(/4/);
+    expect(vehiculosData()).toHaveLength(4);
+  });
+
+  it('un vehículo elegido se queda en la lista aunque esté a más de 3 km', async () => {
+    locationMock.setPermission('granted');
+    locationMock.setPosition(CERCA);
+    await renderLinea(
+      '/colectivos/601',
+      rutaCon([
+        { id: '1404', lat: -34.6, lon: -58.39 },
+        { id: '1500', lat: -34.65, lon: -58.39 },
+      ]),
+    );
+    await screen.findByRole('button', { name: /Interno 1404, actualizado hace/ });
+    expect(idsLista()).toEqual(['linea-vehiculo-1404']);
+    // Lo elige desde el mapa: entra a la lista y se queda mientras esté elegido.
+    await fireEvent(source(SOURCE.vehiculos), 'press', pressEvent({ id: '1500' }));
+    await waitFor(() => {
+      expect(idsLista()).toEqual(['linea-vehiculo-1404', 'linea-vehiculo-1500']);
+    });
+    expect(screen.getByTestId('linea-vehiculos-resumen')).toHaveTextContent('2 de 2 en servicio');
+    // «Cerrar»: el lejano sale de la lista.
+    await fireEvent.press(screen.getByRole('button', { name: 'Dejar de mostrar Interno 1500' }));
+    await waitFor(() => {
+      expect(idsLista()).toEqual(['linea-vehiculo-1404']);
+    });
+  });
+
+  it('con ubicación y ninguno a menos de 3 km, lo dice sin botón', async () => {
+    locationMock.setPermission('granted');
+    locationMock.setPosition(CERCA);
+    await renderLinea(
+      '/colectivos/601',
+      rutaCon([
+        { id: '1500', lat: -34.65, lon: -58.39 },
+        { id: '1501', lat: -34.66, lon: -58.39 },
+      ]),
+    );
+    expect(
+      await screen.findByText('Ningún colectivo a menos de 3 km. Hay 2 en servicio más lejos.'),
+    ).toBeOnTheScreen();
+    expect(idsLista()).toEqual([]);
+    expect(screen.getByTestId('linea-vehiculos-resumen')).toHaveTextContent('0 de 2 en servicio');
+    // Sin botón en el vacío (los de siempre —Actualizar, Ver más— siguen en el panel).
+    expect(screen.queryByRole('button', { name: /lejos|ampliar|ver todos/i })).toBeNull();
+  });
+
+  it('sin ubicación, la lista completa con el rótulo de siempre', async () => {
+    await renderLinea(
+      '/colectivos/601',
+      rutaCon([
+        { id: '1404', lat: -34.6, lon: -58.39 },
+        { id: '1500', lat: -34.65, lon: -58.39 },
+      ]),
+    );
+    await screen.findByRole('button', { name: /Interno 1500, actualizado hace/ });
+    expect(idsLista()).toHaveLength(2);
+    expect(screen.getByText('Colectivos en servicio')).toBeOnTheScreen();
+    expect(screen.queryByText('Colectivos a menos de 3 km')).toBeNull();
+    expect(screen.queryByTestId('linea-vehiculos-resumen')).toBeNull();
   });
 });
 

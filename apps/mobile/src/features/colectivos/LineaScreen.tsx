@@ -18,6 +18,7 @@ import {
   boundsOf,
   panelHeights,
   pointCollection,
+  usePanelBottomInset,
   type MapViewHandle,
   type PanelIndex,
 } from '@/shared/map';
@@ -31,6 +32,7 @@ import {
   CLUSTER_MAX_ZOOM,
   CLUSTER_MIN_VEHICULOS,
   FEED_VIEJO_S,
+  filtrarCercanos,
   mensajeDeLinea,
   ordenarVehiculos,
   POSICIONES_NO_DISPONIBLES,
@@ -145,6 +147,13 @@ export function LineaScreen() {
   const [seleccionadoId, setSeleccionadoId] = useState<string | null>(null);
   const [siguiendo, setSiguiendo] = useState(false);
   const seleccionado = vistas.find((v) => v.id === seleccionadoId) ?? null;
+  // La lista (no el mapa ni la banda) muestra solo los de ≤ 3 km cuando se sabe dónde está la
+  // persona; el elegido o seguido se queda aunque se aleje. Sin ubicación, la lista completa.
+  const conUbicacion = posicion !== null;
+  const enLista = useMemo(
+    () => (conUbicacion ? filtrarCercanos(vistas, { seleccionado: seleccionadoId }) : vistas),
+    [vistas, conUbicacion, seleccionadoId],
+  );
 
   const vehiculosFc = useMemo(
     () =>
@@ -214,7 +223,9 @@ export function LineaScreen() {
   const window = useWindowDimensions();
   const [available, setAvailable] = useState(window.height);
   const [headerHeight, setHeaderHeight] = useState(120);
-  const heights = panelHeights(available, headerHeight);
+  // Lugar para la tab bar nativa (flota sobre el contenido): sin esto tapa la fila de acciones.
+  const bottomInset = usePanelBottomInset();
+  const heights = panelHeights(available, headerHeight, bottomInset);
 
   const refresh = () => {
     void posiciones.refetch();
@@ -280,6 +291,7 @@ export function LineaScreen() {
           onIndexChange={setPanel}
           availableHeight={available}
           headerHeight={headerHeight}
+          bottomInset={bottomInset}
           onHeaderHeight={setHeaderHeight}
           testID="linea-panel"
           header={
@@ -316,7 +328,9 @@ export function LineaScreen() {
               encuadrado.current = false;
               router.setParams({ linea: id });
             }}
-            vehiculos={vistas}
+            vehiculos={enLista}
+            total={vistas.length}
+            conUbicacion={conUbicacion}
             seleccionadoId={seleccionado?.id ?? null}
             onSelectVehiculo={select}
             ramal={

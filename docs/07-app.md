@@ -404,7 +404,7 @@ Tareas 4.0 y 4.3 de la Fase 4. MapLibre React Native 11.5.1 con tiles de OpenFre
 
 ## 19. Colectivos
 
-`src/features/colectivos` ([README](../apps/mobile/src/features/colectivos/README.md): brief operativo, estados, contraste y suposiciones `F4-colectivos-1…7` y `F5-colectivos-1…11`), tareas 4.5, 4.7, 4.11 y 4.12; recompuesta en la Fase 5 (F5-MID-B) con la dirección «Señalética de terminal» (contrato en `apps/mobile/.impeccable/surfaces/src-features-colectivos-colectivosscreen-tsx.md`). Rutas finas: `colectivos/index.tsx` monta `ColectivosScreen` y `colectivos/parada/[id].tsx` monta `ParadaScreen`. El detalle de línea con el mapa (`colectivos/[linea].tsx`, tarea 4.6) es la §21.
+`src/features/colectivos` ([README](../apps/mobile/src/features/colectivos/README.md): brief operativo, estados, contraste y suposiciones `F4-colectivos-1…7` y `F5-colectivos-1…13`), tareas 4.5, 4.7, 4.11 y 4.12; recompuesta en la Fase 5 (F5-MID-B) con la dirección «Señalética de terminal» (contrato en `apps/mobile/.impeccable/surfaces/src-features-colectivos-colectivosscreen-tsx.md`). Rutas finas: `colectivos/index.tsx` monta `ColectivosScreen` y `colectivos/parada/[id].tsx` monta `ParadaScreen`. El detalle de línea con el mapa (`colectivos/[linea].tsx`, tarea 4.6) es la §21.
 
 - **Índice (`useIndiceColectivos`):** `paradas.json` + `lineas-colectivos.json` como archivos grandes (§14).
   - Si `/v1/colectivos/lineas` tiene dato, sus líneas reemplazan a las del archivo, porque los `route_id` se reasignan (`06-proxy.md` §6).
@@ -475,22 +475,23 @@ Queda pendiente, sacado de los README de cada feature.
 
 ## 21. Colectivos: línea y mapa
 
-Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada=<paradaId>`) monta `features/colectivos/LineaScreen.tsx`. El brief operativo, los estados con su copy y las suposiciones `F4-colectivos-mapa-1…11` están en el [README de Colectivos](../apps/mobile/src/features/colectivos/README.md), sección "Línea y mapa"; la forma del panel de la Fase 5 (banda de señal fija, `F5-colectivos-2…7`), en "Brief operativo F5".
+Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada=<paradaId>`) monta `features/colectivos/LineaScreen.tsx`. El brief operativo, los estados con su copy y las suposiciones `F4-colectivos-mapa-1…11` están en el [README de Colectivos](../apps/mobile/src/features/colectivos/README.md), sección "Línea y mapa"; la forma del panel de la Fase 5 (banda de señal fija, `F5-colectivos-2…7`; lista a menos de 3 km, `F5-colectivos-12`; lugar para la tab bar, `F5-colectivos-13`), en "Brief operativo F5".
 
 | Pieza | Qué hace |
 | --- | --- |
 | `LineaScreen` | `usePosicionesLinea(lineaId, { enabled: useIsFocused() })`: polling solo con la pantalla a la vista (S10). Línea, ramales y paradas salen de `useIndiceColectivos()`; el recorrido, de `useStaticArchivoGrande('recorridos-colectivos.geojson')`; la posición de la persona, de `useUbicacion()` (solo en memoria). La cámara se encuadra una vez (parada, recorrido o vehículos) |
 | `MapaLinea` | Recorrido aproximado punteado, paradas desde zoom 14 y vehículos (círculo con el número, flecha ▲ solo si hay `rumbo`, atenuados por S31, feed viejo, sin conexión o actualización fallida). Con más de 80 vehículos se agrupan hasta zoom 13. Hit box de 44 |
 | `VehiculosSheet` | Encabezado siempre visible: `SignBand` `lead` **fija** (sin `onPress` ni flecha) con «Línea 152 · Ramal A», «En servicio», el conteo a 56 pt y la antigüedad del dato (`bandaDelPanel` de `lineaModel.ts`); debajo, frescura, favorito y "Actualizar"; con un vehículo elegido la banda se vuelve a señalizar («Interno 1404», «Actualizado», «hace 25 s», distancia) y suma "Cerrar" y "Seguir". Cuerpo con ramales y la lista accesible de vehículos como placa `Board` (`Pictogram colectivos`, interno, distancia o ramal, «hace 25 s»; filas sin flecha) |
-| `BottomPanel` (`shared/map`) | Panel con tres alturas, arrastrable y con un botón accesible en la manija (§18) |
+| `BottomPanel` (`shared/map`) | Panel con tres alturas, arrastrable y con un botón accesible en la manija (§18). `bottomInset` (`usePanelBottomInset`: inset de abajo en iOS, 0 en Android) deja el lugar de la tab bar nativa, que flota sobre el contenido |
 
+- **Lista a menos de 3 km (F5-colectivos-12):** con ubicación, la lista del nivel expandido muestra solo los colectivos a ≤ 3.000 m (`RADIO_LISTA_METROS`, `filtrarCercanos`), con «N de M en servicio» y un vacío compacto («Ningún colectivo a menos de 3 km. Hay 7 en servicio más lejos.»); el elegido o seguido se queda; entran y salen con un fundido de 200 ms. Sin ubicación, la lista completa. La banda sigue mostrando el total y **el mapa no se filtra**.
 - **Movimiento firma:** la banda del panel cruza en fundido de 200 ms cuando cambia el conteo o el vehículo elegido (`transitionKey`); con Reducir movimiento, corte seco.
 - **Estados de la banda:** carga (valor en skeleton), error sin datos («Sin datos» + `ErrorState`), vacío («Sin colectivos con GPS ahora»), feed de más de 10 min (estado warning «Las posiciones pueden no ser actuales») y actualización fallida (`Alert` con «Reintentar»).
 - **Sentido:** el feed no lo informa. Se ven todos los vehículos del ramal y el selector es de ramal.
 - **Interno:** es el `id` del vehículo del feed.
 - **Alertas de colectivos:** el contrato v1 no las trae.
 - **Tests:**
-  - `test/colectivos/linea.test.tsx` (17 casos), con `test/colectivos/lineaFixtures.tsx` (posiciones validadas con `PosicionesLineaResponseV1` y recorrido con `GeoJsonFeatureCollectionV1`).
+  - `test/colectivos/linea.test.tsx` (22 casos, con el lugar de la tab bar y la lista a menos de 3 km), con `test/colectivos/lineaFixtures.tsx` (posiciones validadas con `PosicionesLineaResponseV1` y recorrido con `GeoJsonFeatureCollectionV1`).
   - `src/features/colectivos/__tests__/lineaModel.test.ts` (incluye `bandaDelPanel`).
 - **A validar en el dispositivo:**
   - que el panel y el mapa no compitan por los gestos;
