@@ -1,26 +1,42 @@
-// Fila de la lista de favoritos (brief `docs/briefs/05-favoritos.md`, §3 y §6).
+// Un favorito como banda de señal `next` (dirección «Señalética de terminal», Fase 5; contrato en
+// `.impeccable/surfaces/src-features-favoritos-favoritosscreen-tsx.md`). Mismo contenido que en
+// Inicio (`modeloBanda`): todas las bandas al mismo rango, en el orden que fijó la persona.
 //
-// - Normal: toda la fila es un botón que lleva al detalle del tipo. El lector la lee como una
-//   unidad: "Casa. Estación Medrano, línea B.".
-// - Edición: el texto abre el alias, hay botones "Cambiar nombre" y "Quitar", y las acciones de
-//   accesibilidad "Mover arriba" / "Mover abajo" (alternativa al arrastre).
-// - Slots: `liveData` (dato vivo, lo conecta `FavoritoItem`) y `dragHandle` (4.9-drag).
+// - Lectura: toda la banda es un botón que abre el detalle del tipo (flecha al borde). El lector la
+//   lee como una unidad: "Casa. Estación Medrano, Línea B, Hacia Leandro N. Alem en 4 minutos".
+// - Edición: la banda conserva su forma. A la izquierda entra la manija «Reordenar» (la pasa la
+//   pantalla: es la del arrastre), la flecha se reemplaza por «Quitar» y tocar el texto abre el
+//   alias (ícono `editar` junto al mensaje). Acciones del lector «Mover arriba» / «Mover abajo».
+// - Huérfano: sin destino, así que no navega ni lleva flecha; cuadrado rojo «Ya no figura» y
+//   «Quitar» siempre visible.
+// - Al entrar y salir de la edición el contenido cruza en fundido (corte seco con Reducir
+//   movimiento): `transitionKey` incluye el modo.
+import type { EstadoServicioV1 } from '@transportate/contracts';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type AccessibilityActionEvent } from 'react-native';
+import { Pressable, StyleSheet, type AccessibilityActionEvent } from 'react-native';
 
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
-import { Button, LineBadge, Text } from '@/shared/ui';
+import { SignBand, signBandPalette } from '@/shared/ui';
 
-import { accessibleLabel, displayName, lineLabel, secondaryText, TIPO_ICON } from './describe';
+import { modeloBanda } from './banda';
+import { displayName } from './describe';
 import type { FavoritoV1 } from './model';
-import { orphanMessage, type SubteBadge } from './subte';
+import type { FavoritoLiveDataResult } from './useFavoritoLiveData';
 
 export const MOVE_UP = 'moveUp';
 export const MOVE_DOWN = 'moveDown';
+/** Valor de la banda de un huérfano; el estado rojo dice «Ya no figura». */
+export const HUERFANO_VALOR = 'Sin datos oficiales';
+export const HUERFANO_ESTADO = 'Ya no figura';
+export const RENAME_HINT = 'Cambiar nombre';
 
 export interface FavoritoRowProps {
   favorito: FavoritoV1;
+  /** Dato vivo del favorito (`useFavoritoLiveData`). */
+  live: FavoritoLiveDataResult;
+  /** Solo estaciones de subte: estado de su línea (cuadrado ámbar o rojo). */
+  estadoLinea?: EstadoServicioV1 | undefined;
   editing: boolean;
   onOpen: () => void;
   onRename: () => void;
@@ -30,47 +46,37 @@ export interface FavoritoRowProps {
   /** Primera/última fila: no ofrece la acción que no se puede hacer. */
   isFirst: boolean;
   isLast: boolean;
-  /** Color de la insignia de subte (del estático). Sin él, insignia neutra. */
-  subteBadge?: SubteBadge | undefined;
-  /** El destino ya no existe en los datos oficiales: la fila avisa y se puede quitar. */
-  orphan?: boolean | undefined;
-  /** Dato vivo (StatusChip, próximo arribo, "18 en servicio"). Lo conecta la tarea de datos. */
-  liveData?: ReactNode;
-  /** Lo que el lector agrega al final de la fila ("Hacia Alem en 2 minutos"). */
-  liveDataLabel?: string | undefined;
-  /** Handle de arrastre en edición. Lo agrega high-dev (4.9-drag). */
+  /** Manija de arrastre en edición (la de `react-native-reorderable-list`). */
   dragHandle?: ReactNode;
   testID?: string;
 }
 
-function LeadingBadge({
-  favorito,
-  badge,
-}: {
-  favorito: FavoritoV1;
-  badge: SubteBadge | undefined;
-}) {
-  // Con el estático cargado, la línea y la estación de subte llevan el color oficial de la línea.
-  if (badge) {
-    return (
-      <LineBadge
-        kind="subte"
-        label={badge.label}
-        color={badge.color}
-        textColor={badge.textColor}
-        size="md"
-        accessibilityLabel={`Línea ${badge.label}`}
-      />
-    );
-  }
-  const isLine = favorito.tipo === 'linea_subte' || favorito.tipo === 'linea_colectivo';
-  if (!isLine) return <Icon name={TIPO_ICON[favorito.tipo]} size={24} />;
-  // Sin el estático (cargando o con error), insignia neutra.
-  return <LineBadge kind="colectivo" label={lineLabel(favorito)} size="md" />;
+/** Botón «Quitar» de 44×44 en el color de la banda. */
+function QuitarButton({ name, onPress }: { name: string; onPress: () => void }) {
+  const { colors, scheme, component } = useTheme();
+  const fg = signBandPalette(colors, scheme, 'next').foreground;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Quitar ${name}`}
+      hitSlop={4}
+      style={({ pressed }) => [
+        styles.boton,
+        { width: component.hitSlop, height: component.hitSlop },
+        pressed ? { opacity: 0.6 } : null,
+      ]}
+      testID="favorito-quitar"
+    >
+      <Icon name="borrar" size={24} color={fg} />
+    </Pressable>
+  );
 }
 
 export function FavoritoRow({
   favorito,
+  live,
+  estadoLinea,
   editing,
   onOpen,
   onRename,
@@ -79,97 +85,33 @@ export function FavoritoRow({
   onMoveDown,
   isFirst,
   isLast,
-  subteBadge,
-  orphan = false,
-  liveData,
-  liveDataLabel,
   dragHandle,
   testID,
 }: FavoritoRowProps) {
-  const { space, colors, component } = useTheme();
   const name = displayName(favorito);
-  const secondary = secondaryText(favorito);
-  const message = orphan ? orphanMessage(favorito) : undefined;
-  const label = accessibleLabel(favorito, message ?? liveDataLabel);
-  const minHeight = component.hitSlop + space[3];
-
-  const texts = (
-    <>
-      <View style={styles.lead} importantForAccessibility="no-hide-descendants">
-        <LeadingBadge favorito={favorito} badge={subteBadge} />
-      </View>
-      <View style={styles.texts}>
-        <Text variant="text.md" numberOfLines={1}>
-          {name}
-        </Text>
-        {secondary ? (
-          <Text variant="text.sm" tone="secondary" numberOfLines={1}>
-            {secondary}
-          </Text>
-        ) : null}
-        {message ? (
-          <View style={[styles.orphan, { gap: space[1] }]}>
-            <Icon name="alerta" size={16} color={colors.role.warning.text} />
-            <Text variant="text.sm" color={colors.role.warning.text} style={styles.grow}>
-              {message}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-      {liveData ? <View style={styles.live}>{liveData}</View> : null}
-    </>
-  );
-
-  // Huérfano fuera de edición: no hay detalle al que ir, así que la fila solo avisa y se quita.
-  if (orphan && !editing) {
-    return (
-      <View
-        testID={testID}
-        accessible
-        accessibilityLabel={label}
-        style={{
-          minHeight,
-          backgroundColor: colors.bg.card,
-          paddingVertical: space[2],
-          paddingHorizontal: space[3],
-          gap: space[2],
-        }}
-      >
-        <View style={[styles.row, { gap: space[3] }]}>{texts}</View>
-        <View style={[styles.row, styles.buttons, { gap: space[2] }]}>
-          <Button
-            label="Quitar"
-            accessibilityLabel={`Quitar ${name}`}
-            variant="danger"
-            outline
-            size="sm"
-            onPress={onRemove}
-          />
-        </View>
-      </View>
-    );
-  }
+  const orphan = live.status === 'orphan';
+  const modelo = modeloBanda(favorito, live, {
+    lider: false,
+    estadoLinea,
+    testID: testID ?? `favorito-${favorito.id}`,
+  });
+  const contenido = orphan
+    ? {
+        ...modelo,
+        value: HUERFANO_VALOR,
+        valueStyle: 'text' as const,
+        status: { tone: 'danger' as const, text: HUERFANO_ESTADO },
+      }
+    : modelo;
+  const quitar = <QuitarButton name={name} onPress={onRemove} />;
+  const transitionKey = editing ? 'edicion' : 'lectura';
 
   if (!editing) {
-    return (
-      <Pressable
-        testID={testID}
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={({ pressed }) => [
-          styles.row,
-          {
-            minHeight,
-            paddingVertical: space[2],
-            paddingHorizontal: space[3],
-            gap: space[3],
-            backgroundColor: pressed ? colors.bg.pressed : colors.bg.card,
-          },
-        ]}
-      >
-        {texts}
-      </Pressable>
+    return orphan ? (
+      // Sin destino: no navega ni lleva flecha; «Quitar» siempre a mano.
+      <SignBand {...contenido} variant="next" trailing={quitar} transitionKey={transitionKey} />
+    ) : (
+      <SignBand {...contenido} variant="next" onPress={onOpen} transitionKey={transitionKey} />
     );
   }
 
@@ -178,60 +120,24 @@ export function FavoritoRow({
   if (!isLast) actions.push({ name: MOVE_DOWN, label: 'Mover abajo' });
 
   return (
-    <View
-      testID={testID}
-      style={{
-        backgroundColor: colors.bg.card,
-        paddingVertical: space[2],
-        paddingHorizontal: space[3],
-        gap: space[2],
+    <SignBand
+      {...contenido}
+      variant="next"
+      transitionKey={transitionKey}
+      leading={dragHandle}
+      trailing={quitar}
+      onPressContent={onRename}
+      contentAccessibilityHint={RENAME_HINT}
+      contentAccessibilityActions={actions}
+      onContentAccessibilityAction={(event: AccessibilityActionEvent) => {
+        if (event.nativeEvent.actionName === MOVE_UP) onMoveUp();
+        else if (event.nativeEvent.actionName === MOVE_DOWN) onMoveDown();
       }}
-    >
-      <View style={[styles.row, { gap: space[3] }]}>
-        {dragHandle ?? null}
-        <Pressable
-          onPress={onRename}
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          accessibilityHint="Tocá para cambiar el nombre"
-          accessibilityActions={actions}
-          onAccessibilityAction={(event: AccessibilityActionEvent) => {
-            if (event.nativeEvent.actionName === MOVE_UP) onMoveUp();
-            else if (event.nativeEvent.actionName === MOVE_DOWN) onMoveDown();
-          }}
-          style={[styles.row, styles.grow, { gap: space[3], minHeight: component.hitSlop }]}
-        >
-          {texts}
-        </Pressable>
-      </View>
-      <View style={[styles.row, styles.buttons, { gap: space[2] }]}>
-        <Button
-          label="Cambiar nombre"
-          accessibilityLabel={`Cambiar nombre de ${name}`}
-          variant="secondary"
-          outline
-          size="sm"
-          onPress={onRename}
-        />
-        <Button
-          label="Quitar"
-          accessibilityLabel={`Quitar ${name}`}
-          variant="danger"
-          outline
-          size="sm"
-          onPress={onRemove}
-        />
-      </View>
-    </View>
+      messageIcon="editar"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center' },
-  grow: { flex: 1 },
-  buttons: { flexWrap: 'wrap' },
-  orphan: { flexDirection: 'row', alignItems: 'center' },
-  lead: { minWidth: 32, alignItems: 'center' },
-  texts: { flex: 1, gap: 2 },
-  live: { alignItems: 'flex-end', flexShrink: 0 },
+  boton: { alignItems: 'center', justifyContent: 'center' },
 });

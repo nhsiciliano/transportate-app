@@ -43,3 +43,11 @@ export {
   type FavoritoLiveDataResult,
   type LiveDataStatus,
 } from './useFavoritoLiveData';
+export {
+  descripcionDeFavorito,
+  mensajeDeFavorito,
+  modeloBanda,
+  TIPO_LECTOR,
+  type ModeloBanda,
+} from './banda';
+export { TIPO_ICON } from './describe';

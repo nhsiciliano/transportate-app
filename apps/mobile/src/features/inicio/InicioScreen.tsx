@@ -15,8 +15,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import {
   useFavoritoLiveData,
   useFavoritos,
+  modeloBanda,
   type FavoritoLiveDataResult,
-  type FavoritoTipo,
   type FavoritoV1,
 } from '@/features/favoritos';
 import {
@@ -29,7 +29,7 @@ import {
 } from '@/features/subtes';
 import { distanceMeters, useUbicacion, type LatLon } from '@/features/ubicacion';
 import { invalidateRealtime } from '@/shared/api';
-import { Icon, type IconName } from '@/shared/icons';
+import { Icon } from '@/shared/icons';
 import { useRefreshInterval } from '@/shared/query';
 import { useStaticArchivoGrande } from '@/shared/static';
 import { useTheme } from '@/shared/theme';
@@ -44,8 +44,6 @@ import {
   Skeleton,
   SkeletonGroup,
   Text,
-  type SignBandProps,
-  type SignBandStatus,
 } from '@/shared/ui';
 
 /** Favoritos que se muestran en Inicio (S28). */
@@ -322,21 +320,6 @@ function Etiqueta() {
 
 // ---------------------------------------------------------------- favoritos
 
-const TIPO_ICON: Record<FavoritoTipo, IconName> = {
-  linea_subte: 'subtes',
-  estacion_subte: 'estacion',
-  linea_colectivo: 'colectivos',
-  parada_colectivo: 'parada',
-};
-
-/** Cómo se lee el tipo antes del nombre ("Estación Medrano"); las líneas ya dicen "Línea". */
-const TIPO_LECTOR: Record<FavoritoTipo, string> = {
-  linea_subte: '',
-  estacion_subte: 'Estación',
-  linea_colectivo: 'Colectivo',
-  parada_colectivo: 'Parada',
-};
-
 /** Detalle del favorito en su tab (S3, F4-inicio-2). */
 export function hrefDeFavorito(f: Pick<FavoritoV1, 'tipo' | 'refId'>): Href {
   switch (f.tipo) {
@@ -349,38 +332,6 @@ export function hrefDeFavorito(f: Pick<FavoritoV1, 'tipo' | 'refId'>): Href {
     case 'parada_colectivo':
       return { pathname: '/colectivos/parada/[id]', params: { id: f.refId } };
   }
-}
-
-/**
- * Mensaje de la banda: el alias si lo hay; si no, el nombre con lo que lo ubica («Línea B ·
- * Medrano hacia Leandro N. Alem», «Línea 152 · Ramal A», «Parada Cabildo y Juramento»).
- */
-export function mensajeDeFavorito(
-  f: Pick<FavoritoV1, 'tipo' | 'nombre' | 'subtitulo' | 'alias'>,
-  sentido?: string,
-): string {
-  if (f.alias !== undefined) return f.alias;
-  const con = (a: string, b: string | undefined) =>
-    b === undefined || b === '' ? a : `${a} · ${b}`;
-  switch (f.tipo) {
-    case 'linea_subte':
-    case 'linea_colectivo':
-      return con(f.nombre, f.subtitulo);
-    case 'estacion_subte': {
-      const estacion = sentido === undefined ? f.nombre : `${f.nombre} hacia ${sentido}`;
-      return f.subtitulo === undefined ? `Estación ${estacion}` : con(f.subtitulo, estacion);
-    }
-    case 'parada_colectivo':
-      return `Parada ${f.nombre}`;
-  }
-}
-
-/** Lo que el lector lee antes del dato vivo: alias, tipo, nombre y subtítulo. */
-function descripcionDeFavorito(f: FavoritoV1): string {
-  const tipo = [TIPO_LECTOR[f.tipo], f.nombre].filter((x) => x !== '').join(' ');
-  return [f.alias, f.subtitulo === undefined ? tipo : `${tipo}, ${f.subtitulo}`]
-    .filter((x) => x !== undefined && x !== '')
-    .join('. ');
 }
 
 type PosicionesEstaticas = ReadonlyMap<string, LatLon>;
@@ -432,58 +383,6 @@ function useLiveDeVisibles(visibles: readonly FavoritoV1[]): FavoritoLiveDataRes
     useFavoritoLiveData(at(4), on(4)),
   ];
   return live.slice(0, Math.min(visibles.length, FAVORITOS_EN_INICIO));
-}
-
-const ESTADO_DE_LINEA: Partial<Record<EstadoServicioV1, SignBandStatus>> = {
-  demorada: { text: 'Con demoras', tone: 'warning' },
-  interrumpida: { text: 'Interrumpida', tone: 'danger' },
-};
-
-type ModeloBanda = Omit<SignBandProps, 'variant' | 'onPress'>;
-
-/** De favorito + dato vivo a lo que dibuja la banda. Puro: lo prueban los tests. */
-export function modeloBanda(
-  f: FavoritoV1,
-  live: FavoritoLiveDataResult,
-  { lider, estadoLinea }: { lider: boolean; estadoLinea?: EstadoServicioV1 | undefined },
-): ModeloBanda {
-  const message = mensajeDeFavorito(f, live.sentido);
-  const base = { icon: TIPO_ICON[f.tipo], message, testID: `inicio-favorito-${f.id}` };
-  const descripcion = descripcionDeFavorito(f);
-
-  if (live.status === 'loading') {
-    return { ...base, value: null, accessibilityLabel: `${descripcion}, cargando` };
-  }
-  if (live.status === 'error' || live.status === 'none' || live.status === 'orphan') {
-    const value = live.primary === '' ? live.text : live.primary;
-    return {
-      ...base,
-      value,
-      valueStyle: 'text',
-      accessibilityLabel: `${descripcion}, ${live.status === 'orphan' ? live.spoken : value}`,
-    };
-  }
-
-  // Estado de la línea de una estación (cuadrado ámbar o rojo) y antigüedad si el dato está viejo.
-  const linea = estadoLinea === undefined ? undefined : ESTADO_DE_LINEA[estadoLinea];
-  const edad = live.status === 'stale' && live.ageText !== undefined ? live.ageText : '';
-  const status: SignBandStatus | undefined =
-    linea !== undefined
-      ? { tone: linea.tone, text: edad === '' ? linea.text : `${linea.text} · ${edad}` }
-      : edad !== ''
-        ? { tone: 'muted', text: edad }
-        : undefined;
-  const label = lider && live.primaryIsArribo ? 'Próximo' : undefined;
-  return {
-    ...base,
-    value: live.primary,
-    valueStyle: live.primaryIsArribo ? 'display' : 'text',
-    label,
-    status,
-    accessibilityLabel: [descripcion, live.spoken, linea?.text.toLowerCase()]
-      .filter((x) => x !== undefined && x !== '')
-      .join(', '),
-  };
 }
 
 function Favoritos({
@@ -545,7 +444,11 @@ function Favoritos({
   const modeloLider =
     lider?.live === undefined
       ? undefined
-      : modeloBanda(lider.f, lider.live, { lider: true, estadoLinea: estadoDeEstacion(lider.f) });
+      : modeloBanda(lider.f, lider.live, {
+          lider: true,
+          estadoLinea: estadoDeEstacion(lider.f),
+          testID: `inicio-favorito-${lider.f.id}`,
+        });
   const liderBanda =
     lider === undefined || modeloLider === undefined ? null : (
       <SignBand
@@ -567,7 +470,11 @@ function Favoritos({
             <SignBand
               key={f.id}
               variant="next"
-              {...modeloBanda(f, l, { lider: false, estadoLinea: estadoDeEstacion(f) })}
+              {...modeloBanda(f, l, {
+                lider: false,
+                estadoLinea: estadoDeEstacion(f),
+                testID: `inicio-favorito-${f.id}`,
+              })}
               onPress={abrir(f)}
             />
           ),

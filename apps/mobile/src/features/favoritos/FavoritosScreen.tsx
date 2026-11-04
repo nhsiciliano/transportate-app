@@ -1,6 +1,8 @@
-// Pantalla Favoritos (tarea 4.9; brief `docs/briefs/05-favoritos.md`). Lista única en el orden
-// guardado, pintada síncrona desde MMKV. Sin datos vivos ni arrastre todavía: ver los slots
-// `liveData` y `dragHandle` de `FavoritoRow` y el README de la feature.
+// Pantalla Favoritos (tarea 4.9; brief `docs/briefs/05-favoritos.md`). Desde la Fase 5, con la
+// dirección «Señalética de terminal» (contrato en
+// `.impeccable/surfaces/src-features-favoritos-favoritosscreen-tsx.md`): el tablero completo, una
+// banda `next` por favorito con el mismo contenido que en Inicio, en el orden guardado (pintado
+// síncrono desde MMKV). La edición conserva la forma de las bandas (manija, «Quitar», alias).
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,8 +13,11 @@ import ReorderableList, {
 } from 'react-native-reorderable-list';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import type { EstadoServicioV1 } from '@transportate/contracts';
+
 import { useRedSubte, usePullToRefresh } from '@/features/subtes/hooks';
-import { invalidateRealtime } from '@/shared/api';
+import { estadoDeLinea } from '@/features/subtes/model';
+import { invalidateRealtime, useEstadoSubtes } from '@/shared/api';
 import { useRefreshInterval } from '@/shared/query';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
@@ -22,6 +27,7 @@ import {
   EmptyState,
   FreshnessLabel,
   SearchInput,
+  signBandPalette,
   SnackbarProvider,
   Text,
   triggerHaptic,
@@ -37,7 +43,6 @@ import { useFavoritos } from './FavoritosProvider';
 import type { FavoritoV1 } from './model';
 import { filterFavoritos, SEARCH_THRESHOLD } from './search';
 import { isServiceDown, type ServiceHealth } from './servicio';
-import { resolveFavorito } from './subte';
 
 /** Hasta que la lista informe qué filas se ven, se consideran visibles las primeras. */
 export const INITIAL_VISIBLE = 10;
@@ -57,15 +62,26 @@ export function FavoritosScreen() {
 }
 
 function FavoritosContent() {
-  const { space, colors } = useTheme();
+  const { space, colors, scheme } = useTheme();
+  // Fondo del mundo: `bg.elevated` (#edf4ff) en claro, `bg.base` en oscuro (como Inicio).
+  const fondo = scheme === 'light' ? colors.bg.elevated : colors.bg.base;
   const reduceMotion = useReduceMotion(); // 4.9-drag
   const router = useRouter();
   const snackbar = useSnackbar();
   const { favoritos, repository } = useFavoritos();
   const { editing, setEditing } = useEditMode();
-  // El color de las insignias de subte sale del estático (F4-favoritos-9); el huérfano lo decide
-  // `useFavoritoLiveData` (único criterio, F4-favoritos-7).
+  // Estado de la línea de cada estación guardada (cuadrado ámbar/rojo en su banda). El estado del
+  // subte solo se pide si hay alguna estación; el huérfano lo decide `useFavoritoLiveData`
+  // (único criterio, F4-favoritos-7).
   const { red } = useRedSubte();
+  const hayEstaciones = favoritos.some((f) => f.tipo === 'estacion_subte');
+  const estadoSubte = useEstadoSubtes({ enabled: hayEstaciones });
+  const estadoDeEstacion = (f: FavoritoV1): EstadoServicioV1 | undefined => {
+    if (f.tipo !== 'estacion_subte' || estadoSubte.data === undefined) return undefined;
+    const key = red?.estacionPorId.get(f.refId)?.linea;
+    const linea = key === undefined ? undefined : red?.lineaPorKey.get(key);
+    return linea === undefined ? undefined : estadoDeLinea(linea, estadoSubte.data.lineas).estado;
+  };
   const queryClient = useQueryClient();
   const { seconds } = useRefreshInterval();
   // Pull to refresh: vuelve a pedir los datos en vivo (los estáticos no se tocan).
@@ -121,7 +137,7 @@ function FavoritosContent() {
       // Scroll con `contentInsetAdjustmentBehavior`: así el estado vacío queda debajo del header
       // (large title) como el resto de los tabs, y entra con Dynamic Type grande.
       <ScrollView
-        style={[styles.flex, { backgroundColor: colors.bg.base }]}
+        style={[styles.flex, { backgroundColor: fondo }]}
         contentContainerStyle={styles.emptyContent}
         contentInsetAdjustmentBehavior="automatic"
         testID="favoritos-vacio"
@@ -235,7 +251,7 @@ function FavoritosContent() {
           los pone `contentInsetAdjustmentBehavior`. La raíz de RNGH ya está en `app/_layout.tsx`. */}
       <ReorderableList
         testID="favoritos-lista"
-        style={[styles.flex, { backgroundColor: colors.bg.base }]}
+        style={[styles.flex, { backgroundColor: fondo }]}
         dragEnabled={dragEnabled}
         onReorder={onReorder}
         onDragStart={onDragHaptic}
@@ -259,14 +275,13 @@ function FavoritosContent() {
         viewabilityConfig={VIEWABILITY}
         onViewableItemsChanged={onViewableItemsChanged}
         renderItem={({ item, index }) => {
-          const resolved = resolveFavorito(item, red);
           return (
             <FavoritoItem
               favorito={item}
               visible={viewable === null ? index < INITIAL_VISIBLE : viewable.has(item.id)}
               onTimestamp={onTimestamp}
               onHealth={onHealth}
-              subteBadge={resolved.badge}
+              estadoLinea={estadoDeEstacion(item)}
               editing={editing}
               isFirst={!canMove || index === 0}
               isLast={!canMove || index === visible.length - 1}
@@ -318,7 +333,9 @@ function onDragHaptic() {
 /** Manija de arrastre (44 × 44). Arranca el arrastre al apoyar el dedo. */
 function DragHandle() {
   const drag = useReorderableDrag();
-  const { component } = useTheme();
+  const { component, colors, scheme } = useTheme();
+  // En el color del texto de la banda `next` (la manija va dentro de la banda).
+  const fg = signBandPalette(colors, scheme, 'next').foreground;
   return (
     <Pressable
       onPressIn={drag}
@@ -328,7 +345,7 @@ function DragHandle() {
       style={[styles.handle, { width: component.hitSlop, height: component.hitSlop }]}
       testID="favorito-drag-handle"
     >
-      <Icon name="reordenar" size={24} />
+      <Icon name="reordenar" size={24} color={fg} />
     </Pressable>
   );
 }
