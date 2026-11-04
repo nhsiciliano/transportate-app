@@ -23,10 +23,14 @@ export const BOARD = {
   rowMinHeight: 56,
   paddingX: 12,
   gap: 12,
-  /** Flecha de 20 a 12 pt del borde; el contenido deja 40 pt libres para ella. */
+  /**
+   * Flecha de 20 a 12 pt del borde. Es un elemento más de la fila (no `absolute`) con
+   * `flexShrink: 0`: el contenido, incluido el `trailing`, nunca la tapa (F5-HIGH-C). Reserva
+   * total a la derecha: gap 12 + flecha 20 + borde 12 = 44 pt.
+   */
   arrowSize: 20,
   arrowInset: 12,
-  arrowReserve: 40,
+  arrowReserve: 44,
   statusSquare: 10,
 } as const;
 
@@ -243,7 +247,7 @@ function BoardRow({
     </>
   );
 
-  const base = [styles.row, navega ? styles.rowNav : null];
+  const base = styles.row;
   if (tocable) {
     return (
       <Pressable
@@ -323,20 +327,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: BOARD.paddingX,
     gap: BOARD.gap,
   },
-  rowNav: { paddingRight: BOARD.arrowReserve },
   // El `leading` va de borde a borde en alto (un trazo de recorrido sigue entre filas).
   leading: { justifyContent: 'center' },
   texts: { flex: 1, minWidth: 0, justifyContent: 'center', paddingVertical: 8, gap: 2 },
   small: { fontSize: 13, lineHeight: 16 },
-  trailing: { justifyContent: 'center', alignItems: 'flex-end', flexShrink: 1, maxWidth: '50%' },
+  // Sin pasar de la mitad del lugar que queda (la flecha ya está afuera de ese lugar): con Dynamic
+  // Type grande, el texto del `trailing` baja de línea antes que crecer.
+  trailing: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    flexShrink: 1,
+    minWidth: 0,
+    maxWidth: '50%',
+    paddingVertical: 8,
+  },
   status: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statusText: { flexShrink: 1, textAlign: 'right' },
-  arrow: {
-    position: 'absolute',
-    right: BOARD.arrowInset,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
+  arrow: { width: BOARD.arrowSize, flexShrink: 0, justifyContent: 'center' },
   skeletonTexts: { flex: 1, gap: 6 },
 });

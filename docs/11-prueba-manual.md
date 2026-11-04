@@ -170,6 +170,8 @@ Desde la Fase 5, Ajustes, Acerca de y Licencias siguen la dirección «Señalét
 
 - [ ] Recorré Inicio, Subtes (raíz, línea, estación, mapa), Favoritos y Ajustes en **Claro** y en **Oscuro**.
 - [ ] Nada queda con texto ilegible, fondo que no cambió o un borde que desaparece. Los colores de línea (A, H, Premetro) siguen distinguibles en los dos temas.
+- [ ] **📱 Oscuro con el sistema en claro:** dejá el iPhone en modo claro y elegí **Oscuro** en Ajustes. Los títulos grandes («Subtes», «Colectivos», «Favoritos»), los títulos de header («Ajustes», el nombre de una parada, «Línea 15A»), el botón «Atrás», «Editar/Listo» y la tab bar tienen que verse **oscuros y legibles** (texto claro sobre fondo oscuro), igual que la hora de la barra de estado. Volvé a **Sistema**: todo vuelve a claro. Repetí al revés (sistema en oscuro, elegí **Claro**).
+- [ ] **📱 Títulos con Fira Sans:** los large titles y los títulos de header usan la misma letra que el resto de la app, y el large title sigue achicándose al scrollear (si dejara de colapsar en iOS 26, anotalo: el plan B es la fuente del sistema solo en el large title).
 
 ## 7. Texto grande y Reducir movimiento
 
