@@ -169,6 +169,11 @@ export interface BoardRowProps {
   trailing?: ReactNode;
   /** Abre algo: la fila es botón y lleva la flecha al borde. Sin `onPress`, no hay flecha. */
   onPress?: (() => void) | undefined;
+  /**
+   * Flecha al borde. Default `true` cuando hay `onPress`. `false` para filas que seleccionan pero
+   * no navegan (por ejemplo, elegir un vehículo en la lista de una línea): siguen siendo botón.
+   */
+  arrow?: boolean | undefined;
   /** Lo que lee el lector. Default: título, subtítulo y nota. */
   accessibilityLabel?: string | undefined;
   accessibilityHint?: string | undefined;
@@ -183,13 +188,16 @@ function BoardRow({
   note,
   trailing,
   onPress,
+  arrow,
   accessibilityLabel,
   accessibilityHint,
   disabled = false,
   testID,
 }: BoardRowProps) {
   const { colors, fontFamily } = useTheme();
-  const navega = onPress !== undefined;
+  const tocable = onPress !== undefined;
+  // La flecha promete un destino: solo con `onPress` y si no se apagó a propósito.
+  const navega = tocable && arrow !== false;
   const label =
     accessibilityLabel ??
     [title, subtitle, note?.text].filter((x) => x !== undefined && x !== '').join(', ');
@@ -236,7 +244,7 @@ function BoardRow({
   );
 
   const base = [styles.row, navega ? styles.rowNav : null];
-  if (navega) {
+  if (tocable) {
     return (
       <Pressable
         testID={testID}
