@@ -67,6 +67,21 @@ describe('Board', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('arrow={false}: sigue siendo botón pero sin flecha ni reserva a la derecha', async () => {
+    const onPress = jest.fn();
+    await renderThemed(
+      <Board>
+        <Board.Row testID="fila" title="Interno 1404" arrow={false} onPress={onPress} />
+      </Board>,
+    );
+    const fila = screen.getByRole('button', { name: 'Interno 1404' });
+    expect(screen.queryByTestId('fila-flecha', { includeHiddenElements: true })).toBeNull();
+    expect(fila).toHaveStyle({ paddingHorizontal: 12 });
+    expect(fila).not.toHaveStyle({ paddingRight: 40 });
+    await fireEvent.press(fila);
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
   it('fila sin onPress: un solo elemento accesible, sin botón ni flecha', async () => {
     await renderThemed(
       <Board>
