@@ -395,3 +395,40 @@ El usuario re-probó y los headers seguían vacíos: la hipótesis de la fuente 
 2. Con las capturas: **finish review** (`impeccable-finish-reviewer`) contra los contratos y el boceto; correcciones; **documenter** para reescribir `DESIGN.md` desde lo construido (hoy DESIGN.md describe el sistema previo: Nunito/Open Sans, Card radio 16).
 3. Decisiones abiertas: texto de «Diseño» en Acerca de; contacto o «Reportar un problema» (F4-ajustes-3); `Board.Row selected`.
 4. Después, el resto de la fase (5.1–5.7).
+
+## Fase 6 — Trenes · **ola 1 integrada en `main`, ola 2 en curso**
+
+Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del GCBA: la instancia pública comunitaria de la API de SOFSE (`ariedro.dev/api-trenes`). Plan en la sección «Fase 6» de [`00-plan.md`](00-plan.md); evaluación de la fuente en [`01d-api-trenes-sofse.md`](01d-api-trenes-sofse.md).
+
+### Cronología (2026-11-05)
+
+| Hora / paso | Qué pasó |
+| --- | --- |
+| **Decisión del usuario** | Sumar la tab «Trenes» (Fase 6) con favoritos de **ramal** y de **estación** (no de línea), consumiendo la instancia comunitaria **solo desde el Worker**. **Sin token propio:** Transportate no implementa el login contra SOFSE; si la instancia cae, Trenes dice «Sin información». |
+| **Evaluación de la fuente** | Verificada en vivo: no es oficial (repo de una persona, WTFPL, último commit 2025-11-21 «fix: update cipher»); 6 líneas, 27 ramales públicos y ~300 estaciones; 1,3–2,5 s por pedido; arribos de Retiro 106 KB y de Caballito 42 KB; no cubre Belgrano Norte ni Urquiza. Sin alternativa oficial (la API del GCBA da 404 en `/trenes/*`, el GTFS de trenes es de 2020). Riesgos y plan de salida en `01d`. |
+| **Ola 1** (mergeada) | **F6-LOW-A** (low-dev, hasta `81c449d`): `docs/01d`, `docs/02c` (colores), `docs/briefs/07-trenes.md` con S34–S42, el contrato de superficie de Trenes, la Fase 6 en el plan, y trenes en `PRODUCT.md`, `03-arquitectura.md` y `04-escalabilidad.md`. **F6-HIGH-A** (high-dev, merge `9825c3d`): `/v1/trenes/estado`, `/alertas` y `/estaciones/:id/arribos` en el Worker con la fuente SOFSE aislada (adaptador + esquemas del upstream + `TRENES_UPSTREAM_BASE`), kill-switch `TRENES_ENABLED`, `tools/sofse-probe` y las fixtures reales del 2026-11-05 (`apps/proxy/test/fixtures/sofse/`). |
+| **Contratos estáticos** (coordinador, `c428176`) | `TrenesLineasArchivoV1` y `TrenesEstacionesArchivoV1` en `packages/contracts` (`trenes-lineas.json`, `trenes-estaciones.json`). |
+| **Ola 2** (en curso) | **F6-HIGH-B:** feature `features/trenes` en la app (modelo, hooks, 4 pantallas), rutas, tab entre Subtes y Favoritos, favoritos `ramal_tren` y `estacion_tren`, Inicio. **F6-MID:** paso `trenes` de `tools/gtfs` (el paquete estático). **F6-LOW-B:** docs de la app (`07-app.md` §22), testing (`09-testing.md`), prueba manual (`11-prueba-manual.md` §3b), atribución de trenes en Acerca de y esta sección. |
+
+### Hallazgos que condicionan el diseño
+
+- **La fuente no da un estado de línea:** el campo `estado` de `gerencias` dice «Alertas por ramal» en las 7 líneas. El estado de línea y de ramal se deriva de las alertas (reglas de subtes reutilizadas; `apps/proxy/src/adapters/trenes/README.md`). Con esa regla un ramal regional interrumpido pone toda su línea en «Interrumpida» (con la captura del 2026-11-05 08:56: Roca interrumpida solo por Cañuelas–Lobos). Es conservador y queda a evaluar con uso real.
+- **Siete pedidos por refresco de estado, seis conexiones simultáneas:** el Worker lleva a lo sumo 6 en vuelo y los refrescos piden `gerencias` y los 6 `ramales` con un plazo único de 5 s. Para escalar, trenes es el primer candidato a la capa B (`04-escalabilidad.md` §10): la fuente es un servidor personal.
+- **Los colores de las líneas son provisorios:** no hay manual oficial con hex; salen de las cajas de ramales de Wikipedia (`02c-colores-trenes.md`). Tren de la Costa necesita borde en oscuro y Roca, Mitre y San Martín en claro.
+- **Fechas:** los arribos vienen en UTC real (`Z`); las alertas, en hora de Buenos Aires sin zona (se interpretan con −03:00).
+- **Una estación inexistente y una sin trenes dan lo mismo** (200 con lista vacía): no hay 404 de estación.
+- **Favoritos y downgrade:** los tipos `ramal_tren` y `estacion_tren` no suben `FAVORITOS_SCHEMA_VERSION` (sigue en 1), pero una versión vieja de la app que lea una lista con un favorito de tren la declara inválida y arranca vacía (`07-app.md` §8).
+
+### Pendiente
+
+| # | Qué | Quién | Estado |
+| --- | --- | --- | --- |
+| 1 | **Colores oficiales** de las 6 líneas: comparar con señalética y mapas oficiales, confirmar o reemplazar los provisorios y regenerar el paquete estático (tarea 6.6) | Coordinador | Abierto |
+| 2 | **Subida a R2** de `trenes-lineas.json` y `trenes-estaciones.json` (y de un manifiesto nuevo) | Coordinador | Abierto, después de la ola 2 |
+| 3 | **Smoke en el simulador** de la tab Trenes contra el proxy local (`07-app.md` §11), incluido `TRENES_ENABLED=false` | Coordinador | Abierto |
+| 4 | **Prueba manual en el iPhone** con la sección 3b de [`11-prueba-manual.md`](11-prueba-manual.md) | Usuario | Abierto |
+| 5 | **Capturas y finish review** de Trenes contra el brief y el contrato de superficie (tarea 6.7) | Coordinador | Abierto, junto con las de la Fase 5 |
+| 6 | **Reconciliar la documentación de la ola 2** con lo mergeado: las marcas «a confirmar al cerrar la ola 2» de `07-app.md` §22, `09-testing.md` y `11-prueba-manual.md` (nombres de tests, conteos, estado «Normal» o «Sin novedades», intervalos de polling, cuántas bandas por estación) | Coordinador | Abierto |
+| 7 | Decisiones abiertas del brief: tira «Trenes ahora» en Inicio, nota sobre Belgrano Norte y Urquiza, orden de la tab | Usuario | Abierto |
+| 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
+| 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
