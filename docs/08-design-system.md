@@ -144,6 +144,7 @@ Columnas: uso en la app → nombre en Material Symbols → archivo en `@material
 | Vista de lista | `list` | `rounded/list-fill.svg` | HTTP 200 · 947 B |
 | Parada de colectivo | `departure_board` | `rounded/departure_board-fill.svg` | HTTP 200 · 848 B |
 | Estación de subte | `subway` | `rounded/subway-fill.svg` | HTTP 200 · 662 B |
+| Trenes: línea, ramal y estación de tren (`tren`, `estacionTren`, Fase 6) | `train` | `rounded/train-fill.svg` | en `node_modules` (`@material-symbols/svg-400`) · 592 B |
 | Andén (arribos por andén) | `transfer_within_a_station` | `rounded/transfer_within_a_station-fill.svg` | HTTP 200 · 907 B |
 | Sentido: ida y vuelta (alternar) | `swap_horiz` | `rounded/swap_horiz-fill.svg` | HTTP 200 · 472 B |
 | Sentido: hacia la cabecera | `arrow_forward` | `rounded/arrow_forward-fill.svg` | HTTP 200 · 289 B |

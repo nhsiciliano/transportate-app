@@ -6,8 +6,8 @@ import { light } from '@/shared/theme';
 const names = Object.keys(iconMap) as IconName[];
 
 describe('Icon', () => {
-  it('el mapa curado tiene los 46 usos de docs/08-design-system.md', () => {
-    expect(names).toHaveLength(46);
+  it('el mapa curado tiene los 48 usos de docs/08-design-system.md', () => {
+    expect(names).toHaveLength(48);
   });
 
   it.each(names)('renderiza "%s" sin tirar', async (name) => {

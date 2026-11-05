@@ -121,6 +121,43 @@ describe('LineBadge, OfflineBanner y Skeleton', () => {
     expect(screen.getByLabelText('Línea 60')).toBeOnTheScreen();
   });
 
+  it('LineBadge de tren: siglas en un rectángulo con borde solo si el color no llega a 3:1', async () => {
+    await renderThemed(
+      <>
+        {/* Roca (#FAB700) sobre el fondo claro: 1,60:1 → borde. */}
+        <LineBadge
+          kind="tren"
+          label="R"
+          color="#FAB700"
+          textColor="#000000"
+          surface="#edf4ff"
+          accessibilityLabel="Línea Roca"
+          testID="badge-roca"
+        />
+        {/* Tren de la Costa (#002D9A) sobre el fondo claro: 10,31:1 → sin borde. */}
+        <LineBadge
+          kind="tren"
+          label="TC"
+          color="#002D9A"
+          textColor="#FFFFFF"
+          surface="#edf4ff"
+          accessibilityLabel="Tren de la Costa"
+          testID="badge-costa"
+        />
+      </>,
+    );
+    const roca = screen.getByTestId('badge-roca');
+    const costa = screen.getByLabelText('Tren de la Costa');
+    expect(screen.getByText('TC')).toBeOnTheScreen();
+    const estilo = (el: typeof roca) =>
+      Object.assign({}, ...[el.props.style as object].flat(Infinity)) as Record<string, unknown>;
+    expect(estilo(roca).borderWidth).toBeGreaterThan(0);
+    expect(estilo(roca).backgroundColor).toBe('#FAB700');
+    expect(estilo(costa).borderWidth).toBe(0);
+    // Rectángulo redondeado (no círculo como el subte).
+    expect(estilo(costa).borderRadius).not.toBe((estilo(costa).height as number) / 2);
+  });
+
   it('OfflineBanner solo aparece con visible', async () => {
     const view = await renderThemed(<OfflineBanner visible={false} />);
     expect(screen.queryByText(OFFLINE_MESSAGE)).toBeNull();
