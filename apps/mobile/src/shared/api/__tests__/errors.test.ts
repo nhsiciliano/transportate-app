@@ -41,6 +41,22 @@ describe('userMessage (voseo, docs/briefs/README.md "ErrorState")', () => {
     );
   });
 
+  it('en trenes, timeout y 5xx nombran al servicio de trenes (la fuente no es de la Ciudad)', () => {
+    const T = '/v1/trenes/estaciones/:estacionId/arribos';
+    const trenes = 'El servicio de trenes no responde en este momento.';
+    expect(new HttpError(T, 503, 'upstream_unavailable', null).userMessage()).toEqual({
+      title: 'Servicio no disponible',
+      cause: trenes,
+    });
+    expect(new HttpError('/v1/trenes/estado', 502, null, null).userMessage().cause).toBe(trenes);
+    expect(new TimeoutError('/v1/trenes/alertas', 8000).userMessage().cause).toBe(trenes);
+    // Lo que no es del upstream sigue igual.
+    expect(new HttpError(T, 500, 'internal', null).userMessage().title).toBe(
+      'Algo falló de nuestro lado.',
+    );
+    expect(new NetworkError(T).userMessage().title).toBe('No pudimos conectarnos');
+  });
+
   it('toApiError: lo que no es ApiError es un bug nuestro (contract, sin reintento)', () => {
     const error = toApiError(new RangeError('x'), R);
     expect(isApiError(error)).toBe(true);
@@ -73,12 +89,15 @@ describe('queryKeys', () => {
     expect(queryKeys.subtes.estado()).toEqual(['subtes', 'estado']);
     expect(queryKeys.colectivos.posiciones('1234')).toEqual(['colectivos', 'posiciones', '1234']);
     expect(queryKeys.subtes.arribos('1001')).toEqual(['subtes', 'arribos', '1001']);
+    expect(queryKeys.trenes.arribos('50')).toEqual(['trenes', 'arribos', '50']);
+    expect(queryKeys.trenes.estado()).toEqual(['trenes', 'estado']);
   });
 
   it('invalidateRealtime deja afuera líneas y manifiesto', async () => {
     const client = new QueryClient();
     for (const key of [
       queryKeys.subtes.estado(),
+      queryKeys.trenes.arribos('50'),
       queryKeys.colectivos.arribos('5678'),
       queryKeys.colectivos.lineas(),
       queryKeys.static.manifest(),
@@ -91,7 +110,11 @@ describe('queryKeys', () => {
       .getAll()
       .filter((q) => q.state.isInvalidated)
       .map((q) => q.queryKey.join('/'));
-    expect(invalidated.sort()).toEqual(['colectivos/arribos/5678', 'subtes/estado']);
+    expect(invalidated.sort()).toEqual([
+      'colectivos/arribos/5678',
+      'subtes/estado',
+      'trenes/arribos/50',
+    ]);
     client.clear();
   });
 });

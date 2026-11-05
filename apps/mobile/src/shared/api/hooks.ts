@@ -9,9 +9,12 @@
 //   no el ErrorState (docs/briefs/README.md, "ErrorState"). No se usa `keepPreviousData`: al
 //   cambiar de estación o de línea, mostrar los datos de la anterior sería un error.
 import type {
+  AlertasTrenV1,
   AlertasV1,
+  ArribosEstacionTrenV1,
   ArribosEstacionV1,
   ArribosParadaV1,
+  EstadoLineasTrenV1,
   EstadoLineasV1,
   LineasColectivoV1,
   ManifestV1,
@@ -155,6 +158,40 @@ export function useArribosEstacion(
     queryKeys.subtes.arribos(id),
     '/v1/subtes/estaciones/:estacionId/arribos',
     (client, signal) => client.arribosEstacion(id, { signal }),
+    { enabled: (options.enabled ?? true) && hasId(estacionId), polling: true },
+  );
+}
+
+// ---------------------------------------------------------------- trenes
+// Estado y alertas tienen TTL de 60 s en el proxy (`meta.ttlSeconds`): `staleTime` sale de ahí.
+
+export function useEstadoTrenes(options: FeedOptions = {}): FeedQuery<EstadoLineasTrenV1> {
+  return useFeed(
+    queryKeys.trenes.estado(),
+    '/v1/trenes/estado',
+    (client, signal) => client.estadoTrenes({ signal }),
+    { ...options, polling: true },
+  );
+}
+
+export function useAlertasTrenes(options: FeedOptions = {}): FeedQuery<AlertasTrenV1> {
+  return useFeed(
+    queryKeys.trenes.alertas(),
+    '/v1/trenes/alertas',
+    (client, signal) => client.alertasTrenes({ signal }),
+    { ...options, polling: true },
+  );
+}
+
+export function useArribosEstacionTren(
+  estacionId: string | null | undefined,
+  options: FeedOptions = {},
+): FeedQuery<ArribosEstacionTrenV1> {
+  const id = hasId(estacionId) ? estacionId : '';
+  return useFeed(
+    queryKeys.trenes.arribos(id),
+    '/v1/trenes/estaciones/:estacionId/arribos',
+    (client, signal) => client.arribosEstacionTren(id, { signal }),
     { enabled: (options.enabled ?? true) && hasId(estacionId), polling: true },
   );
 }

@@ -18,10 +18,10 @@ if (estado.isLoadingError) return <ErrorState {...estado.error.userMessage()} on
 | Archivo                 | Qué hace                                                                                                                            |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `client.ts`             | `createApiClient({ baseUrl, fetch?, now?, timeoutMs?, etagCacheSize? })`: un método por ruta, validación Zod, timeout, ETag/304     |
-| `errors.ts`             | `ApiError` (unión por `kind`), `retryable`, `userMessage()`                                                                         |
+| `errors.ts`             | `ApiError` (unión por `kind`), `retryable`, `userMessage()`. Timeout y 5xx: «El servicio de la Ciudad no responde…», salvo en `/v1/trenes/*`, que dice «El servicio de trenes no responde…»                                                                         |
 | `config.ts`             | `getApiBaseUrl()`: `EXPO_PUBLIC_API_URL` sin barra final; si falta, error en consola (solo en desarrollo) y `http://localhost:8787` |
 | `ApiClientProvider.tsx` | El cliente por contexto (`useApiClient()`); sin provider, el de la app                                                              |
-| `keys.ts`               | Query keys tipadas y `invalidateSubtes` / `invalidateColectivos` / `invalidateRealtime`                                             |
+| `keys.ts`               | Query keys tipadas y `invalidateSubtes` / `invalidateTrenes` / `invalidateColectivos` / `invalidateRealtime`                                             |
 | `hooks.ts`              | Un hook por recurso, con la frescura lista para `FreshnessLabel`                                                                    |
 
 ## Rutas
@@ -31,6 +31,9 @@ if (estado.isLoadingError) return <ErrorState {...estado.error.userMessage()} on
 | `estadoSubtes()`               | `/v1/subtes/estado`                         | `EstadoLineasResponseV1`                                                                   | `useEstadoSubtes()`                   |
 | `alertasSubtes()`              | `/v1/subtes/alertas`                        | `AlertasResponseV1`                                                                        | `useAlertasSubtes()`                  |
 | `arribosEstacion(id)`          | `/v1/subtes/estaciones/:estacionId/arribos` | `ArribosEstacionResponseV1`                                                                | `useArribosEstacion(id)`              |
+| `estadoTrenes()` | `/v1/trenes/estado` | `EstadoLineasTrenResponseV1` (TTL 60 s) | `useEstadoTrenes({ enabled })` |
+| `alertasTrenes()` | `/v1/trenes/alertas` | `AlertasTrenResponseV1` (TTL 60 s) | `useAlertasTrenes()` |
+| `arribosEstacionTren(id)` | `/v1/trenes/estaciones/:estacionId/arribos` | `ArribosEstacionTrenResponseV1` (TTL 30 s) | `useArribosEstacionTren(id)` |
 | `lineasColectivo()`            | `/v1/colectivos/lineas`                     | `LineasColectivoResponseV1`                                                                | `useLineasColectivo()`                |
 | `posicionesLinea(id)`          | `/v1/colectivos/lineas/:lineaId/posiciones` | `PosicionesLineaResponseV1`                                                                | `usePosicionesLinea(id, { enabled })` |
 | `arribosParada(id)`            | `/v1/colectivos/paradas/:paradaId/arribos`  | `ArribosParadaResponseV1`                                                                  | `useArribosParada(id)`                |

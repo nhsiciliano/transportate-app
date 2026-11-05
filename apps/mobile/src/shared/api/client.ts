@@ -6,19 +6,25 @@
 // con el ETag que mandó el proxy). Sin User-Agent custom, sin ids de dispositivo ni de persona.
 import {
   AlertasResponseV1,
+  AlertasTrenResponseV1,
   ArribosEstacionResponseV1,
+  ArribosEstacionTrenResponseV1,
   ArribosParadaResponseV1,
   ARCHIVOS_ESTATICOS_V1,
   ErrorV1,
   GEOJSON_ESTATICOS_V1,
   EstadoLineasResponseV1,
+  EstadoLineasTrenResponseV1,
   HealthV1,
   LineasColectivoResponseV1,
   ManifestV1,
   PosicionesLineaResponseV1,
+  type AlertasTrenV1,
   type AlertasV1,
+  type ArribosEstacionTrenV1,
   type ArribosEstacionV1,
   type ArribosParadaV1,
+  type EstadoLineasTrenV1,
   type EstadoLineasV1,
   type LineasColectivoV1,
   type MetaV1,
@@ -87,6 +93,12 @@ export interface ApiClient {
     estacionId: string,
     options?: RequestOptions,
   ): Promise<FeedResult<ArribosEstacionV1>>;
+  estadoTrenes(options?: RequestOptions): Promise<FeedResult<EstadoLineasTrenV1>>;
+  alertasTrenes(options?: RequestOptions): Promise<FeedResult<AlertasTrenV1>>;
+  arribosEstacionTren(
+    estacionId: string,
+    options?: RequestOptions,
+  ): Promise<FeedResult<ArribosEstacionTrenV1>>;
   lineasColectivo(options?: RequestOptions): Promise<FeedResult<LineasColectivoV1>>;
   posicionesLinea(
     lineaId: string,
@@ -292,6 +304,17 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         '/v1/subtes/estaciones/:estacionId/arribos',
         `/v1/subtes/estaciones/${id(estacionId)}/arribos`,
         ArribosEstacionResponseV1,
+        o,
+      ),
+    estadoTrenes: (o) =>
+      feed('/v1/trenes/estado', '/v1/trenes/estado', EstadoLineasTrenResponseV1, o),
+    alertasTrenes: (o) =>
+      feed('/v1/trenes/alertas', '/v1/trenes/alertas', AlertasTrenResponseV1, o),
+    arribosEstacionTren: (estacionId, o) =>
+      feed(
+        '/v1/trenes/estaciones/:estacionId/arribos',
+        `/v1/trenes/estaciones/${id(estacionId)}/arribos`,
+        ArribosEstacionTrenResponseV1,
         o,
       ),
     lineasColectivo: (o) =>
