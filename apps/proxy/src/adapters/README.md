@@ -1,22 +1,27 @@
 # adapters
 
-Traducen upstream → contrato v1 (`@transportate/contracts`). Las interfaces (`SubtesAdapter`, `ColectivosAdapter`, `TransitoAdapter`) y `ApiError` están en `types.ts`. Leen el upstream con los esquemas laxos de `@transportate/contracts/upstream` y el paquete estático con los contratos v1 (`static.ts`).
+Traducen upstream → contrato v1 (`@transportate/contracts`). Las interfaces (`SubtesAdapter`, `ColectivosAdapter`, `TrenesAdapter`, `TransitoAdapter`) y `ApiError` están en `types.ts`. Leen el upstream con los esquemas laxos de `@transportate/contracts/upstream` y el paquete estático con los contratos v1 (`static.ts`).
 
 | Carpeta | Qué hace | Detalle |
 |---|---|---|
 | `subtes/` | Estado por línea, alertas y arribos (tarea 2.5) | [`subtes/README.md`](subtes/README.md) |
 | `colectivos/` | Líneas, posiciones y arribos por parada, siempre con el filtro `route_id` (tarea 2.6) | [`colectivos/README.md`](colectivos/README.md) |
+| `trenes/` | Estado por línea y ramal, alertas y arribos de SOFSE (API comunitaria, Fase 6) | [`trenes/README.md`](trenes/README.md) |
 | `transito/` | Stub diferido: siempre 503 (tarea 2.7) | — |
 
-`index.ts` → `createAdapters(env, ctx?)` arma por request una `EdgeCachedFeedSource` y el `StaticStore` sobre el bucket `STATIC`. La fuente recibe las credenciales de `env` y estas variables:
+`index.ts` → `createAdapters(env, ctx?)` arma por request dos `EdgeCachedFeedSource` (la del GCBA, con las credenciales de `env`, y la de trenes, sin credenciales) y el `StaticStore` sobre el bucket `STATIC`. Variables:
 
 | Variable | Default |
 |---|---:|
 | `FEED_TTL_SECONDS` | 20 |
 | `STATIC_TTL_SECONDS` | 86400 |
 | `UPSTREAM_TIMEOUT_MS` | 5000 |
+| `TRENES_UPSTREAM_BASE` | `https://ariedro.dev/api-trenes` |
+| `TRENES_ENABLED` | `"true"` (otro valor apaga trenes) |
+| `TRENES_TTL_SECONDS` | 30 (arribos) |
+| `TRENES_ESTADO_TTL_SECONDS` | 60 (gerencias y ramales) |
 
-`UPSTREAM_TIMEOUT_MS` es opcional y **todavía no está en `wrangler.jsonc`**: mid-dev la agrega en `vars`. Armar los adaptadores es barato, porque las copias en memoria, los flags de refresco y los índices estáticos viven por isolate y son solo datos.
+Armar los adaptadores es barato, porque las copias en memoria, los flags de refresco y los índices estáticos viven por isolate y son solo datos.
 
 ## CPU del primer request por isolate (colectivos)
 

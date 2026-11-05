@@ -112,6 +112,16 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 | `production` | `pnpm --filter transportate-proxy run deploy --env production` o el workflow | `transportate-proxy-production` | `transportate-static` | namespace `1003` | `production` | `wrangler secret put … --env production` |
 
 - En `wrangler.jsonc`, los **bindings y las vars no se heredan** de la raíz: por eso `env.preview` y `env.production` repiten `ratelimits`, `r2_buckets` y `vars`. Si agregás un binding, va en la raíz **y** en cada entorno. Después corré `pnpm --filter transportate-proxy types`.
+- **Vars de trenes** (no son secrets: van en `vars` de la raíz, de `env.preview` y de `env.production`):
+
+  | Var | Valor | Para qué |
+  |---|---|---|
+  | `TRENES_UPSTREAM_BASE` | `https://ariedro.dev/api-trenes` | Base de la API comunitaria de SOFSE |
+  | `TRENES_ENABLED` | `"true"` | Kill-switch: con otro valor, `/v1/trenes/estado` responde `sin_datos` y `/alertas` y `/arribos` 503, sin llamar a la fuente |
+  | `TRENES_TTL_SECONDS` | `"30"` | TTL de arribos |
+  | `TRENES_ESTADO_TTL_SECONDS` | `"60"` | TTL de estado y alertas |
+
+  Para apagar trenes en un entorno sin tocar el código: cambiar `TRENES_ENABLED` en ese entorno de `wrangler.jsonc` y redesplegar. En local se prueba con `pnpm exec wrangler dev --var TRENES_ENABLED:false`.
 - `/v1/health` devuelve `environment`, así se ve contra qué entorno está hablando la app.
 - **App:** la URL base del proxy se inyecta en build con una variable pública de Expo (por ejemplo `EXPO_PUBLIC_API_BASE_URL`), con un valor por perfil de EAS (`development` → `http://<IP-de-tu-máquina>:8787`, `preview` → Worker preview, `production` → dominio propio). Se define en la Fase 3 (tarea 3.9) y se documenta en `07-app.md`. La URL base no es un secreto.
 

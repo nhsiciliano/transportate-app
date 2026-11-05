@@ -238,6 +238,40 @@ describe('EdgeCachedFeedSource', () => {
     });
   });
 
+  it('sin credenciales (fuente pública) la URL va tal cual y el 503 usa el mensaje configurado', async () => {
+    n++;
+    const source = new EdgeCachedFeedSource({
+      cache: await caches.open(`edge-cached-test-${n}`),
+      retryDelayMs: 1,
+      timeoutMs: 1_000,
+      unavailableMessage: 'Servicio de trenes no disponible',
+    });
+    const req: FeedRequest = {
+      key: `trenes:test:${n}`,
+      url: new URL('https://ariedro.dev/api-trenes/infraestructura/gerencias?idEmpresa=1'),
+      ttlSeconds: 60,
+      accept: 'json',
+    };
+    fetchSpy.mockResolvedValueOnce(ok('[]'));
+    await source.fetch(req);
+    const url = new URL(urlOf(fetchSpy.mock.calls[0]?.[0] ?? ''));
+    expect(url.href).toBe('https://ariedro.dev/api-trenes/infraestructura/gerencias?idEmpresa=1');
+    expect(url.searchParams.has('client_id')).toBe(false);
+    expect(url.searchParams.has('client_secret')).toBe(false);
+
+    resetEdgeCacheMemory();
+    fetchSpy.mockResolvedValue(ok('Not Found', 500));
+    const err: unknown = await source
+      .fetch({ ...req, key: `${req.key}:otra` })
+      .catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      code: 'upstream_unavailable',
+      message: 'Servicio de trenes no disponible',
+      status: 503,
+      retryAfterSeconds: 60,
+    });
+  });
+
   it('la clave de caché y los logs no contienen credenciales', async () => {
     const { cache, source, req, advance } = await setup();
     const putSpy = vi.spyOn(cache, 'put');

@@ -4,9 +4,17 @@ import type { FeedResult } from './types';
 
 export const UPSTREAM_BASE = 'https://apitransporte.buenosaires.gob.ar';
 
-/** URL upstream sin credenciales. */
-export function upstreamUrl(path: string, params: Record<string, string> = {}): URL {
-  const url = new URL(path, UPSTREAM_BASE);
+/**
+ * URL upstream sin credenciales. `base` puede traer un path (`https://ariedro.dev/api-trenes`):
+ * `path` se agrega a continuación, no lo reemplaza.
+ */
+export function upstreamUrl(
+  path: string,
+  params: Record<string, string> = {},
+  base: string = UPSTREAM_BASE,
+): URL {
+  const b = new URL(base);
+  const url = new URL(`${b.pathname.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`, b.origin);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   return url;
 }

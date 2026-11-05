@@ -53,3 +53,31 @@ Convención: `<servicio>/<endpoint>[.<variante>].<ext>`. Variantes: `json=1` (mi
 - `trenes/*.error.txt` y `subtes/tripUpdates*.error.txt`: `404` "No listener…" en dos formatos distintos (`text/plain` y JSON).
 
 Los zips GTFS estáticos no se guardan acá (pesan decenas/cientos de MB); el probe los baja a `~/.cache/transportate/gtfs/`.
+
+## Fixtures de la API comunitaria de trenes (SOFSE)
+
+Capturados por `tools/sofse-probe/probe.mjs --fixtures` el **2026-11-05 entre 11:56 y 11:57 UTC** (08:56 hora de Buenos Aires, día hábil) contra `https://ariedro.dev/api-trenes`, la instancia pública comunitaria que reenvía a la API interna de SOFSE (Trenes Argentinos). Cuerpos **crudos**, sin credenciales (la fuente no usa). Se regeneran con:
+
+```sh
+node tools/sofse-probe/probe.mjs --fixtures
+```
+
+| Archivo | Endpoint | Bytes | Nota |
+|---|---|---:|---|
+| `sofse/gerencias.json` | `/infraestructura/gerencias?idEmpresa=1` | 4366 | 7 gerencias (incluye Regionales 501, que el proxy ignora); una alerta informativa por línea; `estado.mensaje` «Alertas por ramal» en todas |
+| `sofse/ramales.11.json` | `/infraestructura/ramales?idGerencia=11` (Roca) | 9489 | 12 ramales; Cañuelas-Lobos con alerta «interrumpido por obras» |
+| `sofse/ramales.1.json` | `…?idGerencia=1` (Sarmiento) | 4793 | 4 ramales; Moreno-Mercedes con dos alertas `SIGNIFICANT_DELAYS` (una vence 09:36) |
+| `sofse/ramales.5.json` | `…?idGerencia=5` (Mitre) | 2970 | 5 ramales, sin alertas |
+| `sofse/ramales.31.json` | `…?idGerencia=31` (San Martín) | 1179 | 2 ramales, sin alertas |
+| `sofse/ramales.21.json` | `…?idGerencia=21` (Belgrano Sur) | 2358 | 3 ramales; M.C.G. Belgrano con «recorrido limitado» |
+| `sofse/ramales.41.json` | `…?idGerencia=41` (Tren de la Costa) | 571 | 1 ramal, `alerta: null` |
+| `sofse/estaciones.ramal=1.json` | `/infraestructura/estaciones?idRamal=1` (Once-Moreno) | 4947 | Ids, coordenadas y orden como strings |
+| `sofse/arribos.332.json` | `/arribos/estacion/332?cantidad=8` (Retiro LGM) | 65099 | Terminal: `llegada: {}`, solo `salida.programada`; dos servicios sin `anden` |
+| `sofse/arribos.50.json` | `/arribos/estacion/50?cantidad=8` (Caballito) | 82055 | Intermedia: `llegada`/`salida` con `programada` y a veces `estimada`; sentidos 1 y 2 |
+| `sofse/arribos.inexistente.json` | `/arribos/estacion/999999?cantidad=8` | 48 | `{"timestamp":…,"results":[],"total":0}` con status 200 |
+
+Particularidades que los tests del adaptador de trenes cubren:
+
+- Los ISO de los arribos son **UTC reales** (`segundos` = `programada − timestamp` o `estimada − timestamp`); las `vigencia_*` de las alertas son **hora de Buenos Aires sin offset**.
+- Ningún arribo de esta captura está cancelado ni en el pasado: los tests los fabrican sobre la fixture.
+- `efecto_gtfs` llega como nombre (`OTHER_EFFECT`, `SIGNIFICANT_DELAYS`), nunca como número.

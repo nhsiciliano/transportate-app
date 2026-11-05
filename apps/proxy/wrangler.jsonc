@@ -33,10 +33,16 @@
       "preview_bucket_name": "transportate-static-preview",
     },
   ],
+  // Trenes (SOFSE vía la API comunitaria, sin credenciales): `TRENES_ENABLED` distinto de "true"
+  // apaga la fuente (kill-switch); TTL de arribos y de estado/alertas por separado.
   "vars": {
     "FEED_TTL_SECONDS": "20",
     "STATIC_TTL_SECONDS": "86400",
     "UPSTREAM_TIMEOUT_MS": "5000",
+    "TRENES_UPSTREAM_BASE": "https://ariedro.dev/api-trenes",
+    "TRENES_ENABLED": "true",
+    "TRENES_TTL_SECONDS": "30",
+    "TRENES_ESTADO_TTL_SECONDS": "60",
     "ENVIRONMENT": "dev",
   },
   // Entornos desplegables (`wrangler deploy --env preview|production`). Los bindings y
@@ -63,6 +69,10 @@
         "FEED_TTL_SECONDS": "20",
         "STATIC_TTL_SECONDS": "86400",
         "UPSTREAM_TIMEOUT_MS": "5000",
+        "TRENES_UPSTREAM_BASE": "https://ariedro.dev/api-trenes",
+        "TRENES_ENABLED": "true",
+        "TRENES_TTL_SECONDS": "30",
+        "TRENES_ESTADO_TTL_SECONDS": "60",
         "ENVIRONMENT": "preview",
       },
     },
@@ -88,6 +98,10 @@
         "FEED_TTL_SECONDS": "20",
         "STATIC_TTL_SECONDS": "86400",
         "UPSTREAM_TIMEOUT_MS": "5000",
+        "TRENES_UPSTREAM_BASE": "https://ariedro.dev/api-trenes",
+        "TRENES_ENABLED": "true",
+        "TRENES_TTL_SECONDS": "30",
+        "TRENES_ESTADO_TTL_SECONDS": "60",
         "ENVIRONMENT": "production",
       },
     },

@@ -3,3 +3,4 @@ export * from './common.js';
 export * from './subtes.js';
 export * from './colectivos.js';
 export * from './static.js';
+export * from './trenes.js';

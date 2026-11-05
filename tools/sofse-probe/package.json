@@ -1,0 +1,9 @@
+{
+  "name": "@transportate/sofse-probe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Volcados crudos y fixtures de la API comunitaria de trenes (SOFSE).",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "probe": "node probe.mjs", "fixtures": "node probe.mjs --fixtures" }
+}
