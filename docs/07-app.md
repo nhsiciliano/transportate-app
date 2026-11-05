@@ -23,7 +23,7 @@ apps/mobile/
 ├── test/                    # tests de integración y de módulos (los de componentes van junto a ellos)
 └── src/
     ├── app/                 # rutas de Expo Router (cada archivo es una pantalla)
-    ├── features/            # lógica por feature: inicio, colectivos, subtes, transito, favoritos, ajustes
+    ├── features/            # lógica por feature: inicio, colectivos, subtes, trenes, transito, favoritos, ajustes
     └── shared/
         ├── api/             # cliente del proxy y QueryClient (tarea 3.9)
         ├── fonts/           # carga de Fira Sans
@@ -39,10 +39,11 @@ apps/mobile/
 - `src/app/` solo tiene rutas y layouts. La lógica va en `features/<feature>` y lo reutilizable en `shared/`.
 - Los tests no van dentro de `src/app/`, porque todo archivo ahí es una ruta.
 - El alias `@/…` apunta a `src/…`. Lo resuelven TypeScript, Metro y Jest.
+- **Trenes (Fase 6):** la feature vive en `src/features/trenes/` (`model.ts`, `hooks.ts`, las cuatro pantallas y su `README.md`) y sus rutas finas en `src/app/(tabs)/trenes/` (`_layout.tsx`, `index.tsx`, `[linea].tsx`, `ramal/[id].tsx`, `estacion/[id].tsx`). Es el mismo esquema que `subtes` (§15). Ver §22.
 
 ## 2. Navegación
 
-Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs** de [`00-plan.md`](00-plan.md) ("Correcciones tras la Fase 1").
+Mapa de [`briefs/README.md`](briefs/README.md). Con la corrección de **4 tabs** de [`00-plan.md`](00-plan.md) ("Correcciones tras la Fase 1") la barra tenía Inicio, Colectivos, Subtes y Favoritos; desde la **Fase 6 tiene 5**: Inicio, Colectivos, **Subtes, Trenes**, Favoritos (Tránsito sigue oculto).
 
 | Ruta                                                            | Pantalla                                         | Archivo                                   |
 | --------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
@@ -53,12 +54,14 @@ Mapa de [`briefs/README.md`](briefs/README.md), con la corrección de **4 tabs**
 | `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos (§19) → línea (`lineaId`, `?parada=`) → parada | `(tabs)/colectivos/…`                     |
 | `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea (`A`…`H`, `PM`) → estación (§14)  | `(tabs)/subtes/…`                         |
 | `/subtes/mapa`                                                  | Mapa de la red (tarea 4.3), desde "Ver mapa"     | `(tabs)/subtes/mapa.tsx`                  |
+| `/trenes` → `/trenes/:linea` → `/trenes/ramal/:id` → `/trenes/estacion/:id` | Trenes (§22) → línea (`roca`, `sarmiento`, `mitre`, `san-martin`, `belgrano-sur`, `tren-de-la-costa`) → ramal → estación (también desde la búsqueda y desde Favoritos) | `(tabs)/trenes/…`                         |
 | `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
 | `/transito`                                                     | **Oculto** (no navegable)                        | `(tabs)/transito/…`                       |
 | cualquier otra                                                  | "No encontramos esta pantalla" + link a Inicio   | `+not-found.tsx`                          |
 
 - **Tabs nativas** (`NativeTabs` de `expo-router/native-tabs`): UITabBarController en iOS y la barra de Material en Android.
   - No tienen header: cada tab anida su `Stack`, con back nativo y `headerBackTitle` "Atrás" en iOS.
+  - La tab **Trenes** va entre Subtes y Favoritos, con SF Symbol `train.side.front.car` y Material `train`.
   - Íconos provisorios: SF Symbols (`sf`) y Material Symbols (`md`) del sistema. Se reemplazan por `Icon` cuando las tabs acepten imágenes propias.
 - **Tránsito oculto:** el trigger va con `hidden`. Decisión del usuario del 2026-11-01: el upstream devuelve 500 y las tareas 2.7 y 4.8 están diferidas.
 - **Rutas tipadas:** `experiments.typedRoutes`. `expo start` genera `.expo/types/router.d.ts` y `expo-env.d.ts`, que no se commitean. `tsc` pasa con y sin ellos.
@@ -146,7 +149,9 @@ Todos los providers reciben sus dependencias por prop, con un default de producc
 
 - **Modelo** (Zod, `features/favoritos/model.ts`):
   - `FavoritoV1 = { id, tipo, refId, nombre, subtitulo?, alias? (≤ 30), orden, creadoEn }`.
-  - `tipo` es `linea_colectivo`, `parada_colectivo`, `linea_subte` o `estacion_subte`.
+  - `tipo` es `linea_colectivo`, `parada_colectivo`, `linea_subte`, `estacion_subte`, `ramal_tren` o `estacion_tren` (los dos últimos, Fase 6).
+  - **Trenes: se guarda el ramal o la estación, nunca la línea.** Una línea de tren tiene varios ramales (Roca tiene 12, con destinos distintos): «Línea Roca» no responde ninguna pregunta de la persona, «Once–Moreno» o «Caballito» sí. Por eso `LineaTrenScreen` no tiene estrella. El `refId` es el `ramalId` o `estacionId` del contrato (el id numérico de SOFSE, como texto); `nombre` guarda «Once – Moreno» o «Caballito», y `subtitulo` la línea.
+  - **`FAVORITOS_SCHEMA_VERSION` sigue en 1:** agregar tipos es aditivo y no hace falta migrar. El costo es el **downgrade**: una versión anterior de la app que lea una lista con un favorito de tren no reconoce el `tipo`, la lectura defensiva la declara inválida y **arranca vacía** (pasa lo mismo con cualquier esquema inválido). Es la decisión de la spec de la Fase 6 *(a confirmar al cerrar la ola 2)*; quien vuelva a una versión vieja pierde los favoritos.
   - Se guardan `nombre` y `subtitulo` porque los ids del upstream pueden cambiar.
 - **Repositorio:** `FavoritosRepository` (interfaz) + `MmkvFavoritosRepository(store)`.
   - **Id determinístico** `tipo:refId`: no hay duplicados, y `has(tipo, refId)` resuelve la estrella.
@@ -516,3 +521,116 @@ Tarea 4.6. La ruta `/colectivos/[linea]` (`linea` = `lineaId`; opcional `?parada
   - que el panel y el mapa no compitan por los gestos;
   - el gesto de volver con el mapa;
   - el render de los marcadores y de la flecha cuando el feed traiga `rumbo`.
+
+## 22. Trenes
+
+Fase 6 (2026-11-05). Tab **Trenes**, espejo de Subtes (§15) y **sin mapa**: tablero de las 6 líneas de SOFSE con estado derivado de sus alertas, línea → ramales, ramal → estaciones, estación con arribos por destino, y favoritos de ramal y de estación. Código en `src/features/trenes` (el README de la feature tiene el brief operativo y las suposiciones; *a confirmar al cerrar la ola 2*). Brief de producto: [`briefs/07-trenes.md`](briefs/07-trenes.md); contrato visual: `.impeccable/surfaces/src-features-trenes-trenesscreen-tsx.md`; fuente y riesgos: [`01d-api-trenes-sofse.md`](01d-api-trenes-sofse.md); colores: [`02c-colores-trenes.md`](02c-colores-trenes.md).
+
+### La fuente, a través del Worker
+
+La app **nunca** habla con SOFSE ni con la instancia comunitaria (`ariedro.dev/api-trenes`): solo con el Worker, que la consume detrás de un adaptador aislado (`06-proxy.md`, «Trenes»). Eso significa: ni URL, ni credenciales, ni formato del upstream en la app; el día que cambie la fuente, la app no se entera. Tres rutas del contrato v1:
+
+| Ruta del Worker | Cliente (`shared/api/client.ts`) | Hook | `queryKey` | Refresco |
+| --- | --- | --- | --- | --- |
+| `/v1/trenes/estado` | `estadoTrenes` | `useEstadoTrenes` | `queryKeys.trenes.estado` | TTL del proxy 60 s |
+| `/v1/trenes/alertas` | `alertasTrenes` | `useAlertasTrenes` | `queryKeys.trenes.alertas` | 60 s |
+| `/v1/trenes/estaciones/:id/arribos` | `arribosEstacionTren` | `useArribosEstacionTren(id)` | `queryKeys.trenes.arribos(id)` | TTL del proxy 30 s |
+
+- `queryKeys.trenes.all` agrupa las tres; `invalidateRealtime` incluye `trenes` (pull to refresh y reintentos).
+- **Intervalo:** como el proxy no tiene datos nuevos antes de su TTL, el polling de Trenes no baja de 60 s (estado y alertas) ni de 30 s (arribos), aunque en Ajustes esté en 15 o 20 s *(S38; a confirmar al cerrar la ola 2)*. Sigue valiendo «solo con la pantalla a la vista» (§9).
+- **Error propio:** el copy de servicio caído es «El servicio de trenes no responde en este momento.» (el de las otras features nombra a la Ciudad, y esta fuente no es de la Ciudad).
+
+### Estático
+
+Las líneas, los ramales y las ~300 estaciones salen del paquete estático (`trenes-lineas.json` y `trenes-estaciones.json`, validados con `TrenesLineasArchivoV1` y `TrenesEstacionesArchivoV1`; carga y versión en §14): la búsqueda de estaciones, el orden del recorrido y los colores de línea no necesitan red. `useRedTrenes` los une con el tiempo real.
+
+### Modelo y hooks
+
+`features/trenes/model.ts` (funciones puras, con tests):
+
+| Función | Qué hace |
+| --- | --- |
+| `buildRedTrenes` | Une los dos estáticos en 6 líneas (`LineaTrenId` por slug) con sus ramales y estaciones |
+| `estadoDeLineaTren`, `estadoDeRamal` | Estado mostrable de una línea o un ramal a partir de `EstadoServicioV1` y de si hay datos (sección siguiente) |
+| `alertasDe*` | Alertas de una línea, de un ramal o de una estación a partir de `alertaIds`, `ramalId` y `estacionId` |
+| `buscarEstacionesTren` | Búsqueda sin tildes ni mayúsculas, con la línea y los ramales de cada resultado |
+| `arribosTrenVigentes`, `agruparArribosTren` | Filtra los arribos vigentes y los agrupa **por destino** (ramal + sentido): una banda por grupo, con el próximo y «Después 7 y 12 min» |
+| `demoraDe` | Diferencia entre la hora estimada y la programada de un arribo |
+| `nombreLinea`, `siglasLinea` | «Línea Roca» y las siglas de la insignia: R, S, M, SM, BS, TC |
+
+`features/trenes/hooks.ts`: `useRedTrenes` (los dos estáticos), `useLineasTrenConEstado` (raíz), `useLineaTrenDetalle`, `useRamalDetalle` y `useEstacionTrenDetalle` combinan el estático con `useEstadoTrenes`, `useAlertasTrenes` y `useArribosEstacionTren`.
+
+### Estado de línea y de ramal
+
+**El estado lo deriva el proxy**, no la app, porque la fuente no tiene un estado operativo útil (su campo `estado` dice «Alertas por ramal» en todas las líneas). Reglas completas en `apps/proxy/src/adapters/trenes/README.md`; en resumen, por severidad de cada alerta vigente:
+
+| Estado del contrato | Si… | Se ve |
+| --- | --- | --- |
+| `interrumpida` | efecto `NO_SERVICE` o texto «sin servicio», «interrumpido», «suspendido» | «Interrumpida», cuadrado rojo con texto |
+| `demorada` | efecto `SIGNIFICANT_DELAYS`, `REDUCED_SERVICE`, `DETOUR`, `MODIFIED_SERVICE` o `STOP_MOVED`, o texto de demora | «Con demoras», cuadrado ámbar con texto |
+| `normal` | el resto (las alertas informativas, como el aviso del CUD con SUBE, no cambian el estado) | «Normal» en `text.secondary` *(a confirmar: «Normal» o «Sin novedades»)* |
+| `sin_datos` | fuente caída o kill-switch | «Sin información» |
+
+- **La línea toma la severidad máxima de sus alertas y de las de todos sus ramales; el ramal, la de las suyas y las de la línea que no apuntan a un ramal.** Consecuencia: **un solo ramal interrumpido pone toda su línea en «Interrumpida»** (por ejemplo Cañuelas–Lobos en Roca, cuando el resto circula). Es una regla conservadora y se ve en el detalle, porque la lista de ramales muestra el estado de cada uno. Si molesta en la práctica, es un cambio del adaptador, no de la app.
+- `resumen` es el título de la alerta más severa; la fila de la raíz lo muestra como tercera línea.
+- Nunca se muestra «Normal» sin datos: si `estado` es `sin_datos`, la fila dice «Sin información» (principio 2 de `PRODUCT.md`).
+
+### Pantallas
+
+| Pantalla | Qué muestra | Notas |
+| --- | --- | --- |
+| `TrenesScreen` | Large title «Trenes»; `SearchInput` «Buscá una estación»; una placa con las 6 líneas en orden fijo (insignia rectangular con siglas, «Línea Roca», «12 ramales» o cabeceras, estado a la derecha, flecha); `FreshnessLabel` | **Sin placa de mapa.** Orden: Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa |
+| `LineaTrenScreen` | Banda `lead` fija con el estado (sin flecha), alertas de la línea, placa de ramales con nombre, cabeceras y estado | **Sin estrella** (la línea no se guarda) |
+| `RamalScreen` | Banda `lead` fija con el estado, estrella `ramal_tren` en el header, alertas (las de un sentido, «Hacia X»), estaciones en orden en una placa con el trazo del color de la línea | Las estaciones incluidas pero no operativas en el ramal se marcan |
+| `EstacionTrenScreen` | Título con el nombre, estrella `estacion_tren` en el header, una **banda por destino** y `FreshnessLabel` | Ver abajo |
+
+**Bandas por destino.** La estación agrupa los arribos por **ramal y sentido** (`agruparArribosTren`): «Hacia Moreno», «Próximo», el minuto a 56 pt, «Andén 3 · Ramal Once–Moreno» y «Después 7 y 12 min». El destino es la cabecera del ramal en ese sentido (el proxy marca `sentido` `1` = hacia la cabecera final y `2` = hacia la inicial; verificado con Once–Moreno en Caballito). Variaciones:
+
+- **Demora:** si la hora estimada pasa a la programada (`demoraDe`), la banda suma «Programado hh:mm».
+- **Cancelado:** el arribo cancelado dice «Cancelado» y no cuenta como el próximo.
+- **Dato viejo:** con la antigüedad del dato > 10 min, el valor pasa a «Dato de hace N min» y se atenúa (S30). Un «2 min» de hace 12 minutos engaña más que no decir nada.
+- **Sin trenes:** una estación sin arribos dice «No hay próximos trenes informados para esta estación.». La fuente no distingue una estación sin trenes de una que no existe (responde 200 con lista vacía en los dos casos).
+- **Muchos destinos:** una estación de varios ramales (Liniers sirve a cuatro) genera más bandas; cuántas se muestran como banda antes de pasar a placa es una decisión abierta del contrato visual *(a confirmar al cerrar la ola 2)*.
+
+### Estados (por pantalla)
+
+| Estado | Raíz | Línea, ramal | Estación |
+| --- | --- | --- | --- |
+| **Carga** (sin caché) | Skeleton de 6 filas | Banda y placa con skeleton; el nombre ya se ve (es estático) | `SignBand.Skeleton` por destino; el nombre ya se ve |
+| **Error** (sin datos, `retryable`) | Las 6 líneas con «Sin información» y `ErrorState` con «Volver a intentar» («El servicio de trenes no responde en este momento.») | Estado «Sin información» y `ErrorState` | `ErrorState` con reintento |
+| **Con datos y actualización fallida** | Alert «No pudimos actualizar. Mostramos lo último que sabemos.» con «Reintentar» | ídem | ídem |
+| **`sin_datos` del proxy** (200) | Las 6 líneas con `ramales: []` y «Sin información»; la `FreshnessLabel` en advertencia | La línea sin ramales: «Sin información» | — |
+| **Kill-switch** `TRENES_ENABLED=false` | Como `sin_datos` (el estado responde 200 con `X-Transportate-Stale: 1`) | ídem | `ErrorState` (los arribos responden 503) |
+| **Sin conexión** | Banner global; lo último guardado con su antigüedad; el estático funciona (búsqueda) | ídem | ídem; arribos viejos con la regla de arriba |
+| **Dato viejo** | `FreshnessLabel` en advertencia | ídem | Tiempos reemplazados por «Dato de hace N min» |
+
+*Los textos y el detalle de cada celda siguen el patrón de Subtes (§15) y la spec de la feature; se reconcilian con la implementación al cerrar la ola 2.*
+
+**`sin_datos` y kill-switch.** Con la fuente caída, el estado no es un error de red: el Worker responde 200 con las 6 líneas en `sin_datos`, `ramales: []` y `stale: true`, y la app muestra «Sin información» sin culpar a la persona ni reintentar sola de más. Eso es lo mismo que pasa con `TRENES_ENABLED=false` en el Worker (el **kill-switch** que apaga trenes sin publicar una versión nueva de la app): `/estado` sigue en 200 y `/alertas` y `/arribos` responden 503. Para probarlo en local: `pnpm exec wrangler dev --var TRENES_ENABLED:false` (guía de la sección 3b de [`11-prueba-manual.md`](11-prueba-manual.md)).
+
+### Favoritos e Inicio
+
+- **Favoritos:** `FavoriteToggle` en `RamalScreen` (`ramal_tren`) y en `EstacionTrenScreen` (`estacion_tren`); `hrefFor` abre `/trenes/ramal/[id]` o `/trenes/estacion/[id]`, en la tab Trenes (N1, S3). El dato vivo de un **ramal** es su estado; el de una **estación**, el próximo tren por destino (la misma banda que en la pantalla). Un favorito cuyo ramal o estación ya no está en el paquete estático es un huérfano, con el criterio único de `useFavoritoLiveData` (§16).
+- **Inicio:** `hrefDeFavorito` y `elegirLider` conocen las estaciones de tren, así que una estación guardada puede ser la banda líder por cercanía. **No hay tira «Trenes ahora»**: queda para una fase posterior.
+
+### Componentes nuevos o ampliados
+
+`LineBadge kind="tren"` (insignia rectangular con las siglas, el color y el texto de la línea; con **borde** donde el color no llega a 3:1 con la superficie, `02c-colores-trenes.md` §3) y los íconos `tren` y `estacionTren` del mapa curado de `shared/icons`. Reusa `SignBand`, `Board`, `FreshnessLabel`, `Alert`, `ErrorState` y `FavoriteToggle`; la tarea 6.8 los pasará a `shared/ui` cuando haga falta compartir lo que hoy vive en `features/subtes`.
+
+### Tests
+
+- `src/features/trenes/__tests__/model.test.ts`: modelo puro.
+- `test/trenes/{fixtures.tsx, TrenesScreen.test.tsx, LineaRamalEstacion.test.tsx}`: pantallas con `fetch` mockeado por ruta y el estático validado con los contratos.
+- Casos nuevos en favoritos, inicio y `test/layout.test.tsx` (5 tabs).
+- `src/features/ajustes/__tests__/AcercaScreen.test.tsx`: la atribución de trenes.
+
+Detalle y cómo se capturan las fixtures de SOFSE en [`09-testing.md`](09-testing.md) §4 y §8. *(Nombres y conteos, a confirmar al cerrar la ola 2.)*
+
+### Pendiente
+
+- **Colores oficiales** de las 6 líneas: hoy son provisorios y salen de una fuente comunitaria (`02c-colores-trenes.md`); los confirma el coordinador (tarea 6.6).
+- **Tira «Trenes ahora» en Inicio:** fuera de la Fase 6.
+- **Belgrano Norte (Ferrovías) y Urquiza (Metrovías):** no tienen fuente; la pantalla no los muestra y queda abierta si se aclara con una nota.
+- **Posición del tren en un mapa:** la fuente trae `location` por servicio, pero esta fase no tiene mapa.
+- **A validar en el dispositivo:** las bandas por destino con Dynamic Type grande, las insignias con borde en oscuro, la estación con varios ramales, y que el polling de 60 y 30 s se sienta bien (tab, `sin_datos` y kill-switch: sección 3b de la prueba manual).
+- **Capturas y finish review** de Trenes contra el brief (tarea 6.7), y pasar los componentes compartidos de `features/subtes` a `shared/ui` (6.8).
