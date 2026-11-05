@@ -142,7 +142,7 @@ Detalle en [`apps/proxy/src/adapters/colectivos/README.md`](../apps/proxy/src/ad
 Lo genera `tools/gtfs` y se sube a R2 con `tools/gtfs/upload-r2.sh`: cada `<version>/<archivo>` primero y `latest/manifest.json` al final (`10-deploy.md` §3).
 
 - **`ManifestV1`:** tiene `version` (hash del contenido) y `generatedAt`. Cada archivo de `archivos` trae `{ url: "<version>/<archivo>", bytes, sha256 }`. Opcionalmente trae `omitidos` y `fuentes` (atribución).
-- **Archivos con contrato:** `paradas.json`, `lineas-colectivos.json`, `equivalencias-paradas.json`, `indice-colectivos.json`, `subte-lineas.json` y `subte-estaciones.json` (`ARCHIVOS_ESTATICOS_V1`). Los `.geojson` (`subte-red`, `recorridos-colectivos`) tienen desde la Fase 4 un esquema mínimo de FeatureCollection (`GEOJSON_ESTATICOS_V1`, `SubteRedGeoJsonV1`), que valida la app, no el proxy.
+- **Archivos con contrato:** `paradas.json`, `lineas-colectivos.json`, `equivalencias-paradas.json`, `indice-colectivos.json`, `subte-lineas.json`, `subte-estaciones.json`, `trenes-lineas.json` (6 líneas y sus 27 ramales públicos, generado por el paso `trenes` de `tools/gtfs` desde los volcados de `tools/sofse-probe`) y `trenes-estaciones.json` (262 estaciones únicas) (`ARCHIVOS_ESTATICOS_V1`). Los `.geojson` (`subte-red`, `recorridos-colectivos`) tienen desde la Fase 4 un esquema mínimo de FeatureCollection (`GEOJSON_ESTATICOS_V1`, `SubteRedGeoJsonV1`), que valida la app, no el proxy.
 - **Caché:** el Worker lo sirve a través de la Cache API. La app baja el manifiesto, compara `version` y descarga solo si cambió.
 
 ## 8. Rate limiting y privacidad

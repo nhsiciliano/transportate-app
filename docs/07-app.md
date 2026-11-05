@@ -282,6 +282,8 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
   - si cambió, se muestra la vieja mientras baja la nueva;
   - sin red o con el manifiesto caído, sigue andando aunque la caché persistida haya vencido.
 - Hoy lo usan `subte-lineas.json` (5 KB) y `subte-estaciones.json` (17 KB).
+- `trenes-lineas.json` (9 KB): las 6 líneas con sus 27 ramales públicos (`idGerencia`, colores, cabeceras y `estacionIds` en el orden del upstream; los ids son los de SOFSE como texto). Fase 6.
+- `trenes-estaciones.json` (29 KB): 262 estaciones únicas con `lat`/`lon`, `lineas` y `ramalIds`; la búsqueda de estaciones de tren es local. Fase 6.
 
 **Archivos grandes** (tarea 4.5): `useStaticArchivoGrande(archivo)` tiene la misma forma que `useStaticArchivo`, más `progress` (0 a 1), `isDownloading` y `bytes`. Lo usan `paradas.json` (1,7 MB) y `lineas-colectivos.json` (161 KB).
 
