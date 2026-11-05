@@ -15,9 +15,9 @@
 //
 // La copia en memoria existe además porque la Cache API no tiene efecto en `*.workers.dev`.
 //
-// Secretos: las credenciales se agregan a la URL solo al hacer el fetch. Nunca aparecen en claves
-// de caché (URL ficticia derivada de `req.key`), errores ni logs; los logs solo llevan
-// { event, key, status, ms }.
+// Secretos: las credenciales (si la fuente las usa) se agregan a la URL solo al hacer el fetch.
+// Nunca aparecen en claves de caché (URL ficticia derivada de `req.key`), errores ni logs; los
+// logs solo llevan { event, key, status, ms }.
 import { ApiError } from '../adapters/types';
 import { DeadlineExceeded, raceAbort } from '../cache/deadline';
 import {
@@ -46,8 +46,8 @@ export const USER_AGENT = 'transportate-proxy/0.1';
 /** Timeout por intento si `env.UPSTREAM_TIMEOUT_MS` no lo define. */
 export const DEFAULT_UPSTREAM_TIMEOUT_MS = 5_000;
 
-const unavailable = (ttlSeconds: number): ApiError =>
-  new ApiError('upstream_unavailable', 'Servicio del GCBA no disponible', 503, ttlSeconds);
+/** Texto del 503 si `EdgeCachedOptions.unavailableMessage` no lo define. */
+export const DEFAULT_UNAVAILABLE_MESSAGE = 'Servicio del GCBA no disponible';
 
 export interface Credentials {
   clientId: string;
@@ -55,7 +55,10 @@ export interface Credentials {
 }
 
 export interface EdgeCachedOptions {
-  credentials: Credentials;
+  /** Credenciales de la API del GCBA. Sin ellas (fuentes públicas, como trenes) la URL va tal cual. */
+  credentials?: Credentials | undefined;
+  /** Texto del 503 cuando no hay dato (default `DEFAULT_UNAVAILABLE_MESSAGE`). */
+  unavailableMessage?: string;
   ctx?: ExecutionContext | undefined;
   /** Edad máxima (s) de una entrada vencida que se sirve si el upstream falla. Default 300. */
   maxStaleSeconds?: number;
@@ -244,7 +247,12 @@ export class EdgeCachedFeedSource implements DeadlineFeedSource {
         }),
       );
       if (fallback) return asResult(fallback, true, true);
-      throw unavailable(req.ttlSeconds);
+      throw new ApiError(
+        'upstream_unavailable',
+        this.opts.unavailableMessage ?? DEFAULT_UNAVAILABLE_MESSAGE,
+        503,
+        req.ttlSeconds,
+      );
     } finally {
       if (holdsLock) {
         // Con plazo vencido el flag se libera cuando termina el fetch (no antes: evita duplicados).
@@ -273,8 +281,11 @@ export class EdgeCachedFeedSource implements DeadlineFeedSource {
   /** Un intento con timeout. Las credenciales se agregan acá y no salen de esta función. */
   private async attempt(req: FeedRequest): Promise<CachedFeed> {
     const url = new URL(req.url);
-    url.searchParams.set('client_id', this.opts.credentials.clientId);
-    url.searchParams.set('client_secret', this.opts.credentials.clientSecret);
+    const { credentials } = this.opts;
+    if (credentials) {
+      url.searchParams.set('client_id', credentials.clientId);
+      url.searchParams.set('client_secret', credentials.clientSecret);
+    }
     const t0 = Date.now();
     try {
       const res = await fetch(url, {
