@@ -21,6 +21,8 @@ export const INPUTS = {
   vehiclePositionsSimple: join(FIXTURES, 'colectivos', 'vehiclePositionsSimple.json'),
   /** Nombres de estación con tildes (el GTFS de subte los trae sin tildes). */
   subtesForecast: join(FIXTURES, 'subtes', 'forecastGTFS.json'),
+  /** Volcados de `tools/sofse-probe` (gerencias, ramales, estaciones por ramal y `capturado.json`). */
+  sofseDir: join(CACHE, 'sofse'),
 } as const;
 
 /** Fuentes declaradas en el manifest (URL y fecha de los datos, no de la descarga). */
@@ -56,6 +58,18 @@ export const FUENTES = {
     fecha: '2026-11-01',
     licencia: 'CC-BY-2.5-AR',
   },
+  sofse: {
+    nombre: 'API comunitaria api-trenes (datos de SOFSE / Trenes Argentinos)',
+    url: 'https://ariedro.dev/api-trenes',
+    fecha: '2026-11-05',
+    licencia: 'sin licencia explícita; fuente no oficial (docs/01d-api-trenes-sofse.md)',
+  },
+  coloresTrenes: {
+    nombre: 'docs/02c-colores-trenes.md §1 (tabla final, provisoria)',
+    url: 'docs/02c-colores-trenes.md',
+    fecha: '2026-11-05',
+    licencia: 'Wikipedia (CC BY-SA 4.0); no oficial',
+  },
 } as const;
 
 export const PARAMS = {
@@ -84,6 +98,30 @@ export const COLORES_SUBTE: Record<string, { color: string; texto: string }> = {
   'PM-Savio': { color: '#FFBD33', texto: '#000000' },
 };
 
+/**
+ * Colores de las líneas de tren, copiados de docs/02c-colores-trenes.md §1 (fuente de verdad;
+ * provisorios, no oficiales). Si cambia un color, se cambia primero en ese doc. Orden fijo de las
+ * líneas de la red: Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa.
+ */
+export const COLORES_TRENES: Record<string, { color: string; texto: string }> = {
+  roca: { color: '#FAB700', texto: '#000000' },
+  sarmiento: { color: '#B766C2', texto: '#000000' },
+  mitre: { color: '#8FBE00', texto: '#000000' },
+  'san-martin': { color: '#6495ED', texto: '#000000' },
+  'belgrano-sur': { color: '#F85900', texto: '#000000' },
+  'tren-de-la-costa': { color: '#002D9A', texto: '#FFFFFF' },
+};
+
+/** Líneas de tren en orden fijo: `id` (slug del contrato) e `idGerencia` de SOFSE. Regionales (501) se ignora. */
+export const GERENCIAS_TRENES = [
+  { id: 'roca', idGerencia: 11 },
+  { id: 'sarmiento', idGerencia: 1 },
+  { id: 'mitre', idGerencia: 5 },
+  { id: 'san-martin', idGerencia: 31 },
+  { id: 'belgrano-sur', idGerencia: 21 },
+  { id: 'tren-de-la-costa', idGerencia: 41 },
+] as const;
+
 export const OUTPUT_FILES = [
   'paradas.json',
   'lineas-colectivos.json',
@@ -93,5 +131,7 @@ export const OUTPUT_FILES = [
   'subte-estaciones.json',
   'subte-red.geojson',
   'recorridos-colectivos.geojson',
+  'trenes-lineas.json',
+  'trenes-estaciones.json',
 ] as const;
 export type OutputFile = (typeof OUTPUT_FILES)[number];

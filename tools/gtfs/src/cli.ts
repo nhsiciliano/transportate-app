@@ -2,7 +2,7 @@
 //
 // Uso:  npm run build                      todo
 //       npm run build -- --solo paradas    solo algunos pasos (coma): paradas, lineas, equivalencias,
-//                                          subte, recorridos. El manifest se regenera siempre con lo
+//                                          subte, recorridos, trenes. El manifest se regenera siempre con lo
 //                                          que haya en out/.
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -43,8 +43,9 @@ import { buildLineas } from './steps/lineas.js';
 import { buildParadas } from './steps/paradas.js';
 import { buildRecorridos } from './steps/recorridos.js';
 import { buildSubte, readSubteInput } from './steps/subte.js';
+import { buildTrenes, fuenteSofse } from './steps/trenes.js';
 
-const STEPS = ['paradas', 'lineas', 'equivalencias', 'subte', 'recorridos'] as const;
+const STEPS = ['paradas', 'lineas', 'equivalencias', 'subte', 'recorridos', 'trenes'] as const;
 type Step = (typeof STEPS)[number];
 
 const { values } = parseArgs({ options: { solo: { type: 'string' } }, allowPositionals: false });
@@ -237,6 +238,34 @@ async function main(): Promise<void> {
     };
   }
 
+  // ---------------------------------------------------------------- trenes (volcados de tools/sofse-probe)
+  if (need('trenes')) {
+    const dir = requireInput(INPUTS.sofseDir);
+    const r = await timed('trenes', () => buildTrenes(dir));
+    report.trenes = {
+      lineas: r.stats.lineas,
+      ramales: r.stats.ramales,
+      estaciones: r.stats.estaciones,
+      filasDeEstacion: r.stats.filasDeEstacion,
+      descartadas: r.stats.descartadas,
+      sinAppMobile: r.stats.sinAppMobile,
+      cabecerasNoCoinciden: r.stats.cabecerasNoCoinciden,
+      estacionesDeRamalNoPublicadas: r.stats.estacionesDeRamalNoPublicadas,
+    };
+    for (const d of r.stats.descartadas)
+      console.warn(
+        `  ! trenes: estación ${d.id} (${d.nombre}) con coordenada inválida: descartada`,
+      );
+    for (const c of r.stats.cabecerasNoCoinciden)
+      console.warn(
+        `  ! trenes: ramal ${c.ramalId} (${c.nombre}) no empieza/termina en sus cabeceras (el upstream devuelve la lista incompleta)`,
+      );
+    report.trenesBytes = {
+      lineas: writeOutput('trenes-lineas.json', r.lineas),
+      estaciones: writeOutput('trenes-estaciones.json', r.estaciones),
+    };
+  }
+
   // ---------------------------------------------------------------- recorridos (opcional)
   if (need('recorridos')) {
     const zip = requireInput(INPUTS.colectivosGtfs);
@@ -308,6 +337,12 @@ function buildManifest(): Manifest {
         .object({ feedEndDate: z.string().nullable() })
         .parse(JSON.parse(readFileSync(join(OUT_DIR, 'subte-lineas.json'), 'utf8'))).feedEndDate
     : null;
+  // La fecha de la fuente de trenes es la de la captura de los volcados.
+  const trenesCapturado = existsSync(join(OUT_DIR, 'trenes-lineas.json'))
+    ? z
+        .object({ capturadoEn: z.string() })
+        .parse(JSON.parse(readFileSync(join(OUT_DIR, 'trenes-lineas.json'), 'utf8'))).capturadoEn
+    : null;
   const manifest: Manifest = {
     version,
     generatedAt: new Date().toISOString(),
@@ -319,6 +354,7 @@ function buildManifest(): Manifest {
         ...FUENTES.subtesGtfs,
         nota: `fecha = descarga; feed_end_date ${subteEnd ?? 'desconocido'}`,
       },
+      ...(trenesCapturado === null ? {} : { sofse: fuenteSofse(trenesCapturado) }),
       colectivosGtfs: {
         ...FUENTES.colectivosGtfs,
         nota: 'fecha = archivos internos del zip; servicio 2020-12-21 → 2021-06-21',
