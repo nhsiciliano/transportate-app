@@ -24,7 +24,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | Documento | Contenido | Estado |
 |---|---|---|
 | [`00-plan.md`](00-plan.md) | Plan maestro: contexto, decisiones de arquitectura, fases, riesgos | ✅ |
-| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1 a 4 cerradas técnicamente) |
+| [`bitacora.md`](bitacora.md) | Resumen por fase: qué se hizo, decisiones, riesgos, cierre | ✅ (Fases 1 a 4 cerradas técnicamente; Fases 5 y 6 en curso) |
 | [`versiones.md`](versiones.md) | Versiones fijadas y verificadas con Context7, y lo pendiente de fijar | ✅ |
 
 ### Investigación (Fase 1)
@@ -58,9 +58,9 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd con fixtures reales; Jest + RNTL en la app), cómo se corre y qué queda afuera | ✅ |
+| [`09-testing.md`](09-testing.md) | Estrategia de tests: qué se prueba en cada pieza (Vitest en workerd con fixtures reales; Jest + RNTL en la app), cómo se corre, cómo se capturan las fixtures de SOFSE (trenes) y qué queda afuera | ✅ |
 | [`10-deploy.md`](10-deploy.md) | Despliegue del proxy en Cloudflare (entornos, R2, secrets, workflow manual de GitHub Actions) y operación sin datos personales | ✅ |
-| [`11-prueba-manual.md`](11-prueba-manual.md) | Checklist de prueba manual en el iPhone con el dev client (Fase 4, todas las pantallas): preparación, cómo forzar cada estado, qué tocar y qué debería verse por pantalla, y qué anotar si algo falla | ✅ |
+| [`11-prueba-manual.md`](11-prueba-manual.md) | Checklist de prueba manual en el iPhone con el dev client (Fase 4, todas las pantallas): preparación, cómo forzar cada estado, qué tocar y qué debería verse por pantalla (incluida Trenes, sección 3b), y qué anotar si algo falla | ✅ |
 | [`../apps/proxy/README.md`](../apps/proxy/README.md) | Rutas v1, headers, composición, rate limit y estáticos del Worker | ✅ |
 | [`06-proxy.md`](06-proxy.md) | Referencia del Worker: rutas, adaptadores, fuente con caché, estáticos, rate limit, límites de CPU, cómo agregar un servicio | ✅ |
 
@@ -82,7 +82,7 @@ Formato de los ADR: **Contexto / Decisión / Alternativas consideradas / Consecu
 
 | Documento | Contenido | Estado |
 |---|---|---|
-| [`07-app.md`](07-app.md) | Referencia de la app: estructura, navegación, providers, tema, fuentes, almacenamiento (MMKV), favoritos, estático, ubicación, mapas, cada feature de la Fase 4 y el estado al cierre | ✅ |
+| [`07-app.md`](07-app.md) | Referencia de la app: estructura, navegación, providers, tema, fuentes, almacenamiento (MMKV), favoritos, estático, ubicación, mapas, cada feature de la Fase 4, el estado al cierre y Trenes (§22, Fase 6) | ✅ |
 | [`08-design-system.md`](08-design-system.md) | Sistema de diseño en código: tokens, componentes de `shared/ui` y cuándo usarlos, accesibilidad, háptica e íconos (mapa curado) | ✅ |
 
 `09-testing.md`, `10-deploy.md` y `11-prueba-manual.md` ya existen y se amplían en la Fase 5 (EAS Build y OTA, CI y la prueba manual de cada ola).
