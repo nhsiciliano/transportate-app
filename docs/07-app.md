@@ -539,7 +539,7 @@ La app **nunca** habla con SOFSE ni con la instancia comunitaria (`ariedro.dev/a
 | `/v1/trenes/estaciones/:id/arribos` | `arribosEstacionTren` | `useArribosEstacionTren(id)` | `queryKeys.trenes.arribos(id)` | TTL del proxy 30 s |
 
 - `queryKeys.trenes.all` agrupa las tres; `invalidateRealtime` incluye `trenes` (pull to refresh y reintentos).
-- **Intervalo:** como el proxy no tiene datos nuevos antes de su TTL, el polling de Trenes no baja de 60 s (estado y alertas) ni de 30 s (arribos), aunque en Ajustes esté en 15 o 20 s *(S38; a confirmar al cerrar la ola 2)*. Sigue valiendo «solo con la pantalla a la vista» (§9).
+- **Intervalo:** la app pollea con el intervalo de Ajustes (con jitter, como las demás pantallas), pero el proxy no tiene datos nuevos antes de su TTL (60 s para estado y alertas, 30 s para arribos): las consultas intermedias vuelven con el mismo `ETag` (304) o desde la caché del Worker, así que la fuente no recibe más pedidos por eso (S38). Sigue valiendo «solo con la pantalla a la vista» (§9).
 - **Error propio:** el copy de servicio caído es «El servicio de trenes no responde en este momento.» (el de las otras features nombra a la Ciudad, y esta fuente no es de la Ciudad).
 
 ### Estático
@@ -570,7 +570,7 @@ Las líneas, los ramales y las ~300 estaciones salen del paquete estático (`tre
 | --- | --- | --- |
 | `interrumpida` | efecto `NO_SERVICE` o texto «sin servicio», «interrumpido», «suspendido» | «Interrumpida», cuadrado rojo con texto |
 | `demorada` | efecto `SIGNIFICANT_DELAYS`, `REDUCED_SERVICE`, `DETOUR`, `MODIFIED_SERVICE` o `STOP_MOVED`, o texto de demora | «Con demoras», cuadrado ámbar con texto |
-| `normal` | el resto (las alertas informativas, como el aviso del CUD con SUBE, no cambian el estado) | «Normal» en `text.secondary` *(a confirmar: «Normal» o «Sin novedades»)* |
+| `normal` | el resto (las alertas informativas, como el aviso del CUD con SUBE, no cambian el estado) | «Normal» en `text.secondary` (misma etiqueta que Subtes; «Sin novedades» queda para la finish review) |
 | `sin_datos` | fuente caída o kill-switch | «Sin información» |
 
 - **La línea toma la severidad máxima de sus alertas de línea y de su `estado.mensaje`; las alertas de sus ramales le aportan como máximo «Con demoras».** Solo una alerta de línea (o el mensaje de la gerencia) puede ponerla en «Interrumpida». El ramal toma la severidad de las suyas y de las de la línea que no apuntan a un ramal. Consecuencia: un ramal interrumpido (por ejemplo Cañuelas–Lobos en Roca) deja la línea en «Con demoras» con el resumen prefijado por el nombre del ramal («Cañuelas-Lobos: …»), y el detalle por ramal muestra «Interrumpida» en ese ramal. Decidido el 2026-11-05 (ola 2, F6-MID-B); antes la línea tomaba la máxima de todos sus ramales.
@@ -592,7 +592,7 @@ Las líneas, los ramales y las ~300 estaciones salen del paquete estático (`tre
 - **Cancelado:** el arribo cancelado dice «Cancelado» y no cuenta como el próximo.
 - **Dato viejo:** con la antigüedad del dato > 10 min, el valor pasa a «Dato de hace N min» y se atenúa (S30). Un «2 min» de hace 12 minutos engaña más que no decir nada.
 - **Sin trenes:** una estación sin arribos dice «No hay próximos trenes informados para esta estación.». La fuente no distingue una estación sin trenes de una que no existe (responde 200 con lista vacía en los dos casos).
-- **Muchos destinos:** una estación de varios ramales (Liniers sirve a cuatro) genera más bandas; cuántas se muestran como banda antes de pasar a placa es una decisión abierta del contrato visual *(a confirmar al cerrar la ola 2)*.
+- **Muchos destinos:** las bandas se agrupan por destino (no por ramal): las **2** con el tren más próximo van como banda y el resto baja a la placa «Otros destinos» con el tiempo a la derecha (Retiro muestra Tigre y J.L. Suárez como bandas y Bmé. Mitre en la placa). Las alertas de la estación y de sus ramales van **debajo** de las bandas: lo primero que se lee es «¿cuándo viene?». En el tablero de la raíz, el resumen de alerta se muestra en dos líneas y solo si la línea tiene un problema (los avisos informativos se leen en la línea).
 
 ### Estados (por pantalla)
 
@@ -626,7 +626,7 @@ Las líneas, los ramales y las ~300 estaciones salen del paquete estático (`tre
 - Casos nuevos en favoritos, inicio y `test/layout.test.tsx` (5 tabs).
 - `src/features/ajustes/__tests__/AcercaScreen.test.tsx`: la atribución de trenes.
 
-Detalle y cómo se capturan las fixtures de SOFSE en [`09-testing.md`](09-testing.md) §4 y §8. *(Nombres y conteos, a confirmar al cerrar la ola 2.)*
+Detalle y cómo se capturan las fixtures de SOFSE en [`09-testing.md`](09-testing.md) §4 y §8. Conteos al cierre de la ola 2 (2026-11-05): contratos 116, proxy 130, `tools/gtfs` 104, app 803 tests en 72 suites.
 
 ### Pendiente
 
