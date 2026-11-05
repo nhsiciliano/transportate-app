@@ -10,14 +10,14 @@ Versiones fijadas (Fase 2): Vitest **5.0.5**, `@cloudflare/vitest-plugin` **1.4.
 
 | Capa | Dónde | Herramienta | Qué cubre |
 |---|---|---|---|
-| Contratos | `packages/contracts/test/` | Vitest (Node) | Cada esquema v1 acepta un ejemplo válido y rechaza uno inválido. `envelope()` arma el sobre. Los esquemas **upstream** laxos aceptan las fixtures reales |
+| Contratos | `packages/contracts/test/` | Vitest (Node) | Cada esquema v1 acepta un ejemplo válido y rechaza uno inválido. `envelope()` arma el sobre. Los esquemas **upstream** laxos aceptan las fixtures reales (en `upstream.test.ts` también las de SOFSE, Fase 6). Trenes: `LineaTrenId`, estado, alertas, arribos y los dos estáticos (`TrenesLineasArchivoV1`, `TrenesEstacionesArchivoV1`) en `schemas.test.ts` |
 | Proxy: rutas y middlewares | `apps/proxy/test/*.test.ts` | Vitest dentro de **workerd** (`@cloudflare/vitest-plugin`) | Rutas `/v1` con adaptadores falsos, ETag/304, `Cache-Control`, rate limit, errores sin fuga de secrets, estáticos desde R2 local con Cache API real |
-| Proxy: fuente capa A | `apps/proxy/test/sources/edge-cached.test.ts` | Vitest en workerd, upstream y caché inyectados | Miss → upstream y hit dentro del TTL; coalescing (10 concurrentes → 1 fetch); último dato bueno con `stale`; 503 sin caché; reintento por timeout, red o 5xx, pero no por 4xx; credenciales ausentes de claves y logs |
-| Proxy: adaptadores | `apps/proxy/test/adapters/{subtes,colectivos}.test.ts`, `test/lib/gtfs-rt.test.ts` | Vitest en workerd + **fixtures reales**. Las `.pb` se importan inline (`?inline` → data URL → bytes con `test/lib/fixture-bytes.ts`), porque workerd no tiene `fs` | Reglas de estado de subte, alertas, arribos con forecast congelado; colectivos: líneas, posiciones filtradas, arribos por equivalencia, 404, fan-out parcial, decodificación GTFS-RT |
+| Proxy: fuente capa A | `apps/proxy/test/sources/edge-cached.test.ts` | Vitest en workerd, upstream y caché inyectados | Miss → upstream y hit dentro del TTL; coalescing (10 concurrentes → 1 fetch); último dato bueno con `stale`; 503 sin caché; reintento por timeout, red o 5xx, pero no por 4xx; credenciales ausentes de claves y logs. Fase 6: fuente **sin credenciales**, con otra base y su propio texto de 503 (la de trenes) |
+| Proxy: adaptadores | `apps/proxy/test/adapters/{subtes,colectivos,trenes}.test.ts`, `test/lib/gtfs-rt.test.ts` | Vitest en workerd + **fixtures reales**. Las `.pb` se importan inline (`?inline` → data URL → bytes con `test/lib/fixture-bytes.ts`), porque workerd no tiene `fs` | Reglas de estado de subte, alertas, arribos con forecast congelado; colectivos: líneas, posiciones filtradas, arribos por equivalencia, 404, fan-out parcial, decodificación GTFS-RT; **trenes** (32 casos al 2026-11-05, con las fixtures de `fixtures/sofse/`): estado por línea y ramal, alertas vigentes y su traducción, arribos por estación con fechas UTC, `results: []`, degradación por `gerencias` o `ramales` caídos, concurrencia máxima de 6 pedidos y kill-switch |
 | Proxy: carga | `tools/carga` (fuera de la suite) | autocannon 8.0.0 contra `wrangler dev` | 1 fetch upstream por clave y por TTL bajo carga, y rate limit 429. Ver §5 |
-| `tools/gtfs` contra contratos | `tools/gtfs/test/contracts.test.ts` (+ tests por paso) | Vitest (npm, fuera del workspace) | Cada archivo de `out/` valida contra su esquema de `ARCHIVOS_ESTATICOS_V1`, y el manifiesto contra `ManifestV1` |
+| `tools/gtfs` contra contratos | `tools/gtfs/test/contracts.test.ts` (+ tests por paso, y `trenes.test.ts` para el paso `trenes`, Fase 6; a confirmar al cerrar la ola 2) | Vitest (npm, fuera del workspace) | Cada archivo de `out/` valida contra su esquema de `ARCHIVOS_ESTATICOS_V1`, y el manifiesto contra `ManifestV1`. `trenes.test.ts` arma `trenes-lineas.json` y `trenes-estaciones.json` desde muestras de los volcados de `tools/sofse-probe` y los valida contra `TrenesLineasArchivoV1` y `TrenesEstacionesArchivoV1` |
 | Herramientas | `tools/*` | Ejecución manual (scripts standalone con npm, fuera del workspace) | Investigación y preprocesado; ver §5 |
-| App (Fase 3) | `apps/mobile` | Jest + React Native Testing Library | Ver §7 |
+| App (Fases 3 a 6) | `apps/mobile` | Jest + React Native Testing Library | Ver §8. Trenes (Fase 6): modelo puro y pantallas con `fetch` mockeado por ruta |
 
 Todo lo que entra al workspace (`apps/*`, `packages/*`) corre en CI (`.github/workflows/ci.yml`: install `--frozen-lockfile` → lint → typecheck → test) y antes de cada despliegue (`.github/workflows/deploy-proxy.yml`).
 
@@ -70,6 +70,11 @@ pnpm lint && pnpm typecheck && pnpm format:check
   1. revisar el diff (tamaños, campos nuevos);
   2. correr `pnpm test`: un adaptador que se rompe marca un cambio del upstream;
   3. actualizar `docs/01-api-transporte.md`.
+- **Trenes (SOFSE, Fase 6).** Las fixtures de la fuente comunitaria viven en `apps/proxy/test/fixtures/sofse/` (cuerpos **crudos** de `gerencias`, `ramales`, `estaciones` y `arribos`, capturados el 2026-11-05 a las 08:56 hora de Buenos Aires). No confundir con `fixtures/trenes/`, que son los 404 de la API del GCBA (`/trenes/*`). Se regeneran con `tools/sofse-probe`, que no usa credenciales ni `.env`:
+  ```sh
+  node tools/sofse-probe/probe.mjs --fixtures
+  ```
+  Tarda ~1 min (37 pedidos, de a uno, con pausa de 300 ms: la fuente es el servidor de una persona). Además de las fixtures deja volcados crudos fuera del repo (`~/.cache/transportate/sofse/`) que consume el paso `trenes` de `tools/gtfs`. Después de regenerar: revisar el diff, correr los tests del adaptador (un cambio de formato rompe un test, no la pantalla) y actualizar `docs/01d-api-trenes-sofse.md`. **Ningún test llama a la fuente**: ni en CI ni en local. Los tests de trenes leen las fixtures, y la app ni siquiera conoce la URL de SOFSE (solo habla con el Worker).
 - Límite de tamaño: ningún archivo commiteado puede superar 5 MB. Las más grandes hoy son `tripUpdates.pb` (3,6 MB) y `vehiclePositions.json=1.json` (3,5 MB).
 
 ## 5. Herramientas (`tools/*`)
@@ -82,6 +87,7 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
 | `tools/gtfs-cruce` | `node tools/gtfs-cruce/cruce.mjs` (lee la caché en `~/.cache/transportate/gtfs/`) | `last-run.json` con porcentajes de cruce (`docs/01b-gtfs-alternativos.md`) |
 | `tools/captura-posiciones` | `node captura.mjs --once` (un snapshot y termina); `./status.sh` para la captura larga | CSV en `~/.cache/transportate/capturas/` |
 | `tools/gtfs` (preprocesado) | `npm run check` y `npm test`: Vitest sobre muestras chicas y, si existe `out/`, validación de cada archivo contra `ARCHIVOS_ESTATICOS_V1` (`ParadasArchivoV1`, `LineasColectivoArchivoV1`, `EquivalenciasArchivoV1`, `SubteLineasArchivoV1`, `SubteEstacionesArchivoV1`) y del manifiesto contra `ManifestV1`. Esquemas vigentes: `ManifestV1.archivos[x].url` = `<version>/<archivo>` relativo a `/v1/static/` (más `omitidos` y `fuentes` opcionales); `ParadaV1` con `altura` y `comuna` **numéricos** (o `null`) y `lineas[]` = `{ linea, numero, sentido: 'ida'\|'vuelta'\|null }`; `EquivalenciaParadaV1` solo con paradas (el origen `gtfs2021` está reservado y no se publica) | `out/<version>/*` + `manifest.json` |
+| `tools/sofse-probe` | `node tools/sofse-probe/probe.mjs` (volcados) o con `--fixtures` (además, las fixtures del proxy); imprime status, latencia y bytes por pedido. Sin dependencias | `~/.cache/transportate/sofse/` y `apps/proxy/test/fixtures/sofse/` |
 | `tools/carga` | Corre contra `wrangler dev` con el paquete estático en el R2 local (ver su README). Escenario A: 50 conexiones durante 10 o 45 s; cuenta los `upstream_fetch` del log. Escenario B: 100 requests con la misma IP → 429 | `tools/carga/README.md` con p50/p99, req/s, errores y fetches upstream |
 | `tools/contraste` | `python3 tools/contraste/contraste.py --check` (sale con 1 si falla un par de la paleta oscura) | Tablas de contraste de `docs/02-obelisco-tokens.md` |
 
@@ -97,6 +103,7 @@ Son paquetes standalone con npm, **fuera del workspace pnpm**. No corren en CI: 
 ## 7. Qué NO se testea (a propósito)
 
 - **Llamadas reales a la API GCBA en CI.** CI no tiene credenciales, y la API es inestable (1–9 % de fallos medidos) y está "en revisión" según el portal. El contacto con el upstream se verifica a mano con `tools/api-probe` y queda congelado en fixtures.
+- **Llamadas reales a la fuente de trenes** (`ariedro.dev/api-trenes`). Es un servicio comunitario sin SLA ni términos: un test que lo llamara sería inestable y le sumaría carga a un servidor personal. Se verifica a mano con `tools/sofse-probe` y queda congelado en fixtures. El kill-switch `TRENES_ENABLED` se prueba con el `env` inyectado, no con el Worker desplegado.
 - **Despliegue real ni bindings remotos** (R2 o rate limit de Cloudflare). Se usan los simulados del plugin. La verificación post-deploy es manual (`docs/10-deploy.md` §2).
 - **La Cache API en `*.workers.dev`**, que no tiene efecto allí. Se prueba la lógica en local; el comportamiento en producción depende del dominio propio.
 - **Compresión gzip/brotli**: la aplica el runtime de Workers, no nuestro código.
@@ -183,6 +190,9 @@ Totales por paquete al cierre de la Fase 4 (2026-11-03, cada uno por separado): 
 | `src/shared/map/__tests__/*`, `test/map/*` | `MapView` compartido y mapa de la red de subte contra el mock de MapLibre |
 | `test/clear-query-cache.test.ts` | `clearPersistedQueryCache` borra solo la caché de consultas |
 | `src/shared/theme/__tests__/*` | Contrastes de DESIGN.md §2 en claro y oscuro; `ThemeProvider` |
+| `src/features/trenes/__tests__/model.test.ts`, `test/trenes/{fixtures.tsx, TrenesScreen.test.tsx, LineaRamalEstacion.test.tsx}` (Fase 6, a confirmar al cerrar la ola 2) | Trenes: modelo puro (`buildRedTrenes` con los dos estáticos, `estadoDeLineaTren` y `estadoDeRamal`, búsqueda de estaciones sin tildes, `agruparArribosTren` por destino, `arribosTrenVigentes`, `demoraDe`, siglas R/S/M/SM/BS/TC); raíz (6 líneas con estado, búsqueda, skeleton, error con reintento, `sin_datos`, sin mapa); línea → ramales; ramal con estrella y estaciones; estación con una banda por destino, demora («Programado hh:mm»), «Cancelado» y «Dato de hace N min». `fetch` mockeado por ruta (`/v1/trenes/estado`, `/alertas`, `/estaciones/:id/arribos`) y el estático validado con `TrenesLineasArchivoV1` / `TrenesEstacionesArchivoV1` |
+| casos de trenes en favoritos, inicio y navegación/layout (Fase 6, a confirmar al cerrar la ola 2) | Favoritos `ramal_tren` y `estacion_tren` (alta, `hrefFor`, dato vivo, huérfano), Inicio con estaciones de tren (`hrefDeFavorito`, `elegirLider`) y `test/layout.test.tsx` con **5 tabs** (Inicio, Colectivos, Subtes, Trenes, Favoritos) |
+| `src/features/ajustes/__tests__/AcercaScreen.test.tsx` | Acerca de, también la atribución de trenes («Trenes: datos de Trenes Argentinos (SOFSE) a través de una API comunitaria no oficial.») y su enlace a la fuente |
 | `src/shared/ui/__tests__/*` | Componentes: Alert, Button, FreshnessLabel, SearchInput, StatusChip, vitrina en los dos esquemas, y (`Estados.test.tsx`) Chip, SegmentedControl, ErrorState, EmptyState, LineBadge, OfflineBanner y Skeleton |
 
 **Cobertura** (`jest --coverage`, informativa y sin umbral; medida el 2026-11-02, antes de la Fase 4): **93,2 % statements, 88,2 % branches, 86,9 % funciones, 94,8 % líneas**.
