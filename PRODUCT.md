@@ -45,7 +45,7 @@ Una sola base de código React Native con Expo (iOS + Android, dev client, New A
 
 ## Capabilities and Constraints
 
-Alcance del MVP (el plan habla de seis pantallas; la tab **Trenes** se suma en la Fase 6, ver `docs/00-plan.md`; ver `docs/00-plan.md`, tareas 1.9 y 3.8): Inicio, Colectivos, Subtes, Tránsito, Favoritos y Ajustes (con Acerca de como pantalla anidada). *(Suposición: así se cuentan las seis; los briefs de `shape` lo confirman.)*
+Alcance del MVP (el plan habla de seis pantallas, ver `docs/00-plan.md`, tareas 1.9 y 3.8; la tab **Trenes** se suma en la Fase 6): Inicio, Colectivos, Subtes, Tránsito, Favoritos y Ajustes (con Acerca de como pantalla anidada). *(Suposición: así se cuentan las seis; los briefs de `shape` lo confirman.)*
 
 Restricciones duras:
 
