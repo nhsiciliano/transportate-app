@@ -145,8 +145,10 @@ function LineaRow({ item, onPress }: { item: LineaTrenConEstado; onPress: () => 
       leading={<LineaTrenBadge linea={linea} surface={colors.bg.card} />}
       title={linea.nombre}
       subtitle={detalle}
+      // El resumen va en la nota solo cuando la línea tiene un problema: con estado «Normal» el
+      // aviso informativo (hoy, el del CUD en las seis líneas) se lee en la línea, no en el tablero.
       note={
-        resumen === undefined || resumen === ''
+        resumen === undefined || resumen === '' || estado === 'normal'
           ? undefined
           : { text: resumen, tone: tonoNota(estado) }
       }

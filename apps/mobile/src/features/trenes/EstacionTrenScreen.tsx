@@ -1,8 +1,8 @@
 // Detalle de estación de tren («Señalética de terminal», Fase 6): el cartel de andén. Título
 // nativo con el nombre y la estrella en el header; la fila de contexto con la insignia de cada
-// línea; las alertas de la estación y sus ramales; **una banda fija por destino** con el próximo
-// tren a escala monumental («Hacia Moreno · Próximo · 4 min»), el andén, el ramal, los siguientes y
-// la hora programada si hay demora (S38). Las dos bandas más próximas van arriba; el resto de los
+// línea; **una banda fija por destino** con el próximo tren a escala monumental («Hacia Moreno ·
+// Próximo · 4 min»), el andén, el ramal, los siguientes y la hora programada si hay demora (S38);
+// y debajo, las alertas de la estación y sus ramales (la banda es lo primero que se lee). Las dos bandas más próximas van arriba; el resto de los
 // destinos baja a una placa. Un cancelado no cuenta como próximo (S40). Con dato de más de 10 min,
 // los tiempos se reemplazan por la antigüedad (S30). Cuando cambia el próximo, la banda se vuelve a
 // señalizar con el fundido de 200 ms de `SignBand` (corte seco con Reducir movimiento).
@@ -138,18 +138,6 @@ export function EstacionTrenScreen({ id }: { id: string | undefined }) {
             testID="estacion-interrumpida"
           />
         ) : null}
-        {alertasEstacion.map((a) => {
-          const ramal = a.ramalId === undefined ? undefined : ramalPorId.get(a.ramalId);
-          return (
-            <AlertaTren
-              key={a.id}
-              alerta={a}
-              estado={a.ramalId === undefined ? undefined : estadoDeRamal(a.ramalId, estado.data)}
-              sentido={ramal === undefined ? undefined : sentidoDeAlerta(a, ramal)}
-            />
-          );
-        })}
-
         {arribos.isRefreshError ? <RefreshErrorAlert onRetry={onRefresh} /> : null}
 
         {arribos.isPending ? (
@@ -182,6 +170,19 @@ export function EstacionTrenScreen({ id }: { id: string | undefined }) {
         {arribos.data !== undefined ? (
           <FreshnessLabel sourceTimestamp={arribos.sourceTimestamp} intervalSeconds={seconds} />
         ) : null}
+
+        {/* Las alertas van después del «¿cuándo viene?»: la banda es lo primero que se lee. */}
+        {alertasEstacion.map((a) => {
+          const ramal = a.ramalId === undefined ? undefined : ramalPorId.get(a.ramalId);
+          return (
+            <AlertaTren
+              key={a.id}
+              alerta={a}
+              estado={a.ramalId === undefined ? undefined : estadoDeRamal(a.ramalId, estado.data)}
+              sentido={ramal === undefined ? undefined : sentidoDeAlerta(a, ramal)}
+            />
+          );
+        })}
       </>
     );
   }

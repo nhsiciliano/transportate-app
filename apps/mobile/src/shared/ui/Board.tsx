@@ -229,7 +229,7 @@ function BoardRow({
           </Text>
         )}
         {note === undefined || note.text === '' ? null : (
-          <Text variant="text.sm" color={noteColor} style={styles.small}>
+          <Text variant="text.sm" color={noteColor} style={styles.small} numberOfLines={2}>
             {note.text}
           </Text>
         )}
