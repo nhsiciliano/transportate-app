@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
 import {
   AlertasResponseV1,
+  AlertasTrenResponseV1,
+  AlertasTrenV1,
+  AlertaTrenV1,
   AlertaV1,
+  ArribosEstacionTrenResponseV1,
+  ArribosEstacionTrenV1,
+  ArriboTrenV1,
   ArriboColectivoV1,
   ArribosEstacionV1,
   ArribosParadaV1,
@@ -12,13 +18,18 @@ import {
   ErrorV1,
   IndiceColectivosArchivoV1,
   EstacionSubteV1,
+  EstadoLineasTrenResponseV1,
+  EstadoLineasTrenV1,
+  EstadoLineaTrenV1,
   EstadoLineasV1,
   EstadoLineaV1,
+  EstadoRamalTrenV1,
   HealthV1,
   LineaColectivoV1,
   LineasColectivoV1,
   LineasColectivoArchivoV1,
   LineaSubteV1,
+  LineaTrenId,
   ManifestV1,
   MetaV1,
   ParadaV1,
@@ -27,6 +38,7 @@ import {
   SubteLineasArchivoV1,
   PosicionesLineaResponseV1,
   PosicionesLineaV1,
+  SentidoTrenV1,
   VehiculoV1,
 } from '../src/index.js';
 
@@ -138,6 +150,48 @@ const equivalencia = {
   observaciones: 12,
 };
 
+const ramalTren = {
+  ramalId: '51',
+  nombre: 'Moreno-Mercedes',
+  estado: 'demorada',
+  alertaIds: ['99284', '98462'],
+};
+const estadoLineaTren = {
+  linea: 'sarmiento',
+  nombre: 'Sarmiento',
+  color: '#00A650',
+  colorTexto: '#000000',
+  estado: 'demorada',
+  resumen: 'El tren de las 08:11 hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
+  alertaIds: ['99284'],
+  ramales: [ramalTren],
+};
+const alertaTren = {
+  id: '99284',
+  linea: 'sarmiento',
+  ramalId: '51',
+  sentido: '2',
+  titulo: 'El tren de las 08:11 hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
+  descripcion: 'El tren de las 08:11 hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
+  causa: 'TECHNICAL_PROBLEM',
+  efecto: 'SIGNIFICANT_DELAYS',
+  desde: '2026-11-05T08:32:00-03:00',
+};
+const arriboTren = {
+  estacionId: '50',
+  linea: 'sarmiento',
+  ramalId: '1',
+  ramal: 'Once-Moreno',
+  destino: 'Once',
+  sentido: '2',
+  enSegundos: 240,
+  horaProgramada: '2026-11-05T12:00:15.000Z',
+  horaEstimada: '2026-11-05T12:01:12.000Z',
+  anden: '2',
+  cancelado: false,
+  servicioId: '41167f5a-f7fd-4e06-ab9e-7ff18cb1f835',
+};
+
 // [nombre, esquema, válido, inválido]
 const casos: [string, z.ZodType, unknown, unknown][] = [
   ['MetaV1', MetaV1, meta, { ...meta, generatedAt: '01/11/2026' }],
@@ -173,6 +227,47 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
     ArribosEstacionV1,
     { estacionId: '1059N', arribos: [arriboSubte] },
     { estacionId: 1059, arribos: [] },
+  ],
+  ['LineaTrenId', LineaTrenId, 'san-martin', 'San Martín'],
+  ['SentidoTrenV1', SentidoTrenV1, '2', '3'],
+  ['EstadoRamalTrenV1', EstadoRamalTrenV1, ramalTren, { ...ramalTren, ramalId: 51 }],
+  [
+    'EstadoLineaTrenV1',
+    EstadoLineaTrenV1,
+    estadoLineaTren,
+    { ...estadoLineaTren, linea: 'urquiza' },
+  ],
+  [
+    'EstadoLineaTrenV1 (sin ramales ni resumen)',
+    EstadoLineaTrenV1,
+    { ...estadoLineaTren, estado: 'sin_datos', resumen: undefined, ramales: [] },
+    { ...estadoLineaTren, ramales: undefined },
+  ],
+  [
+    'EstadoLineasTrenV1',
+    EstadoLineasTrenV1,
+    { lineas: [estadoLineaTren] },
+    { lineas: [{ ...estadoLineaTren, color: 'verde' }] },
+  ],
+  ['AlertaTrenV1', AlertaTrenV1, alertaTren, { ...alertaTren, desde: '2026-11-05 08:32:00' }],
+  [
+    'AlertasTrenV1',
+    AlertasTrenV1,
+    { alertas: [alertaTren] },
+    { alertas: [{ ...alertaTren, sentido: 1 }] },
+  ],
+  ['ArriboTrenV1', ArriboTrenV1, arriboTren, { ...arriboTren, cancelado: 'no' }],
+  [
+    'ArriboTrenV1 (solo programado, sin andén)',
+    ArriboTrenV1,
+    { ...arriboTren, horaEstimada: undefined, anden: undefined, servicioId: undefined },
+    { ...arriboTren, enSegundos: 1.5 },
+  ],
+  [
+    'ArribosEstacionTrenV1',
+    ArribosEstacionTrenV1,
+    { estacionId: '50', arribos: [arriboTren] },
+    { estacionId: 50, arribos: [] },
   ],
   ['VehiculoV1', VehiculoV1, vehiculo, { ...vehiculo, lat: 91 }],
   [
@@ -316,6 +411,21 @@ describe('contratos v1', () => {
     ).toBe(true);
     expect(
       AlertasResponseV1.safeParse({ meta, data: { alertas: [{ ...alerta, id: 1 }] } }).success,
+    ).toBe(false);
+  });
+
+  it('los sobres de trenes arman { meta, data }', () => {
+    expect(
+      EstadoLineasTrenResponseV1.safeParse({ meta, data: { lineas: [estadoLineaTren] } }).success,
+    ).toBe(true);
+    expect(AlertasTrenResponseV1.safeParse({ meta, data: { alertas: [alertaTren] } }).success).toBe(
+      true,
+    );
+    expect(
+      ArribosEstacionTrenResponseV1.safeParse({
+        meta,
+        data: { estacionId: '50', arribos: [{ ...arriboTren, linea: 'urquiza' }] },
+      }).success,
     ).toBe(false);
   });
 });
