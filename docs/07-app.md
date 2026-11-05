@@ -571,7 +571,7 @@ Las líneas, los ramales y las ~300 estaciones salen del paquete estático (`tre
 | `normal` | el resto (las alertas informativas, como el aviso del CUD con SUBE, no cambian el estado) | «Normal» en `text.secondary` *(a confirmar: «Normal» o «Sin novedades»)* |
 | `sin_datos` | fuente caída o kill-switch | «Sin información» |
 
-- **La línea toma la severidad máxima de sus alertas y de las de todos sus ramales; el ramal, la de las suyas y las de la línea que no apuntan a un ramal.** Consecuencia: **un solo ramal interrumpido pone toda su línea en «Interrumpida»** (por ejemplo Cañuelas–Lobos en Roca, cuando el resto circula). Es una regla conservadora y se ve en el detalle, porque la lista de ramales muestra el estado de cada uno. Si molesta en la práctica, es un cambio del adaptador, no de la app.
+- **La línea toma la severidad máxima de sus alertas de línea y de su `estado.mensaje`; las alertas de sus ramales le aportan como máximo «Con demoras».** Solo una alerta de línea (o el mensaje de la gerencia) puede ponerla en «Interrumpida». El ramal toma la severidad de las suyas y de las de la línea que no apuntan a un ramal. Consecuencia: un ramal interrumpido (por ejemplo Cañuelas–Lobos en Roca) deja la línea en «Con demoras» con el resumen prefijado por el nombre del ramal («Cañuelas-Lobos: …»), y el detalle por ramal muestra «Interrumpida» en ese ramal. Decidido el 2026-11-05 (ola 2, F6-MID-B); antes la línea tomaba la máxima de todos sus ramales.
 - `resumen` es el título de la alerta más severa; la fila de la raíz lo muestra como tercera línea.
 - Nunca se muestra «Normal» sin datos: si `estado` es `sin_datos`, la fila dice «Sin información» (principio 2 de `PRODUCT.md`).
 
