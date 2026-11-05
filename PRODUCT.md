@@ -12,18 +12,18 @@ Una sola base de código React Native con Expo (iOS + Android, dev client, New A
 
 ## Users
 
-**Residentes y visitantes de la Ciudad Autónoma de Buenos Aires que se mueven en colectivo y subte.**
+**Residentes y visitantes de la Ciudad Autónoma de Buenos Aires que se mueven en colectivo, subte y tren.**
 
 - Lo usan **en la calle y en movimiento**: parados en una parada, en un andén, caminando hacia una estación. Van **apurados**, con **una sola mano** y, muchas veces, con sol sobre la pantalla.
 - A veces **sin señal** o con señal mala (subsuelo, túneles, zonas con cobertura floja). La app tiene que mostrar lo último que sabe y decir con claridad qué tan viejo es.
 - Hablan **español rioplatense**; los visitantes pueden no conocer la red, así que nombres de líneas, estaciones y paradas tienen que ser inequívocos.
-- Trabajo a resolver: *"¿cuándo pasa mi colectivo o mi subte, y está funcionando?"* en unos pocos segundos, y volver a consultar lo mismo todos los días sin buscarlo de nuevo (favoritos).
+- Trabajo a resolver: *"¿cuándo pasa mi colectivo, mi subte o mi tren, y está funcionando?"* en unos pocos segundos, y volver a consultar lo mismo todos los días sin buscarlo de nuevo (favoritos).
 
 *(Suposición)* No hay segmentos secundarios confirmados (turistas, personas con movilidad reducida, conductores de colectivos). Se tratan como parte de la misma audiencia hasta que haya evidencia distinta.
 
 ## Product Purpose
 
-**Transportate** muestra el transporte público de CABA **en tiempo real**: posiciones de colectivos, estado y próximos arribos del subte, y cortes de tránsito, en una app móvil sin cuentas ni datos personales y con favoritos guardados en el teléfono.
+**Transportate** muestra el transporte público de CABA **en tiempo real**: posiciones de colectivos, estado y próximos arribos del subte, estado y arribos de los trenes de Trenes Argentinos (SOFSE) y cortes de tránsito, en una app móvil sin cuentas ni datos personales y con favoritos guardados en el teléfono.
 
 Éxito: el usuario obtiene la respuesta en menos de lo que tarda en cruzar la calle; sabe qué tan fresco es el dato; la app sigue siendo útil sin conexión (favoritos y último dato bueno). A nivel de ingeniería, éxito es escalar de cientos a millones de usuarios sin reescribir (proxy en dos capas, ver `docs/03-arquitectura.md` y `docs/04-escalabilidad.md`).
 
@@ -38,13 +38,14 @@ Una sola base de código React Native con Expo (iOS + Android, dev client, New A
 
 - **Modo de diseño: Operate.** La persona viene a completar una tarea (ver una línea, una parada, un estado). Escaneabilidad, consistencia, expectativas nativas y la escena real de uso pesan más que la expresión. La marca vive en detalles precisos.
 - **Fuentes de datos:** API de Transporte del GCBA (`https://apitransporte.buenosaires.gob.ar`), consumida **solo a través de un proxy propio** (Cloudflare Worker + Hono). El teléfono nunca habla con el upstream ni lleva credenciales. Spec: `docs/fuentes/api-transporte-v1.raml`; endpoints verificados: `docs/01-api-transporte.md`.
+- **Trenes: fuente no oficial.** Los datos de trenes vienen de una **API comunitaria no oficial** que reproduce el acceso de la app de Trenes Argentinos a la API interna de SOFSE (`https://ariedro.dev/api-trenes`, mantenida por una persona; evaluación en `docs/01d-api-trenes-sofse.md`). Se consume **solo desde nuestro Worker** (`/v1/trenes/*`), nunca desde la app. No tiene términos de uso ni SLA y ya cayó al rotar su acceso: la caída es un estado esperable. **Degradación:** si la fuente cae, Trenes muestra «Sin información», no datos inventados; el último dato bueno se muestra marcado como viejo, y un kill-switch del servidor puede apagar el servicio sin publicar una versión nueva. Cobertura: las 6 líneas de SOFSE; **no están Belgrano Norte ni Urquiza** (concesiones privadas).
 - **Datos estáticos** (GTFS de colectivos de ~209 MB y de subtes): se preprocesan offline, se filtran a CABA y se sirven como JSON compacto versionado; búsqueda y paradas cercanas ocurren **localmente** en el teléfono.
 - **Refresco:** polling de 20 s (configurable) solo con la pantalla visible; pausa en segundo plano.
 - **Riesgo operativo conocido:** el portal de datos abiertos informó en junio de 2026 que los datasets con formato API y GTFS estaban "suspendidos, en revisión y corrección". La app debe tratar la indisponibilidad del upstream como un estado normal, no excepcional (ver Product Principles).
 
 ## Capabilities and Constraints
 
-Alcance del MVP (el plan habla de seis pantallas; ver `docs/00-plan.md`, tareas 1.9 y 3.8): Inicio, Colectivos, Subtes, Tránsito, Favoritos y Ajustes (con Acerca de como pantalla anidada). *(Suposición: así se cuentan las seis; los briefs de `shape` lo confirman.)*
+Alcance del MVP (el plan habla de seis pantallas; la tab **Trenes** se suma en la Fase 6, ver `docs/00-plan.md`; ver `docs/00-plan.md`, tareas 1.9 y 3.8): Inicio, Colectivos, Subtes, Tránsito, Favoritos y Ajustes (con Acerca de como pantalla anidada). *(Suposición: así se cuentan las seis; los briefs de `shape` lo confirman.)*
 
 Restricciones duras:
 
@@ -53,7 +54,7 @@ Restricciones duras:
 - **Ubicación solo "mientras se usa"**, en memoria, con alternativa manual cuando no hay permiso.
 - **Estados obligatorios en cada pantalla:** carga, vacío, error con reintento, dato viejo (stale), sin conexión, sin permiso de ubicación.
 - **Colores de líneas de subte** tomados del GTFS oficial (`docs/02b-colores-subte.md`).
-- **Terminología:** *línea* (colectivo y subte), *parada* (colectivo), *estación* y *andén* (subte), *ramal*, *corte* (tránsito), *frescura* ("hace 12 s").
+- **Terminología:** *línea* (colectivo, subte y tren: Roca, Sarmiento…), *ramal* (de tren, como Once–Moreno; también el de un número de colectivo), *parada* (colectivo), *estación* (subte y tren), *andén* (subte y tren), *cabecera* (cada extremo de un ramal), *corte* (tránsito), *frescura* ("hace 12 s"). En trenes lo que se guarda como favorito es el **ramal** o la **estación**, nunca la línea entera.
 - **Sin definir todavía:** si existen arribos por parada de colectivos en la API (Fase 1 lo confirma o descarta; si no hay feed, se omite la función); intervalo de refresco por defecto distinto de 20 s; modo oscuro (Obelisco no lo define, se deriva en Fase 1.6).
 
 ## Brand Commitments
@@ -66,6 +67,7 @@ Compromisos que el plan fija y que son **vinculantes** para el trabajo visual (s
 - **Dirección visual: «Señalética de terminal».** Elegida por el usuario el 2026-11-03 con Impeccable (contrato de dirección en `apps/mobile/.impeccable/surfaces/`), con el piloto en Inicio validado en el iPhone el 2026-11-04 y extendida al resto de la app ese mismo día. Aporta tipografía, densidad, placas y bandas de señal sobre la paleta de Obelisco v2, que no cambia; las tabs, los large titles, los headers, el gesto de volver, las sheets y los controles quedan nativos.
 - **Íconos:** **Material Symbols Rounded**, **FILL 1**, como SVG (`@material-symbols/svg-400`).
 - **Atribución obligatoria** a los datos del GCBA (licencia CC-BY-2.5-AR) en la pantalla "Acerca de".
+- **Atribución de trenes** (copy oficial para Acerca de, ola 2 de la Fase 6): «Trenes: datos de Trenes Argentinos (SOFSE) a través de una API comunitaria no oficial». Dice la verdad sobre el origen: no se presenta como dato oficial del GCBA ni de SOFSE.
 - **Voz:** rioplatense, directa, sin jerga técnica; breve porque se lee de pie y en movimiento. *(Suposición: tono cercano pero sobrio, sin humor en estados de error del servicio.)*
 
 **Tensiones abiertas (a resolver en `shape` / `adapt` nativo, no acá):**
@@ -79,6 +81,7 @@ Compromisos que el plan fija y que son **vinculantes** para el trabajo visual (s
 - GTFS estático de subtes verificado el 2026-11-01 (HTTP 200): colores por línea y estaciones en `docs/02b-colores-subte.md`.
 - Credenciales de la API en un `.env` local (no versionado) del equipo de desarrollo.
 - Tokens de Obelisco v2 (colores, escalas tipográficas) identificados en el plan; el detalle con archivo origen está en `docs/02-obelisco-tokens.md`.
+- Trenes (verificado en vivo el 2026-11-05 desde una Mac): la instancia comunitaria cubre 6 líneas, 27 ramales públicos y unas 300 estaciones; responde en 1,3–2,5 s por pedido; los arribos de Retiro (13 trenes) pesan 106 KB y los de Caballito (4 trenes) 42 KB; un path desconocido devuelve 500 «Not Found». Repo con licencia WTFPL y 28 estrellas, último commit 2025-11-21 («fix: update cipher»). Detalle y riesgos en `docs/01d-api-trenes-sofse.md`; colores provisorios en `docs/02c-colores-trenes.md`.
 - **No hay:** usuarios reales, métricas de uso, entrevistas, testimonios, benchmarks de competidores ni capturas de apps de referencia. No inventar ninguno.
 
 ## Product Principles
