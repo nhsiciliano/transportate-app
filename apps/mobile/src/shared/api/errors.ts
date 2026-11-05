@@ -17,6 +17,18 @@ const SERVICIO_NO_RESPONDE: UserMessage = {
   title: 'Servicio no disponible',
   cause: 'El servicio de la Ciudad no responde en este momento.',
 };
+const TRENES_NO_RESPONDE: UserMessage = {
+  title: 'Servicio no disponible',
+  cause: 'El servicio de trenes no responde en este momento.',
+};
+
+/**
+ * Timeout o 5xx del upstream: el copy nombra a quien no responde. Las rutas de trenes salen de
+ * la fuente comunitaria de SOFSE, no de la API de la Ciudad.
+ */
+function servicioNoResponde(route: string): UserMessage {
+  return route.startsWith('/v1/trenes/') ? TRENES_NO_RESPONDE : SERVICIO_NO_RESPONDE;
+}
 const NO_DISPONIBLE: UserMessage = {
   title: 'Esta información no está disponible por ahora.',
   cause: null,
@@ -72,7 +84,7 @@ export class TimeoutError extends ApiErrorBase {
   }
 
   userMessage(): UserMessage {
-    return SERVICIO_NO_RESPONDE;
+    return servicioNoResponde(this.route);
   }
 }
 
@@ -113,7 +125,7 @@ export class HttpError extends ApiErrorBase {
     }
     // 500 `internal` y 400 `bad_request` son fallas nuestras; el resto de los 5xx, del upstream.
     if (this.status === 500 || this.status === 400) return FALLA_NUESTRA;
-    if (this.retryable) return SERVICIO_NO_RESPONDE;
+    if (this.retryable) return servicioNoResponde(this.route);
     return FALLA_NUESTRA;
   }
 }

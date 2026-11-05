@@ -12,12 +12,15 @@ import SubtesLayout from '@/app/(tabs)/subtes/_layout';
 import LineaRoute from '@/app/(tabs)/subtes/[linea]';
 import EstacionRoute from '@/app/(tabs)/subtes/estacion/[id]';
 import SubtesRoute from '@/app/(tabs)/subtes/index';
+import TrenesLayout from '@/app/(tabs)/trenes/_layout';
+import EstacionTrenRoute from '@/app/(tabs)/trenes/estacion/[id]';
 import { MmkvFavoritosRepository, type NuevoFavorito } from '@/features/favoritos';
 import { SUBTE_NORMAL } from '@/features/inicio';
 import { MemoryKeyValueStore } from '@/shared/storage/kv';
 import { light } from '@/shared/theme';
 
 import { locationMock } from './mocks/expo-location';
+import { arribosTren, estadoTrenes } from './trenes/fixtures';
 import {
   arribos,
   createHarness,
@@ -48,6 +51,8 @@ async function renderInicio(routes: Routes = defaultRoutes(), favoritos: NuevoFa
       'subtes/[linea]': LineaRoute,
       'subtes/estacion/[id]': EstacionRoute,
       'favoritos/index': FavoritosRoute,
+      'trenes/_layout': TrenesLayout,
+      'trenes/estacion/[id]': EstacionTrenRoute,
     },
     { initialUrl: '/inicio', wrapper: harness.Wrapper },
   );
@@ -397,6 +402,49 @@ describe('Inicio: bandas de favoritos', () => {
     expect(bandas[0]).toHaveStyle({ minHeight: 148 });
     // Inicio nunca pide el permiso (S32): solo lo lee.
     expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+  });
+
+  it('estación de tren: compite por cercanía como líder y abre su detalle en Trenes', async () => {
+    locationMock.setPermission('granted');
+    // Junto a Caballito (las estaciones de tren del fixture están en -34.6 / -58.45).
+    locationMock.setPosition({ latitude: -34.6001, longitude: -58.4501 });
+    await renderInicio(
+      {
+        ...defaultRoutes(),
+        '/v1/trenes/estado': () => jsonResponse(estadoTrenes()),
+        '/v1/trenes/estaciones/50/arribos': () =>
+          jsonResponse(
+            arribosTren('50', [
+              {
+                ramalId: '1',
+                ramal: 'Once-Moreno',
+                destino: 'Once',
+                sentido: '2',
+                enSegundos: 240,
+                anden: '2',
+                cancelado: false,
+              },
+            ]),
+          ),
+      },
+      [
+        { ...LINEA_D },
+        { tipo: 'estacion_tren', refId: '50', nombre: 'Caballito', subtitulo: 'Línea Sarmiento' },
+      ],
+    );
+    const banda = await screen.findByRole('button', {
+      name: /^Estación Caballito, Línea Sarmiento, Hacia Once en 4 minutos/,
+    });
+    await waitFor(() => {
+      expect(
+        screen.getAllByTestId(/^inicio-favorito-[^-]+$/).map((b) => b.props.testID as string)[0],
+      ).toBe('inicio-favorito-estacion_tren:50');
+    });
+    expect(
+      screen.getByText('Estación Caballito hacia Once', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    await userEvent.setup().press(banda);
+    expect(screen).toHavePathname('/trenes/estacion/50');
   });
 
   it('sin permiso: no pide ubicación y la líder es la primera', async () => {

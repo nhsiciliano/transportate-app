@@ -52,6 +52,7 @@ import DarkModeFillSvg from '@material-symbols/svg-400/rounded/dark_mode-fill.sv
 import BrightnessAutoFillSvg from '@material-symbols/svg-400/rounded/brightness_auto-fill.svg';
 import TimerFillSvg from '@material-symbols/svg-400/rounded/timer-fill.svg';
 import PrivacyTipFillSvg from '@material-symbols/svg-400/rounded/privacy_tip-fill.svg';
+import TrainFillSvg from '@material-symbols/svg-400/rounded/train-fill.svg';
 
 export const iconMap = {
   inicio: HomeFillSvg, // Tab Inicio
@@ -81,6 +82,8 @@ export const iconMap = {
   lista: ListFillSvg, // Vista de lista
   parada: DepartureBoardFillSvg, // Parada de colectivo
   estacion: SubwayFillSvg, // Estación de subte
+  tren: TrainFillSvg, // Trenes (línea y ramal; pictograma de banda y favorito de ramal)
+  estacionTren: TrainFillSvg, // Estación de tren (banda por destino y favorito de estación)
   anden: TransferWithinAStationFillSvg, // Andén (arribos por andén)
   sentidoAlternar: SwapHorizFillSvg, // Sentido: alternar
   sentidoHacia: ArrowForwardFillSvg, // Sentido: hacia la cabecera

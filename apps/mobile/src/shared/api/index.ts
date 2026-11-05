@@ -27,13 +27,22 @@ export {
   DEFAULT_STALE_TIME_MS,
   MANIFEST_STALE_TIME_MS,
   useAlertasSubtes,
+  useAlertasTrenes,
   useArribosEstacion,
+  useArribosEstacionTren,
   useArribosParada,
   useEstadoSubtes,
+  useEstadoTrenes,
   useLineasColectivo,
   useManifest,
   usePosicionesLinea,
   type FeedQuery,
   type ResourceQuery,
 } from './hooks';
-export { invalidateColectivos, invalidateRealtime, invalidateSubtes, queryKeys } from './keys';
+export {
+  invalidateColectivos,
+  invalidateRealtime,
+  invalidateSubtes,
+  invalidateTrenes,
+  queryKeys,
+} from './keys';

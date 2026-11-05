@@ -27,6 +27,7 @@ import {
   type LineaConEstado,
   type RedSubte,
 } from '@/features/subtes';
+import { useRedTrenes } from '@/features/trenes/hooks';
 import { distanceMeters, useUbicacion, type LatLon } from '@/features/ubicacion';
 import { invalidateRealtime } from '@/shared/api';
 import { Icon } from '@/shared/icons';
@@ -339,6 +340,10 @@ export function hrefDeFavorito(f: Pick<FavoritoV1, 'tipo' | 'refId'>): Href {
       return { pathname: '/colectivos/[linea]', params: { linea: f.refId } };
     case 'parada_colectivo':
       return { pathname: '/colectivos/parada/[id]', params: { id: f.refId } };
+    case 'ramal_tren':
+      return { pathname: '/trenes/ramal/[id]', params: { id: f.refId } };
+    case 'estacion_tren':
+      return { pathname: '/trenes/estacion/[id]', params: { id: f.refId } };
   }
 }
 
@@ -346,7 +351,7 @@ type PosicionesEstaticas = ReadonlyMap<string, LatLon>;
 
 /**
  * Favorito líder: el más cercano entre los visibles que tienen posición en el estático
- * (estaciones de subte y paradas de colectivo; las líneas no compiten). Sin posición de la
+ * (estaciones de subte y de tren, y paradas de colectivo; líneas y ramales no compiten). Sin posición de la
  * persona o sin candidatos: el primero en el orden guardado. Empates: gana el orden guardado.
  */
 export function elegirLider(
@@ -354,6 +359,7 @@ export function elegirLider(
   posicion: LatLon | null,
   estaciones: PosicionesEstaticas | undefined,
   paradas: PosicionesEstaticas | undefined,
+  estacionesTren?: PosicionesEstaticas,
 ): string | undefined {
   const primero = visibles[0]?.id;
   if (posicion === null) return primero;
@@ -364,7 +370,9 @@ export function elegirLider(
         ? estaciones?.get(f.refId)
         : f.tipo === 'parada_colectivo'
           ? paradas?.get(f.refId)
-          : undefined;
+          : f.tipo === 'estacion_tren'
+            ? estacionesTren?.get(f.refId)
+            : undefined;
     if (lugar === undefined) continue;
     const metros = distanceMeters(posicion, lugar);
     if (lider === undefined || metros < lider.metros) lider = { id: f.id, metros };
@@ -424,11 +432,13 @@ function Favoritos({
       paradas.data.paradas.filter((p) => ids.has(p.id)).map((p) => [p.id, p] as const),
     );
   }, [paradas.data, visibles]);
+  const estacionesTren = useRedTrenes().red?.estacionPorId;
   const liderId = elegirLider(
     visibles,
     position === null ? null : { lat: position.lat, lon: position.lon },
     estaciones,
     posParadas,
+    estacionesTren,
   );
 
   const estadoDeEstacion = (f: FavoritoV1): EstadoServicioV1 | undefined => {

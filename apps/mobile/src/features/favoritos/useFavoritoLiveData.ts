@@ -7,12 +7,16 @@
 // - `parada_colectivo` → estático: las líneas que paran, desde `paradas.json` (archivo grande,
 //                        `useStaticArchivoGrande`). Mientras no está cargado, el `subtitulo`
 //                        guardado. Si la parada ya no figura en el listado: huérfano (`orphan`).
+// - `ramal_tren`       → estado del ramal (`useEstadoTrenes`, TTL 60 s).
+// - `estacion_tren`    → próximo tren por destino (`useArribosEstacionTren`).
 import type { EstadoServicioV1 } from '@transportate/contracts';
 import { useEffect, useState } from 'react';
 
 import {
   useArribosEstacion,
+  useArribosEstacionTren,
   useEstadoSubtes,
+  useEstadoTrenes,
   useLineasColectivo,
   usePosicionesLinea,
 } from '@/shared/api';
@@ -29,8 +33,16 @@ import {
   formatArribo,
   isLineaKey,
 } from '../subtes/model';
+import { useRedTrenes } from '../trenes/hooks';
+import {
+  agruparArribosTren,
+  arribosTrenVigentes,
+  estadoDeRamal,
+  formatArriboTren,
+} from '../trenes/model';
 import type { FavoritoV1 } from './model';
 import { orphanMessage, resolveFavorito } from './subte';
+import { resolveFavoritoTren } from './tren';
 
 export type LiveDataStatus =
   | 'loading'
@@ -54,7 +66,7 @@ export interface FavoritoLiveDataResult {
   /** `muted` = atenuado (error o dato viejo). */
   tone: 'default' | 'muted';
   sourceTimestamp: string | null;
-  /** Solo `linea_subte`: para el `StatusChip`. */
+  /** `linea_subte` y `ramal_tren`: para el `StatusChip`. */
   estado?: EstadoServicioV1;
   /** "hace 6 min" si el dato está viejo; vacío si no. */
   ageText?: string;
@@ -66,7 +78,7 @@ export interface FavoritoLiveDataResult {
   primary: string;
   /** `primary` es un arribo (un tiempo): Inicio lo muestra a escala monumental con «Próximo». */
   primaryIsArribo: boolean;
-  /** Solo `estacion_subte` con arribos: cabecera del tren más próximo («Leandro N. Alem»). */
+  /** Estaciones (subte o tren) con arribos: cabecera del tren más próximo («Leandro N. Alem»). */
   sentido?: string;
 }
 
@@ -141,6 +153,10 @@ export function useFavoritoLiveData(
   const subteOrphan =
     (tipo === 'linea_subte' || tipo === 'estacion_subte') &&
     resolveFavorito(asFavorito(favorito), red.red).orphan;
+  const redTrenes = useRedTrenes();
+  const trenOrphan =
+    (tipo === 'ramal_tren' || tipo === 'estacion_tren') &&
+    resolveFavoritoTren(favorito, redTrenes.red).orphan;
   const lineasVivas = useLineasColectivo({ enabled: enabled && tipo === 'linea_colectivo' });
   const lineaOrphan =
     tipo === 'linea_colectivo' &&
@@ -152,6 +168,12 @@ export function useFavoritoLiveData(
   });
   const posiciones = usePosicionesLinea(tipo === 'linea_colectivo' ? refId : null, {
     enabled: enabled && !lineaOrphan,
+  });
+  const estadoTren = useEstadoTrenes({
+    enabled: enabled && tipo === 'ramal_tren' && !trenOrphan,
+  });
+  const arribosTren = useArribosEstacionTren(tipo === 'estacion_tren' ? refId : null, {
+    enabled: enabled && !trenOrphan,
   });
   // Solo carga el índice de paradas (1,7 MB) para favoritos de parada.
   const paradas = useStaticArchivoGrande('paradas.json', {
@@ -185,7 +207,7 @@ export function useFavoritoLiveData(
       primaryIsArribo: false,
     };
   };
-  if (subteOrphan || lineaOrphan) return orphan();
+  if (subteOrphan || lineaOrphan || trenOrphan) return orphan();
 
   switch (tipo) {
     case 'linea_subte': {
@@ -257,6 +279,66 @@ export function useFavoritoLiveData(
         primary: primeros[0]?.t.short ?? SIN_ARRIBOS_CORTO,
         primaryIsArribo: primeros.length > 0,
         ...(primeros[0] === undefined ? {} : { sentido: primeros[0].cabecera }),
+      };
+    }
+    case 'ramal_tren': {
+      const ramal = redTrenes.red?.ramalPorId.get(refId);
+      if (estadoTren.data === undefined || (ramal === undefined && redTrenes.isPending)) {
+        return estadoTren.isLoadingError || redTrenes.isLoadingError ? error : loading;
+      }
+      const e = estadoDeRamal(refId, estadoTren.data);
+      const a = age(estadoTren.sourceTimestamp, estadoTren.dataUpdatedAt);
+      const label = STATUS[e].label;
+      return {
+        status: a.stale ? 'stale' : 'ok',
+        text: join(label, a.suffix),
+        spoken: join(`Estado: ${label.toLowerCase()}`, a.suffix),
+        tone: a.stale ? 'muted' : 'default',
+        sourceTimestamp: estadoTren.sourceTimestamp,
+        estado: e,
+        ageText: a.suffix,
+        primary: label,
+        primaryIsArribo: false,
+      };
+    }
+    case 'estacion_tren': {
+      if (arribosTren.data === undefined) return arribosTren.isLoadingError ? error : loading;
+      const a = age(arribosTren.sourceTimestamp, arribosTren.dataUpdatedAt);
+      const bloques = agruparArribosTren(
+        arribosTrenVigentes(arribosTren.data.arribos, Math.max(now, arribosTren.dataUpdatedAt)),
+      ).filter((b) => b.arribos.length > 0);
+      // Con dato de más de 10 min, un «4 min» engaña (S30): se muestra solo la antigüedad.
+      if (bloques.length === 0 || a.veryStale) {
+        return {
+          status: a.stale ? 'stale' : 'ok',
+          text: join(SIN_ARRIBOS, a.suffix),
+          spoken: join(SIN_ARRIBOS, a.suffix),
+          tone: 'muted',
+          sourceTimestamp: arribosTren.sourceTimestamp,
+          ageText: a.suffix,
+          primary: SIN_ARRIBOS_CORTO,
+          primaryIsArribo: false,
+        };
+      }
+      // El destino con el tren (no cancelado) más próximo primero.
+      const primeros = bloques
+        .flatMap((b) => {
+          const first = b.arribos[0];
+          return first === undefined
+            ? []
+            : [{ destino: b.destino, en: first.enSegundos, t: formatArriboTren(first.enSegundos) }];
+        })
+        .sort((x, y) => x.en - y.en);
+      return {
+        status: a.stale ? 'stale' : 'ok',
+        text: join(primeros.map((p) => `→ ${p.destino} ${p.t.short}`).join(' · '), a.suffix),
+        spoken: join(primeros.map((p) => `Hacia ${p.destino} ${p.t.spoken}`).join('. '), a.suffix),
+        tone: a.stale ? 'muted' : 'default',
+        sourceTimestamp: arribosTren.sourceTimestamp,
+        ageText: a.suffix,
+        primary: primeros[0]?.t.short ?? SIN_ARRIBOS_CORTO,
+        primaryIsArribo: primeros.length > 0,
+        ...(primeros[0] === undefined ? {} : { sentido: primeros[0].destino }),
       };
     }
     case 'linea_colectivo': {

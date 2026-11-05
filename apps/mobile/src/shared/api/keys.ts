@@ -9,6 +9,12 @@ export const queryKeys = {
     alertas: () => ['subtes', 'alertas'] as const,
     arribos: (estacionId: string) => ['subtes', 'arribos', estacionId] as const,
   },
+  trenes: {
+    all: ['trenes'] as const,
+    estado: () => ['trenes', 'estado'] as const,
+    alertas: () => ['trenes', 'alertas'] as const,
+    arribos: (estacionId: string) => ['trenes', 'arribos', estacionId] as const,
+  },
   colectivos: {
     all: ['colectivos'] as const,
     lineas: () => ['colectivos', 'lineas'] as const,
@@ -26,20 +32,25 @@ export function invalidateSubtes(client: QueryClient): Promise<void> {
   return client.invalidateQueries({ queryKey: queryKeys.subtes.all });
 }
 
+/** Todo lo de trenes (estado, alertas y arribos). */
+export function invalidateTrenes(client: QueryClient): Promise<void> {
+  return client.invalidateQueries({ queryKey: queryKeys.trenes.all });
+}
+
 /** Todo lo de colectivos (líneas, posiciones y arribos). */
 export function invalidateColectivos(client: QueryClient): Promise<void> {
   return client.invalidateQueries({ queryKey: queryKeys.colectivos.all });
 }
 
 /**
- * Solo el tiempo real (estado, alertas, arribos y posiciones): lo que se refresca al tocar
+ * Solo el tiempo real (estado, alertas, arribos de subtes y trenes, y posiciones): lo que se refresca al tocar
  * "Reintentar" o al volver la conexión. Las líneas y el manifiesto (estáticos) quedan.
  */
 export function invalidateRealtime(client: QueryClient): Promise<void> {
   return client.invalidateQueries({
     predicate: (query) => {
       const [domain, resource] = query.queryKey;
-      if (domain === 'subtes') return true;
+      if (domain === 'subtes' || domain === 'trenes') return true;
       return domain === 'colectivos' && resource !== 'lineas';
     },
   });

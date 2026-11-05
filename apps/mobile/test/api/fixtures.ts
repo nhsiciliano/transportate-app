@@ -3,9 +3,12 @@
 // Zod al cargarse: si el contrato cambia, estos fixtures fallan primero.
 import {
   AlertasResponseV1,
+  AlertasTrenResponseV1,
   ArribosEstacionResponseV1,
+  ArribosEstacionTrenResponseV1,
   ArribosParadaResponseV1,
   EstadoLineasResponseV1,
+  EstadoLineasTrenResponseV1,
   HealthV1,
   LineasColectivoResponseV1,
   ManifestV1,
@@ -82,6 +85,62 @@ export const arribosEstacion = ArribosEstacionResponseV1.parse({
         destino: 'San Pedrito',
         enSegundos: 120,
         horaEstimada: '2026-11-02T12:02:00.000Z',
+      },
+    ],
+  },
+});
+
+export const estadoTrenes = EstadoLineasTrenResponseV1.parse({
+  meta: meta({ ttlSeconds: 60 }),
+  data: {
+    lineas: [
+      {
+        linea: 'sarmiento',
+        nombre: 'Sarmiento',
+        color: '#B766C2',
+        colorTexto: '#000000',
+        estado: 'demorada',
+        resumen: 'El tren de las 08:42 hs. desde Moreno ha sido cancelado.',
+        alertaIds: ['99285'],
+        ramales: [{ ramalId: '1', nombre: 'Once-Moreno', estado: 'normal', alertaIds: [] }],
+      },
+    ],
+  },
+});
+
+export const alertasTrenes = AlertasTrenResponseV1.parse({
+  meta: meta({ ttlSeconds: 60 }),
+  data: {
+    alertas: [
+      {
+        id: '99285',
+        linea: 'sarmiento',
+        ramalId: '51',
+        titulo: 'El tren de las 08:42 hs. desde Moreno ha sido cancelado.',
+        descripcion: 'El tren de las 08:42 hs. desde Moreno ha sido cancelado.',
+        efecto: 'SIGNIFICANT_DELAYS',
+      },
+    ],
+  },
+});
+
+export const arribosTren = ArribosEstacionTrenResponseV1.parse({
+  meta: meta({ ttlSeconds: 30 }),
+  data: {
+    estacionId: '50',
+    arribos: [
+      {
+        estacionId: '50',
+        linea: 'sarmiento',
+        ramalId: '1',
+        ramal: 'Once-Moreno',
+        destino: 'Once',
+        sentido: '2',
+        enSegundos: 240,
+        horaProgramada: '2026-11-02T12:03:00.000Z',
+        horaEstimada: '2026-11-02T12:04:00.000Z',
+        anden: '2',
+        cancelado: false,
       },
     ],
   },

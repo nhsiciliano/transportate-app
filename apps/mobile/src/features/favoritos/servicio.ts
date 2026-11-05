@@ -24,6 +24,10 @@ export function liveQueryKey(favorito: Pick<FavoritoV1, 'tipo' | 'refId'>): Quer
       return queryKeys.colectivos.posiciones(favorito.refId);
     case 'parada_colectivo':
       return undefined;
+    case 'ramal_tren':
+      return queryKeys.trenes.estado();
+    case 'estacion_tren':
+      return queryKeys.trenes.arribos(favorito.refId);
   }
 }
 

@@ -17,7 +17,9 @@ import type { EstadoServicioV1 } from '@transportate/contracts';
 
 import { useRedSubte, usePullToRefresh } from '@/features/subtes/hooks';
 import { estadoDeLinea } from '@/features/subtes/model';
-import { invalidateRealtime, useEstadoSubtes } from '@/shared/api';
+import { useRedTrenes } from '@/features/trenes/hooks';
+import { estadoDeEstacionTren } from '@/features/trenes/model';
+import { invalidateRealtime, useEstadoSubtes, useEstadoTrenes } from '@/shared/api';
 import { useRefreshInterval } from '@/shared/query';
 import { Icon } from '@/shared/icons';
 import { useTheme } from '@/shared/theme';
@@ -76,7 +78,17 @@ function FavoritosContent() {
   const { red } = useRedSubte();
   const hayEstaciones = favoritos.some((f) => f.tipo === 'estacion_subte');
   const estadoSubte = useEstadoSubtes({ enabled: hayEstaciones });
+  // Lo mismo para las estaciones de tren: el peor estado de los ramales que la sirven.
+  const redTrenes = useRedTrenes().red;
+  const hayTrenes = favoritos.some((f) => f.tipo === 'estacion_tren');
+  const estadoTrenes = useEstadoTrenes({ enabled: hayTrenes });
   const estadoDeEstacion = (f: FavoritoV1): EstadoServicioV1 | undefined => {
+    if (f.tipo === 'estacion_tren') {
+      const estacion = redTrenes?.estacionPorId.get(f.refId);
+      return estacion === undefined || estadoTrenes.data === undefined
+        ? undefined
+        : estadoDeEstacionTren(estacion, estadoTrenes.data);
+    }
     if (f.tipo !== 'estacion_subte' || estadoSubte.data === undefined) return undefined;
     const key = red?.estacionPorId.get(f.refId)?.linea;
     const linea = key === undefined ? undefined : red?.lineaPorKey.get(key);

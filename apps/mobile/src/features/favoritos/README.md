@@ -94,6 +94,18 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 | F4-favoritos-12 | Solo piden datos las filas visibles. Hasta que la lista informe cuáles se ven, se consideran visibles las primeras 10 (`INITIAL_VISIBLE`). La etiqueta de frescura toma la más vieja de las visibles; sin datos vivos no se muestra. El dato estático de la parada (sus líneas) no se repite como dato vivo. |
 | F4-favoritos-13 | **Alert única de servicio caído:** "El servicio de la Ciudad no responde" + "Reintentar" (`invalidateRealtime`) cuando TODAS las filas visibles con dato vivo están en `status: 'error'` por un error reintentable (`ApiError.retryable`: red, timeout, 5xx, 429). Un error de contenido (404) no cuenta, y una sola fila que ande la apaga. `useFavoritoLiveData` no expone el error, así que `FavoritoItem` lo lee del estado de la query de la fila (`servicio.ts › serviceHealth`), sin tocar el hook. Las filas siguen con "Sin información". |
 
+## Favoritos de tren (Fase 6, F6-HIGH-B)
+
+| Tipo | `refId` | Se guarda desde | Dato vivo | Destino |
+|---|---|---|---|---|
+| `ramal_tren` | Id de ramal de SOFSE (`"1"`) | Estrella del ramal (`nombre` «Once – Moreno», `subtitulo` «Línea Sarmiento») | Estado del ramal (`useEstadoTrenes`, TTL 60 s) | `/trenes/ramal/[id]` |
+| `estacion_tren` | Id de estación de SOFSE (`"50"`) | Estrella de la estación (`subtitulo` = sus líneas) | Próximo tren por destino (`useArribosEstacionTren`, `agruparArribosTren`); la banda suma el cuadrado del peor estado de sus ramales | `/trenes/estacion/[id]` |
+
+- **En trenes se guarda el ramal o la estación, nunca la línea** (S37): no hay tipo `linea_tren`.
+- La banda lleva el pictograma del tipo (`tren`, `estacionTren`), como el resto (F5-favoritos-2); `resolveFavoritoTren` deja lista la insignia de la línea por si una fila la necesita.
+- Huérfano: el ramal o la estación ya no están en `trenes-*.json` → «Este ramal / Esta estación ya no figura en los datos oficiales».
+- **Esquema:** los dos tipos son **aditivos** y `FAVORITOS_SCHEMA_VERSION` sigue en **1** (`migrations.ts` no cambia). Consecuencia conocida: si alguien vuelve a una versión de la app anterior a la Fase 6 con favoritos de tren guardados, esa versión no reconoce los tipos nuevos, el documento entero no valida y la lista **arranca vacía** (`repository.ts`, «documento inválido»). Mientras esa versión vieja no guarde nada, volver a la nueva los recupera; si guarda un favorito, sobrescribe el documento y los de antes se pierden.
+
 ## Lógica
 
 Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la ruta es `src/app/(tabs)/favoritos/index.tsx`. Todo se importa desde `@/features/favoritos`.
@@ -111,6 +123,7 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 | `describe.ts`, `search.ts` | Textos, íconos y rutas por tipo; búsqueda sin tildes |
 | `servicio.ts` | `serviceHealth` / `isServiceDown`: decide si el servicio está caído para la Alert única |
 | `subte.ts` | `resolveFavorito`: color de la insignia de subte y huérfano de subte contra el estático (lo consume `useFavoritoLiveData`), y `orphanMessage` |
+| `tren.ts` | `resolveFavoritoTren`: insignia de la línea (siglas y color) y huérfano de un ramal o una estación de tren contra el estático de trenes (lo consume `useFavoritoLiveData`) |
 | `useFavoritoLiveData.ts`, `FavoritoLiveData.tsx` | Dato vivo por tipo y su presentación; deciden también el huérfano (mid-dev) |
 | `FavoritosProvider.tsx` | `FavoritosProvider` (recibe el repositorio por prop, default MMKV), `useFavoritos()` y `useFavoritosRepository()`                             |
 

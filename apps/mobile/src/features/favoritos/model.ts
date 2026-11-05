@@ -10,6 +10,10 @@ export const FAVORITO_TIPOS = [
   'parada_colectivo',
   'linea_subte',
   'estacion_subte',
+  // Fase 6 (aditivo: `FAVORITOS_SCHEMA_VERSION` sigue en 1). En trenes se guarda el ramal o la
+  // estación, nunca la línea (S37).
+  'ramal_tren',
+  'estacion_tren',
 ] as const;
 
 /** Tope del alias (suposición S16 de `docs/briefs/README.md`). */
@@ -22,7 +26,7 @@ export const FavoritoV1Schema = z.object({
   /** `${tipo}:${refId}`: un mismo destino no se puede guardar dos veces. */
   id: z.string().min(1),
   tipo: FavoritoTipoSchema,
-  /** Id del destino en el contrato v1 (línea, parada o estación). */
+  /** Id del destino en el contrato v1 (línea, parada, estación o ramal de tren). */
   refId: z.string().min(1),
   nombre: z.string().min(1),
   subtitulo: z.string().optional(),

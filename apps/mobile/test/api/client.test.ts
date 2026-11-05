@@ -51,6 +51,8 @@ describe('createApiClient: rutas y contrato', () => {
     ['estadoSubtes', '/v1/subtes/estado', fx.estado],
     ['alertasSubtes', '/v1/subtes/alertas', fx.alertas],
     ['lineasColectivo', '/v1/colectivos/lineas', fx.lineasColectivo],
+    ['estadoTrenes', '/v1/trenes/estado', fx.estadoTrenes],
+    ['alertasTrenes', '/v1/trenes/alertas', fx.alertasTrenes],
   ] as const)('%s → GET %s validado', async (method, path, body) => {
     const { client, fetchMock } = setup(() => fx.jsonResponse(body));
     const result = await client[method]();
@@ -67,6 +69,7 @@ describe('createApiClient: rutas y contrato', () => {
     ['arribosEstacion', '1001', '/v1/subtes/estaciones/1001/arribos', fx.arribosEstacion],
     ['posicionesLinea', '1234', '/v1/colectivos/lineas/1234/posiciones', fx.posiciones],
     ['arribosParada', '5678', '/v1/colectivos/paradas/5678/arribos', fx.arribosParada],
+    ['arribosEstacionTren', '50', '/v1/trenes/estaciones/50/arribos', fx.arribosTren],
   ] as const)('%s(%s) → GET %s', async (method, id, path, body) => {
     const { client, fetchMock } = setup(() => fx.jsonResponse(body));
     const result = await client[method](id);
