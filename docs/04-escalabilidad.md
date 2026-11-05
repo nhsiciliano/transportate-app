@@ -173,3 +173,47 @@ Esto **no incluye** filtrar, mapear al contrato, serializar ni comprimir la resp
 4. **Caché de decodificados:** guardar en la Cache API el resultado ya filtrado y mapeado (lo que se le sirve a la app), no el protobuf crudo: un hit no vuelve a decodificar nada (el costo de CPU de un hit hay que medirlo en la Fase 2).
 5. **Presupuesto de CPU** a vigilar en las pruebas de la Fase 2: hit < 2 ms, miss con filtro por línea < 10 ms. Si el miss no entra, el endpoint exige Paid o capa B.
 6. **Qué cambia al pasar a Paid:** desaparece el límite de 10 ms (pasa a 30 s) pero no el de 128 MB de memoria; tampoco baja el costo de las requests facturadas (sección 4).
+
+## 10. Un feed más: trenes (Fase 6)
+
+Trenes suma una fuente que **no es del GCBA**: la instancia comunitaria de SOFSE (`01d-api-trenes-sofse.md`). A diferencia de los otros feeds, el servidor que está atrás es de una persona y no declara límites: acá la prioridad no es el costo sino **no cargar de más al upstream**. Cifras de diseño del 2026-11-05; lo marcado con ⚠ se mide en la Fase 6.
+
+### Estado y alertas (la raíz, la línea y el ramal)
+
+El estado de las 6 líneas sale de una sola pasada que arma el Worker: `gerencias` (1 pedido) y `ramales` por línea (6 pedidos) = **7 requests upstream por refresco**. TTL de **60 s** (las alertas cambian en minutos, no en segundos).
+
+| Concepto | Cálculo | Resultado |
+|---|---|---|
+| Requests upstream por refresco | 1 `gerencias` + 6 `ramales` | **7** |
+| Subrequests del Worker en un *miss* total | 7 `fetch` + 7 `cache.match` + 7 `cache.put` | **≈ 21**, dentro de los **50** del plan Free (§5, §9) |
+| Conexiones salientes simultáneas | 7 `fetch` y el límite es 6 (§9) | hay que limitar la concurrencia a 6: el séptimo espera a que termine uno |
+| Latencia del refresco | 1,3–2,5 s por pedido, en dos tandas | ≈ 3–5 s ⚠ (se sirve el dato anterior con SWR mientras tanto) |
+| Upstream por colo y día (cota) | 7 × 86 400 / 60 | **10.080** por colo con tráfico constante |
+| Con 5–10 colos relevantes ⚠ | 10.080 × 5–10 | 50.000–100.000 por día (0,6–1,2 req/s) |
+
+Es una **cota**: un colo solo refresca cuando alguien pide, y con pocos usuarios casi no se llega. Pero con la cantidad de usuarios que justifica pasar a Paid (§7), la cota se vuelve el uso real, y 100.000 pedidos diarios a un servidor personal no es ser buen vecino. **Por eso trenes es el primer candidato a la capa B** (§3): un `FeedHub` de trenes hace los mismos 7 pedidos cada 60 s *en total*, **10.080 por día global**, sin importar usuarios ni colos. Hasta entonces, el coalescing y el TTL de 60 s son lo único que hay.
+
+CPU: la respuesta de `gerencias` pesa ≈ 4 KB y las de `ramales` ≈ 3–4 KB cada una; parsear, validar con Zod y armar el contrato entra holgado en el presupuesto de un miss (< 10 ms, §9) ⚠ a medir en workerd.
+
+### Arribos de una estación (bajo demanda)
+
+- **No hay refresco de fondo:** se consulta solo la estación que alguien abre (`/arribos/estacion/<id>?cantidad=8`), con TTL de **30 s**. Dos personas en Caballito en el mismo colo comparten un solo pedido upstream (coalescing).
+- **Peso:** el upstream devuelve el itinerario completo de cada tren (106 KB para 13 trenes en Retiro, 42 KB para 4 en Caballito). Con `cantidad=8` son ≈ 60–70 KB que el Worker **recorta a menos de 3 KB** para la app: el teléfono nunca baja el itinerario, y el ancho de banda del teléfono no es problema.
+- **CPU:** decodificar ≈ 65 KB de JSON y reducirlo es del orden de 1 ms ⚠ (a medir). La memoria alcanza de sobra (§9).
+- **Cota upstream:** `estaciones_distintas_consultadas × colos × 86 400 / 30`, con ≈ 300 estaciones posibles. En la práctica, unas pocas decenas de estaciones concentran el tráfico (Retiro, Once, Constitución, las cabeceras).
+- **Una request del Worker por estación y tick** mientras la pantalla está abierta; con la app polleando cada 30 s, 1 estación abierta 30 min/día son 60 requests/día por usuario, dentro del escenario conservador de §4.
+
+### Efecto sobre el plan Free
+
+- Trenes suma **un recurso por pantalla** (estado, o arribos de una estación), no tres: el criterio de §6 se cumple.
+- La raíz de Trenes pollea cada **60 s** (el TTL), no cada 20: 30 min de uso = 30 requests, un tercio de una pantalla de subte. Si Inicio suma una tira «Trenes ahora» (fuera de la Fase 6, decisión abierta del brief), serían 30 requests más por usuario y día.
+- El kill-switch `TRENES_ENABLED=false` corta los pedidos upstream de inmediato; el Worker sigue contando las requests de la app, que reciben `sin_datos` en milisegundos.
+
+### Qué se mide en la Fase 6
+
+| Qué | Dónde |
+|---|---|
+| Latencia real desde workerd (hit, miss, miss total de 7 pedidos) | Prueba local con `wrangler dev` y `tools/sofse-probe` |
+| Subrequests y CPU de un miss total | Métricas del Worker |
+| Pedidos upstream por TTL con N clientes simulados | Prueba de carga (`tools/carga`) |
+| Disponibilidad de la instancia en el tiempo | `tools/sofse-probe` a intervalos largos |
