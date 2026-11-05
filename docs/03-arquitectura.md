@@ -99,7 +99,7 @@ ratelimit/               envoltorio del binding nativo
 
 ### Cómo se agrega un servicio nuevo (por ejemplo trenes o Ecobici)
 
-1. **Investigar y documentar.** Probar el endpoint con las credenciales, registrar status, formato, tamaño y frecuencia de actualización en `docs/01-api-transporte.md`; guardar un fixture real en `apps/proxy/test/fixtures/`. *(En el RAML actual hay un recurso `/ecobici/gbfs`; no hay un recurso de trenes: antes de prometer trenes hay que confirmar que exista una fuente.)*
+1. **Investigar y documentar.** Probar el endpoint con las credenciales, registrar status, formato, tamaño y frecuencia de actualización en `docs/01-api-transporte.md`; guardar un fixture real en `apps/proxy/test/fixtures/`. *(En el RAML actual hay un recurso `/ecobici/gbfs`. No hay un recurso de trenes en la API del GCBA (404): para trenes se usa una **fuente comunitaria no oficial** de SOFSE, evaluada en [`01d-api-trenes-sofse.md`](01d-api-trenes-sofse.md). Antes de prometer un servicio nuevo hay que confirmar que exista una fuente y escribir su plan de salida.)*
 2. **Definir el contrato.** Agregar los esquemas Zod en `packages/contracts` (campos cortos, `generatedAt`, `sourceTimestamp`) y subir la versión menor del contrato si es aditivo; un cambio incompatible crea `/v2`.
 3. **Escribir el adaptador** como funciones puras con tests Vitest contra el fixture.
 4. **Crear la fuente** con su TTL (según la frecuencia del feed) y registrarla en el contenedor de fuentes.
@@ -107,6 +107,13 @@ ratelimit/               envoltorio del binding nativo
 6. **Sumar a la app** una feature en `features/<servicio>/` que consuma el cliente tipado de `shared/api` (nunca el upstream).
 7. **Actualizar documentación:** `01-api-transporte.md`, `06-proxy.md` (cuando exista), `04-escalabilidad.md` si cambia la cantidad de feeds, y la bitácora.
 8. **Capa B:** si el feed es grande o muy consultado, agregar su `FeedHub` (un DO por feed); no hace falta tocar rutas ni app.
+
+**Fuente sin credenciales o con otra base (trenes).** No todo servicio sale del upstream del GCBA con `client_id`/`client_secret`. La capa A acepta que cada fuente declare su propia **base** (una variable de entorno por adaptador, por ejemplo `TRENES_UPSTREAM_BASE`) y que las **`credentials` sean opcionales**: trenes es la primera fuente sin credenciales y con otra base. Reglas para una fuente así:
+
+- **Todo el conocimiento del upstream en dos archivos** (el adaptador y los esquemas Zod del upstream en `packages/contracts/src/upstream/`) más la variable de base: cambiar de fuente no toca rutas, contrato ni app.
+- **Kill-switch por servicio** (`TRENES_ENABLED`): apaga el servicio con el estado `sin_datos` del contrato, sin versión nueva de la app.
+- **Sin credenciales, no hay nada que redactar de la URL**, pero se mantiene la regla de no loguear URLs upstream.
+- **Plan de salida escrito** en el doc de evaluación (qué archivos cambian si la fuente muere).
 
 ## 5. Contrato Zod v1
 
@@ -141,5 +148,6 @@ ratelimit/               envoltorio del binding nativo
 |---|---|
 | Upstream suspendido o inestable | Adaptadores aislados; último dato bueno con `stale`; estado "servicio no disponible" en la UI |
 | Un feed deja de existir (arribos de colectivos) | La función se omite; no se promete en la UI |
+| Una fuente no oficial (trenes) cae, rota su acceso o se cierra | Kill-switch `TRENES_ENABLED`, estado `sin_datos` («Sin información», nunca datos inventados), fuente aislada en un adaptador y plan de salida (`01d-api-trenes-sofse.md` §7) |
 | Caché frío por colo (Cache API no replica entre centros de datos) | TTL con SWR; en capa B el DO sirve de fuente común |
 | Cambio de formato del upstream | Falla un test del adaptador con fixtures, no la app |
