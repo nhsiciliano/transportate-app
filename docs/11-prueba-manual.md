@@ -17,7 +17,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 - [ ] **IP de la Mac:** `ipconfig getifaddr en0`. En `apps/mobile/.env` poné `EXPO_PUBLIC_API_URL=http://<IP-de-la-Mac>:8787`. Abrí `http://<IP-de-la-Mac>:8787/v1/health` desde Safari del iPhone: tiene que responder `ok`.
 - [ ] **Metro:** en `apps/mobile`, `pnpm exec expo start --dev-client`. Dejá esa terminal a la vista: ahí salen los logs.
 - [ ] iPhone y Mac en la **misma red Wi‑Fi**. Abrí el dev client y elegí el servidor de Metro.
-- [ ] Primer arranque: se ve el splash con la marca y después **Inicio**, con las 4 tabs nativas (Inicio, Colectivos, Subtes, Favoritos). Sin pantalla roja.
+- [ ] Primer arranque: se ve el splash con la marca y después **Inicio**, con las 5 tabs nativas (Inicio, Colectivos, Subtes, Trenes, Favoritos). Sin pantalla roja.
 
 ### Cómo forzar cada estado
 
@@ -26,6 +26,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 | **Sin conexión** | Modo avión (Wi‑Fi apagado) | Banner "Sin conexión. Mostramos lo último guardado." arriba, una sola vez en toda la app |
 | **Servicio caído / último dato** | Cortá `wrangler dev` (Ctrl+C) con la app abierta | El contenido se queda y aparece "No pudimos actualizar. Mostramos lo último que sabemos." con "Reintentar" |
 | **Dato viejo (frescura)** | Ajustes → "Actualizar cada" → 15 s, y dejá el proxy apagado unos minutos | La etiqueta pasa de "Actualizado hace 12 s" a "⚠ Dato de hace N min" en color de advertencia |
+| **Trenes apagado** (kill-switch) | Reiniciá el proxy con `pnpm exec wrangler dev --ip 0.0.0.0 --port 8787 --var TRENES_ENABLED:false` | Las 6 líneas de Trenes pasan a «Sin información» y los arribos a un error con reintento; el resto de la app sigue igual (sección 3b) |
 | **Tema** | Ajustes → Tema: Sistema / Claro / Oscuro. Y en el iPhone, Ajustes → Pantalla → Oscuro | Cambia al instante; con "Sistema" sigue al teléfono |
 | **Texto grande** | iPhone: Ajustes → Accesibilidad → Pantalla y tamaño de texto → Texto más grande → al máximo | Nada se trunca ni se superpone; las filas crecen en alto |
 | **Reducir movimiento** | iPhone: Ajustes → Accesibilidad → Movimiento → Reducir movimiento | Sin pulsos de skeleton ni animación de cámara en el mapa; el `Snackbar` aparece sin fundido; la banda grande de Inicio cambia sin fundido |
@@ -131,6 +132,58 @@ Desde la Fase 5, Colectivos usa la misma dirección que Inicio (**«Señalética
 - [ ] **Texto grande en el panel:** la banda crece en alto y el número y "hace 25 s" nunca se cortan (el número se achica antes de cortarse).
 - [ ] **VoiceOver:** la banda se lee de una vez ("Línea 60 · Ramal A, 18 colectivos en servicio, dato más viejo de hace 25 segundos"); el panel se lee con su botón de la manija; la lista de vehículos da la misma información que el mapa ("Interno 1404, actualizado hace 25 segundos, a 600 metros de vos") y marca el elegido con "Seleccionado".
 
+## 3b. Trenes (Fase 6)
+
+Tab nueva, espejo de Subtes y sin mapa. Los datos vienen de una **fuente comunitaria no oficial** de SOFSE a través de tu proxy (nunca desde la app): puede tardar 1–3 s en responder y puede caerse. Los colores de las líneas son **provisorios** (`02c-colores-trenes.md`): anotá si alguno no se parece al de la señalética real. Contrato visual: `apps/mobile/.impeccable/surfaces/src-features-trenes-trenesscreen-tsx.md`; brief: [`briefs/07-trenes.md`](briefs/07-trenes.md). Lo marcado *(a confirmar)* depende de decisiones de la ola 2 de la fase.
+
+### Tab y raíz
+
+- [ ] **📱 Tab visible y orden:** la barra tiene 5 tabs: Inicio, Colectivos, Subtes, **Trenes**, Favoritos (Trenes entre Subtes y Favoritos), con el ícono de tren del sistema. Tránsito sigue oculto.
+- [ ] **📱 Large title** «Trenes» grande, que se achica al scrollear; **no hay mapa** ni botón de mapa.
+- [ ] **📱 Placa de tablero:** las 6 líneas en **una sola placa blanca**, en orden fijo: Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa. Cada fila: insignia **rectangular** del color de la línea con sus siglas (R, S, M, SM, BS, TC), «Línea Roca» y debajo «12 ramales» (o las cabeceras si tiene un solo ramal, como Tren de la Costa); a la derecha el estado y la flecha al borde. Belgrano Norte y Urquiza **no** están (no tienen fuente).
+- [ ] **Estado de cada línea:** «Normal» en gris; «Con demoras» con cuadrado ámbar; «Interrumpida» con cuadrado rojo, y una línea de resumen debajo si hay alerta. Compará con las alertas de la app oficial de Trenes Argentinos. Ojo: **un solo ramal interrumpido pone toda su línea en «Interrumpida»** (por ejemplo Cañuelas–Lobos en Roca); es esperado, el detalle está por ramal. *(a confirmar: el texto del estado sin novedades, «Normal» o «Sin novedades»)*
+- [ ] **`FreshnessLabel`:** «Actualizado hace N s» bajo la placa. Pull to refresh actualiza.
+- [ ] **Buscador:** «Buscá una estación» filtra las ~300 estaciones sin red y sin tildes («caballito», «tigre», «constitucion»); cada resultado dice a qué línea y ramales pertenece y abre la estación. Algo que no existe («Plaza Italia»): «No encontramos «Plaza Italia». Probá con otro nombre de estación.»
+- [ ] **Modo avión:** las líneas y la búsqueda siguen funcionando (el estático está en el teléfono); el estado y los arribos muestran lo último con su antigüedad, y el banner global avisa.
+
+### Línea y ramal
+
+- [ ] **📱 Línea:** tocar «Línea Sarmiento» abre una pantalla con una banda fija arriba (**sin flecha**) con el estado de la línea, las alertas de la línea completas (una por alerta, con su vigencia) y una placa con los **ramales** (Once–Moreno, Merlo–Lobos, Moreno–Mercedes, Once–Bragado), cada uno con sus cabeceras y su estado. **Sin estrella en el header**: la línea no se guarda.
+- [ ] **📱 Ramal:** tocar «Once – Moreno» abre una banda fija con el estado del ramal, la **estrella en el header**, las alertas del ramal (las de un solo sentido dicen «Hacia Moreno»/«Hacia Once») y las **16 estaciones en orden** en una placa, con el trazo vertical del color de la línea **continuo** y flecha en cada fila.
+- [ ] **Ramal con alerta:** si un ramal tiene demora o está interrumpido (hoy hay alguno casi siempre), su fila en la línea y su banda lo dicen igual en las dos pantallas.
+- [ ] **Estrella del ramal:** tocarla guarda con háptico de éxito; tocarla de nuevo, háptico de selección. VoiceOver anuncia «Guardado en favoritos» / «Quitado de favoritos».
+
+### Estación
+
+- [ ] **📱 Header:** título nativo con el nombre («Caballito»), estrella arriba a la derecha, y en el contenido la insignia de la línea.
+- [ ] **📱 Una banda por destino:** por cada ramal y sentido, una banda fija **sin flecha**: «Hacia Moreno», «Próximo», el minuto enorme («4 min») y debajo el andén y el ramal («Andén 3 · Ramal Once–Moreno») y «Después 7 y 12 min». En una cabecera (Retiro, Once) solo aparecen los destinos hacia donde salen trenes. En una estación de varios ramales (Liniers) las bandas son más y las de más abajo pueden pasar a una placa *(a confirmar: cuántas bandas antes de pasar a placa)*.
+- [ ] **Demora:** cuando el tren viene más tarde que lo programado, el minuto va con la hora estimada y aparece «Programado hh:mm» al lado o debajo.
+- [ ] **Cancelado:** un servicio cancelado dice «Cancelado» y no cuenta como el próximo (no es fácil de forzar; si no aparece, anotalo como no verificado).
+- [ ] **Fundido:** cuando cambia el próximo tren de un destino, la banda cruza en un fundido corto; con **Reducir movimiento**, cambio seco.
+- [ ] **Dato viejo:** con el proxy apagado unos 10 minutos, los tiempos de las bandas se reemplazan por «Dato de hace N min» y se atenúan; la `FreshnessLabel` pasa a advertencia.
+- [ ] **Estación sin trenes** (fuera de horario o no operativa en ese ramal): mensaje claro, sin banda inventada y sin error.
+- [ ] **Refresco:** los arribos se actualizan solos cada ~30 s mientras la pantalla está a la vista, y se pausan al salir de la tab.
+
+### Favoritos de tren
+
+- [ ] **📱 Guardar:** una **estación** y un **ramal** con la estrella. En Favoritos aparecen como bandas con el pictograma de tren: la de ramal con su estado («Con demoras», «Normal»…), la de estación con el próximo tren por destino. Tocar una abre su detalle **en la tab Trenes** (ramal o estación), con flecha al borde.
+- [ ] **Inicio:** una estación de tren guardada puede ser la banda líder si está más cerca (con el permiso de ubicación concedido); tocarla abre la estación. **No hay** tira «Trenes ahora» en Inicio (queda para después).
+- [ ] **Edición:** alias, reordenar y quitar con Deshacer funcionan igual que con los de subte.
+- [ ] **Línea no se guarda:** no hay estrella en la pantalla de línea.
+
+### Estados y errores
+
+- [ ] **Proxy apagado y sin caché** (reiniciá la app con `wrangler dev` cortado): la raíz lista las 6 líneas con «Sin información» y un error con «Volver a intentar» («El servicio de trenes no responde en este momento.»). En una estación, un `ErrorState` con reintento. Nunca «Normal» ni horarios inventados.
+- [ ] **Con caché y proxy apagado:** el contenido se queda, con «No pudimos actualizar. Mostramos lo último que sabemos.» y la antigüedad.
+- [ ] **Kill-switch:** con el proxy iniciado con `--var TRENES_ENABLED:false` (tabla de estados de la sección 0), Trenes muestra «Sin información» en las 6 líneas y los arribos fallan con reintento, **sin romper** Inicio, Subtes, Colectivos ni Favoritos (los favoritos de tren quedan visibles y tocables, con su dato en «Sin información»).
+- [ ] **Fuente caída de verdad** (si pasa durante la prueba: la instancia comunitaria no tiene garantías): se ve lo mismo que con el kill-switch. Anotá la hora; no es un bug de la app.
+
+### Modo oscuro, texto grande y VoiceOver
+
+- [ ] **Modo oscuro:** las insignias de las líneas siguen legibles; **Tren de la Costa** (azul oscuro) lleva un **borde claro** porque casi no se distingue del fondo oscuro, y en **claro** llevan borde Roca, Mitre y San Martín (`02c-colores-trenes.md` §3). Los textos de las bandas y los estados se leen al sol.
+- [ ] **Texto grande (Dynamic Type al máximo):** las filas crecen en alto; el estado de la derecha, el minuto y «Dato de hace N min» nunca se cortan; los nombres largos («Villa Ballester – Zárate», «Victoria – Capilla del Señor») pasan a dos líneas.
+- [ ] **VoiceOver:** la fila de línea se lee «Línea Sarmiento, con demoras»; una banda de estación, «Hacia Moreno: próximo en 4 minutos, después en 7 y 12 minutos. Andén 3. Actualizado hace 10 segundos.». La insignia no debería leerse como siglas sueltas (R, SM…) además del nombre de la línea; el color nunca es la única pista *(a confirmar al cerrar la ola 2)*.
+
 ## 4. Favoritos
 
 - [ ] **📱 Large title** "Favoritos" grande, que se achica al scrollear; "Editar"/"Listo" a la derecha. Nada queda debajo del header: ni la primera fila ni el estado vacío.
@@ -170,14 +223,14 @@ Desde la Fase 5, Ajustes, Acerca de y Licencias siguen la dirección «Señalét
 
 ## 6. Tema claro y oscuro (recorrido transversal)
 
-- [ ] Recorré Inicio, Subtes (raíz, línea, estación, mapa), Favoritos y Ajustes en **Claro** y en **Oscuro**.
+- [ ] Recorré Inicio, Subtes (raíz, línea, estación, mapa), Trenes (raíz, línea, ramal, estación), Favoritos y Ajustes en **Claro** y en **Oscuro**.
 - [ ] Nada queda con texto ilegible, fondo que no cambió o un borde que desaparece. Los colores de línea (A, H, Premetro) siguen distinguibles en los dos temas.
 - [ ] **📱 Oscuro con el sistema en claro:** dejá el iPhone en modo claro y elegí **Oscuro** en Ajustes. Los títulos grandes («Subtes», «Colectivos», «Favoritos»), los títulos de header («Ajustes», el nombre de una parada, «Línea 15A»), el botón «Atrás», «Editar/Listo» y la tab bar tienen que verse **oscuros y legibles** (texto claro sobre fondo oscuro), igual que la hora de la barra de estado. Volvé a **Sistema**: todo vuelve a claro. Repetí al revés (sistema en oscuro, elegí **Claro**).
-- [ ] **📱 Títulos de header visibles:** cada tab raíz muestra su large title («Transportate», «Colectivos», «Subtes», «Favoritos») en la fuente del sistema, y el large title se achica al scrollear. Si un header queda alto y sin texto, es el defecto de iOS 26+ con fondo explícito en el header (`docs/07-app.md` §4, chrome nativo): anotalo.
+- [ ] **📱 Títulos de header visibles:** cada tab raíz muestra su large title («Transportate», «Colectivos», «Subtes», «Trenes», «Favoritos») en la fuente del sistema, y el large title se achica al scrollear. Si un header queda alto y sin texto, es el defecto de iOS 26+ con fondo explícito en el header (`docs/07-app.md` §4, chrome nativo): anotalo.
 
 ## 7. Texto grande y Reducir movimiento
 
-- [ ] Con el texto al máximo: las filas de Subtes, Favoritos y Ajustes crecen sin cortar el estado ni la frescura; los botones siguen tocables.
+- [ ] Con el texto al máximo: las filas de Subtes, Trenes, Favoritos y Ajustes crecen sin cortar el estado ni la frescura; los botones siguen tocables.
 - [ ] Con Reducir movimiento: no pulsan los skeletons; el `Snackbar` y el mapa no se animan.
 
 ## 8. VoiceOver (2 o 3 recorridos clave)
