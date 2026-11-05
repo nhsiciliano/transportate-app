@@ -6,7 +6,8 @@ Tarea 2.10 de la Fase 2, con el alcance corregido tras la Fase 1 (`docs/00-plan.
 - arma un **diccionario de líneas** desde el tiempo real;
 - construye una **tabla de equivalencias `stop_id` → parada**: se siembra con el GTFS 2021 y se corrige con las capturas de posiciones;
 - procesa el **GTFS de subte** (vigente);
-- arma **recorridos aproximados** de colectivo.
+- arma **recorridos aproximados** de colectivo;
+- arma el **paquete de trenes** (6 líneas, 27 ramales y 262 estaciones) desde los volcados de `tools/sofse-probe` (Fase 6; `docs/01d-api-trenes-sofse.md`).
 
 Todo sale como JSON compacto, validado con Zod y versionado por hash, listo para subir a R2 y servir en `/v1/static/*`.
 
@@ -20,7 +21,8 @@ cd tools/gtfs
 npm ci                               # Node ≥ 24 (no corre scripts de dependencias: ver .npmrc)
 npm run build                        # todos los pasos → out/ (incluye out/last-build.json)
 npm run build -- --solo paradas      # solo algunos pasos (separados por coma):
-                                     #   paradas, lineas, equivalencias, subte, recorridos
+                                     #   paradas, lineas, equivalencias, subte, recorridos, trenes
+npm run build -- --solo trenes      # el paquete de trenes (lee ~/.cache/transportate/sofse/, sin red)
 npm test                             # Vitest sobre muestras chicas (hermético: no lee out/)
 npm run check                        # typecheck + lint + prettier + tests
 ./upload-r2.sh                       # sube out/ a R2 (requiere wrangler login; ver abajo)
@@ -55,6 +57,8 @@ Todas fuera del repo. Si falta alguna, el build lo dice y termina con error.
 | Tiempo real | `apps/proxy/test/fixtures/colectivos/{vehiclePositions.pb, tripUpdates.pb, vehiclePositionsSimple.json}` | fixtures de la Fase 1 | 2026-11-01 17:09 UTC |
 | Capturas (opcional) | `~/.cache/transportate/capturas/posiciones-*.csv.gz` | `tools/captura-posiciones` (otro worker) | las que haya |
 | Colores de subte | `src/config.ts` (`COLORES_SUBTE`) | `docs/02b-colores-subte.md` §3 | 2026-11-01 |
+| Volcados de SOFSE (solo paso `trenes`) | `~/.cache/transportate/sofse/`: `capturado.json`, `gerencias.json`, `ramales-<idGerencia>.json` ×6 y `estaciones-<idRamal>.json` ×27 | `tools/sofse-probe` (`node tools/sofse-probe/probe.mjs`) sobre la [API comunitaria api-trenes](https://ariedro.dev/api-trenes) (datos de SOFSE; sin licencia explícita, fuente no oficial) | `capturadoEn` de `capturado.json` (2026-11-05) |
+| Colores de trenes | `src/config.ts` (`COLORES_TRENES`) | `docs/02c-colores-trenes.md` §1 (provisorios) | 2026-11-05 |
 
 Las capturas se leen por nombre de columna: `snapshot_ts, vehicle_id, trip_id, route_id, stop_id, current_stop_sequence, current_status, lat, lon, speed, vehicle_ts`. Se aceptan gzip con varios miembros concatenados. Sin capturas, la herramienta igual corre y genera solo la semilla.
 
@@ -72,6 +76,8 @@ Todas son JSON sin espacios, con coordenadas de 6 decimales. Tamaños del build 
 | `indice-colectivos.json` | 232.473 | 83.097 | `IndiceColectivosArchivoV1` | Para el proxy: `paradaId → [stopIds, números]` (6.961 paradas, 4.320 con stop_id) y `número → lineaIds` en CABA (110 números). Evita parsear `paradas.json` y `equivalencias-paradas.json` en el Worker: el primer request pasa de ~25 ms a ~5 ms de CPU (`apps/proxy/src/adapters/README.md`) |
 | `subte-lineas.json` | 4.847 | 1.073 | `SubteLineasArchivoV1` | 8 líneas (A–H y los 2 ramales del Premetro): `routeId`, `tipo`, `color`, `colorTexto`, `estacionIds[]` ordenadas, `sentidos[{directionId, cabecera, estacionIds}]`, más `feedEndDate` |
 | `subte-estaciones.json` | 17.379 | 3.550 | `SubteEstacionesArchivoV1` | 108 estaciones: `nombre` (con tildes), `nombreGtfs`, `lat`, `lon`, `lineas[]`, `andenes`, `accesible` |
+| `trenes-lineas.json` | 8.822 | 2.049 | `TrenesLineasArchivoV1` | 6 líneas en orden fijo (Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa) con `idGerencia`, colores y 27 ramales públicos (12 + 4 + 5 + 2 + 3 + 1): `siglas`, cabeceras, `electrico` y `estacionIds` en el orden del upstream |
+| `trenes-estaciones.json` | 29.163 | 6.240 | `TrenesEstacionesArchivoV1` | 262 estaciones únicas ordenadas por nombre (`localeCompare('es')`): `nombre` con tildes, `lat`, `lon`, `lineas[]` y `ramalIds[]` |
 | `subte-red.geojson` | 7.260 | 2.002 | local | `FeatureCollection` de 8 `LineString` simplificados a 5 m, con `linea`, `routeId` y `color` |
 | `recorridos-colectivos.geojson` | 742.203 | 100.514 | local | 170 líneas (por número), `MultiLineString` recortado a CABA y simplificado a 10 m, `aproximado: true` |
 | `manifest.json` | ~2.300 | — | `ManifestV1` | `version` (sha256 de 12 hex del contenido concatenado), `generatedAt`, `archivos{url, bytes, sha256}` (`url` = `<version>/<archivo>`, relativa a `/v1/static/` y a la raíz del bucket), `omitidos`, `fuentes{nombre, url, fecha, licencia, nota}` |
@@ -209,6 +215,18 @@ Salen solo del tiempo real. Los `route_id` 2021 están reasignados: de 252 compa
 - **Orden de la línea:** unión de los dos sentidos. Si una estación falta en un sentido, se inserta donde menos alarga el recorrido. Es el caso de Alberti y Pasco en la A, donde cada sentido saltea una.
 - **Nombres:** GTFS con tildes restituidas por una lista curada de palabras (`TILDES` en `src/steps/subte.ts`). No se usan los nombres de `forecastGTFS` porque traen errores ("Carlos Pelegrini", "Scalabrini Ortíz") y recortes ("Moreno" en vez de "Jose Maria Moreno"). Queda `Humberto 1` tal cual lo trae el GTFS.
 
+### Trenes
+
+`npm run build -- --solo trenes` → `trenes-lineas.json` y `trenes-estaciones.json`. Lee los volcados de `tools/sofse-probe` (sin red, ni en el build ni en los tests). Para regenerarlos: `node tools/sofse-probe/probe.mjs` y después `npm run build -- --solo trenes`. Tamaños del build de referencia (captura del 2026-11-05): 8.822 B y 29.163 B (2.049 B y 6.240 B con gzip -9).
+
+- **Líneas:** las seis de `gerencias.json` en orden fijo (Roca 11, Sarmiento 1, Mitre 5, San Martín 31, Belgrano Sur 21, Tren de la Costa 41); Regionales (501) se ignora. `id` es el slug de `LineaTrenId`, `idGerencia` va como texto y los colores salen de `COLORES_TRENES`, copiados de `docs/02c-colores-trenes.md`.
+- **Ramales:** solo `publico === true`, por `orden_ramal` y después por nombre. Los ids son los de SOFSE como texto.
+- **Estaciones:** unión de todas las `estaciones-<idRamal>.json`, deduplicada por `id_estacion` y acumulando `lineas` (orden fijo) y `ramalIds`. Se publican las que tienen `visibilidad.app_mobile` en `1`/`"1"` (la fuente trae `visibilidad` como objeto o como texto JSON, y se aceptan las dos) y coordenada válida; `lat`/`lon` se redondean a 6 decimales. Las que no entran se cuentan en `out/last-build.json` (`trenes.sinAppMobile`, `trenes.descartadas`). En la captura del 2026-11-05 no hubo ninguna: las 389 filas (262 estaciones únicas) son visibles y con coordenada válida.
+- **Orden de `estacionIds`: es el del arreglo del upstream, no el de `orden`.** `orden` se reinicia en cada tramo (`id_tramo`): ordenar por él deja mal las cabeceras en 16 de los 27 ramales, mientras que el orden del arreglo («en orden de recorrido», `docs/01d` §5.3) acierta en 20.
+- **Cabeceras que no coinciden (7 de 27):** para algunos ramales el upstream devuelve la lista incompleta (le falta la cabecera inicial o una parte compartida con otro ramal), y el build no inventa estaciones: avisa en consola y deja el detalle en `out/last-build.json` (`trenes.cabecerasNoCoinciden`). Hoy son Constitución-Chascomús (57), Constitución-Lobos (55), Constitución-Monte (49), Ezeiza-Cañuelas (37), Buenos Aires-González Catán (25), Buenos Aires-M.C.G. Belgrano (21) y González Catán-Navarro (67). Las cabeceras igual van en `cabeceraInicial`/`cabeceraFinal`; la app no debe asumir que son la primera y la última de `estacionIds`.
+- **Integridad:** todo id de `estacionIds` existe en `trenes-estaciones.json` (los que no se publican se sacan del ramal).
+- **Fuente del manifest:** `fuentes.sofse` con la fecha de la captura.
+
 ### Recorridos de colectivo
 
 `shapes.txt` 2021 → `trips.txt` (shape → `route_id` 2021) → `routes.txt` (número de línea). Cada shape se recorta a la máscara de CABA y se simplifica con Douglas-Peucker a 10 m. Después se agrupa por número de línea y se deduplican los tramos casi idénticos (ida/vuelta, ramales) con una grilla de ~50 m. Son de 2021 y se unen solo por número: van con `aproximado: true` y la app debe rotularlos como "recorrido aproximado".
@@ -224,6 +242,7 @@ Requisitos: `npx wrangler@4.156.1 login`, o `CLOUDFLARE_API_TOKEN` con permiso R
 
 ## Pendientes
 
+- Los colores de trenes son provisorios (`docs/02c-colores-trenes.md`): cuando se confirmen, se cambian primero en ese doc y después en `COLORES_TRENES`.
 - Volver a correr el build con 24–48 h de capturas y actualizar estas estadísticas (`docs/01b` §7.1).
 - Definir dónde corre el aprendizaje en producción: este paquete lo hace offline; un cron de Worker con D1/R2 es la opción del plan.
 - No se usa OSM, así que no aplica ODbL. Las fuentes son todas CC-BY-2.5-AR (atribución en "Acerca de").

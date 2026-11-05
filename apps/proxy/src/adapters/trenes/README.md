@@ -11,11 +11,11 @@
 - **Todo lo que conoce la forma y las URLs de la fuente vive en dos archivos:** `sofse.ts` (URLs, decodificación, fechas) y `packages/contracts/src/upstream/sofse.ts` (esquemas laxos). Cambiar de fuente mañana = reemplazar esos dos archivos y la var.
 - Los tests nunca la llaman: usan las fixtures de `test/fixtures/sofse/` (`tools/sofse-probe`).
 
-| Pedido | Clave de caché | TTL | Notas |
-|---|---|---:|---|
-| `GET /infraestructura/gerencias?idEmpresa=1` | `trenes:gerencias` | `TRENES_ESTADO_TTL_SECONDS` (60 s) | Las líneas con su `estado.mensaje` y sus alertas de línea. Regionales (501) se ignora |
-| `GET /infraestructura/ramales?idGerencia=<id>` ×6 | `trenes:ramales:<idGerencia>` | 60 s | Ramales con `publico`, `orden_ramal`, cabeceras y alertas de ramal |
-| `GET /arribos/estacion/<id>?cantidad=8` | `trenes:arribos:<estacionId>` | `TRENES_TTL_SECONDS` (30 s) | Pesado (65–106 KB para 8–13 arribos): el proxy devuelve < 3 KB |
+| Pedido                                            | Clave de caché                |                                TTL | Notas                                                                                 |
+| ------------------------------------------------- | ----------------------------- | ---------------------------------: | ------------------------------------------------------------------------------------- |
+| `GET /infraestructura/gerencias?idEmpresa=1`      | `trenes:gerencias`            | `TRENES_ESTADO_TTL_SECONDS` (60 s) | Las líneas con su `estado.mensaje` y sus alertas de línea. Regionales (501) se ignora |
+| `GET /infraestructura/ramales?idGerencia=<id>` ×6 | `trenes:ramales:<idGerencia>` |                               60 s | Ramales con `publico`, `orden_ramal`, cabeceras y alertas de ramal                    |
+| `GET /arribos/estacion/<id>?cantidad=8`           | `trenes:arribos:<estacionId>` |        `TRENES_TTL_SECONDS` (30 s) | Pesado (65–106 KB para 8–13 arribos): el proxy devuelve < 3 KB                        |
 
 `loadRed()` (lo comparten `estadoLineas()` y `alertas()`) pide gerencias y los 6 ramales **con un único plazo de 5 s** (`RED_BUDGET_MS`) y sin reintento, como el fan-out de colectivos. Lo que no llega a tiempo sale del último dato bueno o se trata como caído.
 
@@ -23,14 +23,14 @@
 
 Las líneas, en el orden fijo de `/v1/trenes/estado`, salen de la tabla `LINEAS_TREN` (`lineas.ts`):
 
-| Línea | `idGerencia` | Color | Texto |
-|---|---:|---|---|
-| `roca` | 11 | `#FAB700` | `#000000` |
-| `sarmiento` | 1 | `#B766C2` | `#000000` |
-| `mitre` | 5 | `#8FBE00` | `#000000` |
-| `san-martin` | 31 | `#6495ED` | `#000000` |
-| `belgrano-sur` | 21 | `#F85900` | `#000000` |
-| `tren-de-la-costa` | 41 | `#002D9A` | `#FFFFFF` |
+| Línea              | `idGerencia` | Color     | Texto     |
+| ------------------ | -----------: | --------- | --------- |
+| `roca`             |           11 | `#FAB700` | `#000000` |
+| `sarmiento`        |            1 | `#B766C2` | `#000000` |
+| `mitre`            |            5 | `#8FBE00` | `#000000` |
+| `san-martin`       |           31 | `#6495ED` | `#000000` |
+| `belgrano-sur`     |           21 | `#F85900` | `#000000` |
+| `tren-de-la-costa` |           41 | `#002D9A` | `#FFFFFF` |
 
 La API no trae colores. Los de la tabla son **provisorios** y salen de [`docs/02c-colores-trenes.md`](../../../../../docs/02c-colores-trenes.md) (fuente de verdad, todos AA con su texto).
 
@@ -38,15 +38,15 @@ La API no trae colores. Los de la tabla son **provisorios** y salen de [`docs/02
 
 Una alerta de SOFSE (`gerencias[].alerta[]` o `ramales[].alerta[]`) **cuenta** solo si `habilitado === 1` y `vigencia_desde ≤ ahora ≤ vigencia_hasta` (`vigencia_hasta` null = sin fin). Se juntan las de la gerencia y las de todos sus ramales, sin repetir ids, y se traducen a `AlertaTrenV1`:
 
-| Campo | Origen |
-|---|---|
-| `id` | `id` como string |
-| `linea` | `linea_id` → `lineaDeGerencia`; sin `linea_id`, la línea de la lista donde vino. Las de gerencias que no son de las seis se descartan |
-| `ramalId`, `estacionId`, `sentido` | `ramal_id` (o el ramal donde vino), `estacion_id` y `sentido` (`"1"`/`"2"`) como strings |
-| `titulo` | Primera oración de `contenido` (un punto no cierra oración después de `Pza.`, `Fco.`, `hs.`, `Dr.` o una inicial como `M.C.G.`); si pasa de 120 caracteres, se corta en un espacio con `…` |
-| `descripcion` | `contenido` con los espacios normalizados (la fuente trae espacios de más al final) |
-| `causa`, `efecto` | `causa_gtfs`; `efecto_gtfs` como nombre (si llegara un número GTFS-RT, se traduce con `effectName`) |
-| `desde`, `hasta` | `vigencia_*` interpretadas en hora de Buenos Aires (ver «Supuestos») |
+| Campo                              | Origen                                                                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                               | `id` como string                                                                                                                                                                           |
+| `linea`                            | `linea_id` → `lineaDeGerencia`; sin `linea_id`, la línea de la lista donde vino. Las de gerencias que no son de las seis se descartan                                                      |
+| `ramalId`, `estacionId`, `sentido` | `ramal_id` (o el ramal donde vino), `estacion_id` y `sentido` (`"1"`/`"2"`) como strings                                                                                                   |
+| `titulo`                           | Primera oración de `contenido` (un punto no cierra oración después de `Pza.`, `Fco.`, `hs.`, `Dr.` o una inicial como `M.C.G.`); si pasa de 120 caracteres, se corta en un espacio con `…` |
+| `descripcion`                      | `contenido` con los espacios normalizados (la fuente trae espacios de más al final)                                                                                                        |
+| `causa`, `efecto`                  | `causa_gtfs`; `efecto_gtfs` como nombre (si llegara un número GTFS-RT, se traduce con `effectName`)                                                                                        |
+| `desde`, `hasta`                   | `vigencia_*` interpretadas en hora de Buenos Aires (ver «Supuestos»)                                                                                                                       |
 
 Orden: por línea (orden fijo), luego la más severa primero, a igual severidad la de menor `criticidad_orden` y luego por id.
 
@@ -54,29 +54,29 @@ Orden: por línea (orden fijo), luego la más severa primero, a igual severidad 
 
 Se reutilizan a propósito los textos, la severidad y `estadoDe` de subtes (`../subtes/reglas.ts`). Severidad de una alerta:
 
-| Severidad | Si… |
-|---|---|
-| `interrumpida` | `efecto_gtfs` = `NO_SERVICE`, o `contenido` matchea `TEXTO_INTERRUMPIDA` (`/sin servicio\|no (presta\|funciona)\|interrumpid\|suspendid/i`) |
-| `demorada` | `efecto_gtfs` ∈ {`SIGNIFICANT_DELAYS`, `REDUCED_SERVICE`, `DETOUR`, `MODIFIED_SERVICE`, `STOP_MOVED`}, o `contenido` matchea `TEXTO_DEMORADA` |
-| `informativa` | el resto: no cambia el estado |
+| Severidad      | Si…                                                                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `interrumpida` | `efecto_gtfs` = `NO_SERVICE`, o `contenido` matchea `TEXTO_INTERRUMPIDA` (`/sin servicio\|no (presta\|funciona)\|interrumpid\|suspendid/i`)   |
+| `demorada`     | `efecto_gtfs` ∈ {`SIGNIFICANT_DELAYS`, `REDUCED_SERVICE`, `DETOUR`, `MODIFIED_SERVICE`, `STOP_MOVED`}, o `contenido` matchea `TEXTO_DEMORADA` |
+| `informativa`  | el resto: no cambia el estado                                                                                                                 |
 
 `estado.mensaje` de la gerencia también cuenta: `/interrump|suspend|sin servicio|cancelad/i` → `interrumpida`, `/demor|limitad|reducid/i` → `demorada`, cualquier otra cosa → informativa. **Hoy dice «Alertas por ramal» en todas las líneas** (color `#435a6c`): es un mensaje genérico y no implica demora.
 
-- **Estado de la línea:** la máxima severidad entre sus alertas de línea, las de **todos** sus ramales y su `estado.mensaje` (`estadoDe`: interrumpida, demorada o normal).
-- **`resumen`:** el `titulo` de la alerta más severa. Si el `estado.mensaje` es más severo que todas las alertas (o no hay alertas y el mensaje no es informativo), el `estado.mensaje`. Sin nada de eso, no va.
+- **Estado de la línea:** las alertas **de ramal** (con `ramal_id`, o venidas de `ramales[].alerta[]`) aportan como máximo `demorada`; solo las alertas **de línea** (sin `ramal_id`, de `gerencias[].alerta[]`) y su `estado.mensaje` pueden ponerla en `interrumpida`. Un ramal cortado (por ejemplo un regional con obras) no apaga la línea entera mientras los demás andan. Después `estadoDe`: interrumpida, demorada o normal.
+- **`resumen`:** el `titulo` de la alerta más severa, aunque sea de un ramal; si es de un ramal se antepone su nombre («Constitución-Lobos: El servicio Cañuelas - Lobos se encuentra interrumpido…»). Si el `estado.mensaje` es más severo que todas las alertas (o no hay alertas y el mensaje no es informativo), el `estado.mensaje`. Sin nada de eso, no va.
 - **`alertaIds`:** todas las alertas vigentes de la línea y sus ramales, en el orden de arriba.
-- **`ramales`:** los ramales con `publico: true`, ordenados por `orden_ramal`. Estado de cada uno = máxima severidad entre sus alertas y las alertas de la línea que no son de un ramal. Sus `alertaIds` son las propias primero y después esas de la línea.
+- **`ramales`:** los ramales con `publico: true`, ordenados por `orden_ramal`. Estado de cada uno = máxima severidad entre sus alertas **propias sin tope** (un ramal sí puede estar `interrumpida`) y las alertas de la línea que no son de un ramal. Sus `alertaIds` son las propias primero y después esas de la línea.
 
-Con la fixture real del 2026-11-05 a las 08:56: **Roca `interrumpida`** (solo por el ramal Cañuelas-Lobos, «interrumpido por obras»), **Sarmiento `demorada`** (Moreno-Mercedes, `SIGNIFICANT_DELAYS`), **Belgrano Sur `demorada`** («recorrido limitado» en M.C.G. Belgrano), y Mitre, San Martín y Tren de la Costa `normal` (`test/adapters/trenes.test.ts`). Ojo: con esta regla, un solo ramal regional interrumpido pone toda la línea en `interrumpida`; el detalle por ramal está en `ramales`.
+Con la fixture real del 2026-11-05 a las 08:56: **Roca `demorada`** (el ramal Constitución-Lobos, alerta «Cañuelas - Lobos interrumpido por obras», está `interrumpida`, pero los otros 11 ramales andan; antes de este ajuste la línea entera salía `interrumpida`), **Sarmiento `demorada`** (Moreno-Mercedes, `SIGNIFICANT_DELAYS`), **Belgrano Sur `demorada`** («recorrido limitado» en M.C.G. Belgrano), y Mitre, San Martín y Tren de la Costa `normal` (`test/adapters/trenes.test.ts`). El detalle por ramal está en `ramales`; el nombre del ramal más afectado va al comienzo del `resumen`.
 
 ## Degradación
 
-| Situación | `estadoLineas()` | `alertas()` | `arribos()` |
-|---|---|---|---|
-| `gerencias` caída y sin último dato bueno (o cuerpo que no es de la fuente, como el 500 «Not Found») | **200** con las 6 líneas en `sin_datos`, `ramales: []`, `meta.stale: true`, `sourceTimestamp: null` | **503** `upstream_unavailable` | — |
-| `gerencias` bien, algún `ramales` caído | Esa línea con `ramales: []` y estado solo por sus alertas de línea; `meta.stale: true` | Las alertas de lo que llegó; `meta.stale: true` | — |
-| Dato servido como último bueno | `meta.stale: true` | `meta.stale: true` | `meta.stale: true` |
-| Arribos caídos y sin último dato bueno | — | — | **503** `upstream_unavailable` |
+| Situación                                                                                            | `estadoLineas()`                                                                                    | `alertas()`                                     | `arribos()`                    |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------ |
+| `gerencias` caída y sin último dato bueno (o cuerpo que no es de la fuente, como el 500 «Not Found») | **200** con las 6 líneas en `sin_datos`, `ramales: []`, `meta.stale: true`, `sourceTimestamp: null` | **503** `upstream_unavailable`                  | —                              |
+| `gerencias` bien, algún `ramales` caído                                                              | Esa línea con `ramales: []` y estado solo por sus alertas de línea; `meta.stale: true`              | Las alertas de lo que llegó; `meta.stale: true` | —                              |
+| Dato servido como último bueno                                                                       | `meta.stale: true`                                                                                  | `meta.stale: true`                              | `meta.stale: true`             |
+| Arribos caídos y sin último dato bueno                                                               | —                                                                                                   | —                                               | **503** `upstream_unavailable` |
 
 `meta.sourceTimestamp` de estado y alertas es **cuándo se leyó `gerencias`** (la fuente no informa la hora del dato). En arribos, el `timestamp` de la respuesta.
 
