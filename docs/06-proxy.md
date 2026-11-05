@@ -48,6 +48,9 @@ onError (src/middleware/errors.ts) — todo error sale como ErrorV1, sin stack n
 | `/v1/subtes/estado` | `EnvelopeV1<EstadoLineasV1>` | `FEED_TTL_SECONDS` (20 s) | `subtes/serviceAlerts?json=1` |
 | `/v1/subtes/alertas` | `EnvelopeV1<AlertasV1>` | 20 s | ídem |
 | `/v1/subtes/estaciones/:estacionId/arribos` | `EnvelopeV1<ArribosEstacionV1>` | 20 s | `subtes/forecastGTFS` (congelado desde 2026-10-24; responde `stale`) |
+| `/v1/trenes/estado` | `EnvelopeV1<EstadoLineasTrenV1>` | `TRENES_ESTADO_TTL_SECONDS` (60 s) | API comunitaria SOFSE: `infraestructura/gerencias` + `infraestructura/ramales` ×6 |
+| `/v1/trenes/alertas` | `EnvelopeV1<AlertasTrenV1>` | 60 s | ídem |
+| `/v1/trenes/estaciones/:estacionId/arribos` | `EnvelopeV1<ArribosEstacionTrenV1>` | `TRENES_TTL_SECONDS` (30 s) | API comunitaria SOFSE: `arribos/estacion/<id>?cantidad=8` |
 | `/v1/colectivos/lineas` | `EnvelopeV1<LineasColectivoV1>` | `STATIC_TTL_SECONDS` (86 400 s) | R2: `lineas-colectivos.json` |
 | `/v1/colectivos/lineas/:lineaId/posiciones` | `EnvelopeV1<PosicionesLineaV1>` | 20 s | `colectivos/vehiclePositions?route_id=` + equivalencias (R2) |
 | `/v1/colectivos/paradas/:paradaId/arribos` | `EnvelopeV1<ArribosParadaV1>` | 20 s | `colectivos/tripUpdates?route_id=` por línea + paradas y equivalencias (R2) |
@@ -56,7 +59,7 @@ onError (src/middleware/errors.ts) — todo error sale como ErrorV1, sin stack n
 | `/v1/static/:version/:archivo` | archivo del paquete (`.json`, `.geojson`) | 1 año, `immutable`, ETag de R2 | R2: `<version>/<archivo>` |
 
 - **Parámetros:** `estacionId`, `paradaId`, `lineaId` y `version` cumplen `^[A-Za-z0-9_-]{1,64}$`. `archivo` admite además `.`, pero no `..`, y tiene que terminar en `.json` o `.geojson`. Si no cumplen, la respuesta es 400. La query desconocida se ignora.
-- **Ids que no existen:** una línea o parada inexistente da 404 `not_found`, sin pedir nada al upstream. Una estación de subte que no está en el forecast da una lista vacía.
+- **Ids que no existen:** una línea o parada inexistente da 404 `not_found`, sin pedir nada al upstream. Una estación de subte que no está en el forecast da una lista vacía. Una estación de tren inexistente también: la fuente responde igual que para una estación sin trenes.
 
 ## 3. Headers
 
@@ -103,6 +106,16 @@ Reglas completas en [`apps/proxy/src/adapters/subtes/README.md`](../apps/proxy/s
 - **Siempre `serviceAlerts?json=1`**, porque el protobuf llega corrupto en origen.
 - **Arribos:** salen de `forecastGTFS`, que es un JSON propio, no GTFS-RT. Se marcan `stale` si `Header.timestamp` tiene más de 3 min; hoy el feed está congelado.
 
+### Trenes
+
+Reglas completas en [`apps/proxy/src/adapters/trenes/README.md`](../apps/proxy/src/adapters/trenes/README.md).
+
+- **Fuente:** la **instancia pública comunitaria** `https://ariedro.dev/api-trenes` (`TRENES_UPSTREAM_BASE`). No es oficial: es un proxy Express de una persona que reenvía a la API interna de SOFSE (Trenes Argentinos), sin auth, términos ni SLA, con 1–2,5 s por pedido. Va por una segunda `EdgeCachedFeedSource` **sin credenciales**, con su propio 503 («Servicio de trenes no disponible»). Todo lo que conoce la forma y las URLs de la fuente vive en `adapters/trenes/sofse.ts` y `packages/contracts/src/upstream/sofse.ts`.
+- **Claves y TTL:** `trenes:gerencias` y `trenes:ramales:<idGerencia>` (60 s), `trenes:arribos:<estacionId>` (30 s). Estado y alertas piden gerencias y los 6 ramales con un plazo único de 5 s y a lo sumo 6 pedidos en vuelo (el límite de conexiones salientes simultáneas de Workers).
+- **Estado por línea:** reutiliza las reglas de subtes. Es la máxima severidad entre las alertas vigentes de la línea, las de todos sus ramales y el `estado.mensaje` de la gerencia. Hoy ese mensaje es «Alertas por ramal» en todas las líneas y se toma como informativo. Cada ramal público trae su propio estado. Sin `gerencias`, las 6 líneas quedan `sin_datos` con `stale: true` (200); si falta un `ramales`, esa línea va con `ramales: []` y `stale: true`.
+- **Arribos:** destino según el sentido (`1` va a la cabecera final, `2` a la inicial), `enSegundos` a partir de la hora estimada o, si no hay, la programada, andén y `cancelado`. La fuente pesa 65–106 KB por estación; la respuesta, menos de 3 KB.
+- **Kill-switch:** con `TRENES_ENABLED` distinto de `"true"`, `/estado` responde `sin_datos` + stale y `/alertas` y `/arribos` responden 503 («Trenes no disponible por ahora»), sin pedir nada a la fuente.
+
 ## 6. Colectivos
 
 Detalle en [`apps/proxy/src/adapters/colectivos/README.md`](../apps/proxy/src/adapters/colectivos/README.md) y plan B de paradas en `01b-gtfs-alternativos.md`.
@@ -143,6 +156,14 @@ Lo genera `tools/gtfs` y se sube a R2 con `tools/gtfs/upload-r2.sh`: cada `<vers
 - `GCBA_CLIENT_ID` y `GCBA_CLIENT_SECRET` se cargan como `wrangler secret` por entorno (en local, con `.dev.vars`).
 - Se agregan a la URL **solo al hacer el fetch** (`src/sources/edge-cached.ts`). Nunca forman parte de claves de caché, errores, logs ni respuestas.
 - `test/errors.test.ts` verifica que un error con el secret en el mensaje no lo filtra.
+- **Trenes no usa secrets.** Sus cuatro variables son `vars` de `wrangler.jsonc` (en la raíz y repetidas en `env.preview` y `env.production`):
+
+| Var | Valor | Para qué |
+|---|---|---|
+| `TRENES_UPSTREAM_BASE` | `https://ariedro.dev/api-trenes` | Base de la fuente (puede traer path) |
+| `TRENES_ENABLED` | `"true"` | Kill-switch: cualquier otro valor apaga trenes |
+| `TRENES_TTL_SECONDS` | `"30"` | TTL de arribos |
+| `TRENES_ESTADO_TTL_SECONDS` | `"60"` | TTL de gerencias y ramales (estado y alertas) |
 
 ## 10. Límites de CPU y cómo se respetan
 
@@ -173,7 +194,7 @@ Así el upstream recibe 1 request por TTL y por feed a nivel global. Está dise�
 
 ## 12. Cómo agregar un servicio nuevo
 
-1. **Investigar:** probar el endpoint con `tools/api-probe` (`--only=<servicio>`), documentarlo en `01-api-transporte.md` y guardar las fixtures en `apps/proxy/test/fixtures/<servicio>/`.
+1. **Investigar:** probar el endpoint con `tools/api-probe` (`--only=<servicio>`), documentarlo en `01-api-transporte.md` y guardar las fixtures en `apps/proxy/test/fixtures/<servicio>/`. Una fuente que no es la API del GCBA lleva su propio probe (como `tools/sofse-probe` para trenes) y sus fixtures en su propia carpeta (`fixtures/sofse/`).
 2. **Contrato v1** en `packages/contracts/src/<servicio>.ts`:
    - esquemas con sufijo `V1`, campos cortos, fechas ISO, ids como string;
    - `envelope()` para la respuesta;
@@ -182,7 +203,7 @@ Así el upstream recibe 1 request por TTL y por feed a nivel global. Está dise�
    Un cambio aditivo sube la versión menor; uno incompatible crea `/v2`.
 3. **Esquema upstream laxo** en `packages/contracts/src/upstream/` (`looseObject`, `nullish`), con un test contra la fixture real.
 4. **Adaptador** en `apps/proxy/src/adapters/<servicio>/`:
-   - recibe `{ source, ttlSeconds, now }`;
+   - recibe `{ source, ttlSeconds, now }`. Una fuente que no es la del GCBA usa su propia `EdgeCachedFeedSource` (sin `credentials` y con su `unavailableMessage`), con claves de caché con prefijo propio (`trenes:`) y la base en una var (`upstreamUrl(path, params, base)`);
    - usa `buildMeta()` para `meta`;
    - la clave de caché va sin credenciales;
    - lanza `ApiError` para 404/503;
