@@ -1,4 +1,4 @@
-// Tabs del MVP: Inicio, Colectivos, Subtes y Favoritos.
+// Tabs: Inicio, Colectivos, Subtes, Trenes (Fase 6) y Favoritos (5 visibles; Tránsito oculto).
 //
 // Se usan las tabs nativas de Expo Router (`expo-router/native-tabs` en SDK 58; hasta SDK 57 era `unstable-native-tabs`):
 // UITabBarController en iOS y BottomNavigationView de Material en Android, en línea con la
@@ -28,6 +28,13 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="subtes">
         <NativeTabs.Trigger.Label>Subtes</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'tram', selected: 'tram.fill' }} md="subway" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="trenes">
+        <NativeTabs.Trigger.Label>Trenes</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          sf={{ default: 'train.side.front.car', selected: 'train.side.front.car' }}
+          md="train"
+        />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="favoritos">
         <NativeTabs.Trigger.Label>Favoritos</NativeTabs.Trigger.Label>

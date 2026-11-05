@@ -14,6 +14,8 @@ export const TIPO_LECTOR: Record<FavoritoTipo, string> = {
   estacion_subte: 'Estación',
   linea_colectivo: 'Colectivo',
   parada_colectivo: 'Parada',
+  ramal_tren: 'Ramal',
+  estacion_tren: 'Estación',
 };
 
 /**
@@ -37,6 +39,14 @@ export function mensajeDeFavorito(
     }
     case 'parada_colectivo':
       return `Parada ${f.nombre}`;
+    // «Ramal Once – Moreno · Línea Sarmiento».
+    case 'ramal_tren':
+      return con(`Ramal ${f.nombre}`, f.subtitulo);
+    // «Estación Caballito hacia Moreno» (el destino del próximo tren, como en subte).
+    case 'estacion_tren': {
+      const estacion = sentido === undefined ? f.nombre : `${f.nombre} hacia ${sentido}`;
+      return `Estación ${estacion}`;
+    }
   }
 }
 
@@ -59,7 +69,7 @@ export type ModeloBanda = Omit<SignBandProps, 'variant' | 'onPress'>;
 
 /**
  * De favorito + dato vivo a lo que dibuja la banda. `lider` agrega «Próximo» a un arribo;
- * `estadoLinea` (solo estaciones de subte) suma el cuadrado ámbar o rojo; `testID` por pantalla.
+ * `estadoLinea` (estaciones de subte o de tren) suma el cuadrado ámbar o rojo; `testID` por pantalla.
  */
 export function modeloBanda(
   f: FavoritoV1,

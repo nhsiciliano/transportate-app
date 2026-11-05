@@ -43,6 +43,7 @@ import {
 import { MemoryKeyValueStore } from '@/shared/storage/kv';
 
 import { ARCHIVOS_TEXTO } from '../colectivos/data';
+import { estacionesTren, lineasTren } from '../trenes/data';
 import { createMemoryPreferenceStore, ThemeProvider } from '@/shared/theme';
 
 // ---------------------------------------------------------------- estático
@@ -150,6 +151,17 @@ export function manifest(version = VERSION) {
         url: `${version}/subte-estaciones.json`,
         bytes: 1,
         sha256: 'b'.repeat(64),
+      },
+      // Estático de Trenes (lo leen Favoritos e Inicio para los favoritos de tren).
+      'trenes-lineas.json': {
+        url: `${version}/trenes-lineas.json`,
+        bytes: 1,
+        sha256: 'e'.repeat(64),
+      },
+      'trenes-estaciones.json': {
+        url: `${version}/trenes-estaciones.json`,
+        bytes: 1,
+        sha256: 'f'.repeat(64),
       },
       // Archivos grandes de Colectivos (los sirve el descargador falso del harness).
       'paradas.json': {
@@ -276,6 +288,8 @@ export function defaultRoutes(): Routes {
     '/v1/static/manifest': () => jsonResponse(manifest()),
     [`/v1/static/${VERSION}/subte-lineas.json`]: () => jsonResponse(lineas),
     [`/v1/static/${VERSION}/subte-estaciones.json`]: () => jsonResponse(estaciones),
+    [`/v1/static/${VERSION}/trenes-lineas.json`]: () => jsonResponse(lineasTren),
+    [`/v1/static/${VERSION}/trenes-estaciones.json`]: () => jsonResponse(estacionesTren),
     '/v1/subtes/estado': () => jsonResponse(estado()),
     '/v1/subtes/alertas': () => jsonResponse(alertas()),
   };

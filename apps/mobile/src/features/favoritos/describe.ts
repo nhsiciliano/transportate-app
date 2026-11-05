@@ -8,6 +8,8 @@ export const TIPO_ICON: Record<FavoritoTipo, IconName> = {
   estacion_subte: 'estacion',
   linea_colectivo: 'colectivos',
   parada_colectivo: 'parada',
+  ramal_tren: 'tren',
+  estacion_tren: 'estacionTren',
 };
 
 /** Nombre que se muestra (y se anuncia) como principal: el alias o, si no hay, el oficial. */
@@ -44,6 +46,12 @@ export function accessibleLabel(fav: FavoritoV1, liveLabel?: string): string {
     case 'parada_colectivo':
       oficial = `Parada ${fav.nombre}`;
       break;
+    case 'ramal_tren':
+      oficial = `Ramal ${fav.nombre} de tren`;
+      break;
+    case 'estacion_tren':
+      oficial = `Estación ${fav.nombre} de tren`;
+      break;
   }
   const detalle = fav.subtitulo ? `${oficial}, ${fav.subtitulo}` : oficial;
   return [fav.alias, detalle, liveLabel].filter(Boolean).join('. ') + '.';
@@ -53,7 +61,9 @@ export type FavoritoHref =
   | { pathname: '/subtes/[linea]'; params: { linea: string } }
   | { pathname: '/subtes/estacion/[id]'; params: { id: string } }
   | { pathname: '/colectivos/[linea]'; params: { linea: string } }
-  | { pathname: '/colectivos/parada/[id]'; params: { id: string } };
+  | { pathname: '/colectivos/parada/[id]'; params: { id: string } }
+  | { pathname: '/trenes/ramal/[id]'; params: { id: string } }
+  | { pathname: '/trenes/estacion/[id]'; params: { id: string } };
 
 /** Detalle de cada tipo (N1: `router.push` cambia de tab solo). */
 export function hrefFor(fav: FavoritoV1): FavoritoHref {
@@ -66,5 +76,9 @@ export function hrefFor(fav: FavoritoV1): FavoritoHref {
       return { pathname: '/colectivos/[linea]', params: { linea: fav.refId } };
     case 'parada_colectivo':
       return { pathname: '/colectivos/parada/[id]', params: { id: fav.refId } };
+    case 'ramal_tren':
+      return { pathname: '/trenes/ramal/[id]', params: { id: fav.refId } };
+    case 'estacion_tren':
+      return { pathname: '/trenes/estacion/[id]', params: { id: fav.refId } };
   }
 }
