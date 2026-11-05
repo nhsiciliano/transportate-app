@@ -2,7 +2,7 @@
 
 Transportate es una app móvil (iOS/Android, Expo) con colectivos, subte y tránsito de CABA en tiempo real, sin cuentas ni datos personales. Esta carpeta reúne todo lo que se decide, se investiga y se verifica a lo largo del proyecto. El trabajo avanza por fases con freno y validación al final de cada una (ver `00-plan.md`).
 
-**Estado:** **Fase 4 (features) cerrada técnicamente el 2026-11-03, pendiente de validación del usuario en el iPhone ([`11-prueba-manual.md`](11-prueba-manual.md)); Fase 5 sin iniciar.** Las Fases 1, 2 y 3 se cerraron el 2026-11-01, el 2026-11-02 y el 2026-11-02 (la 3 la validó el usuario el 2026-11-03). Ver `bitacora.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
+**Estado:** **Fase 4 (features) cerrada técnicamente el 2026-11-03, pendiente de validación del usuario en el iPhone ([`11-prueba-manual.md`](11-prueba-manual.md)); Fase 5 sin iniciar.** Las Fases 1, 2 y 3 se cerraron el 2026-11-01, el 2026-11-02 y el 2026-11-02 (la 3 la validó el usuario el 2026-11-03). Ver `bitacora.md`. **La Fase 6 (Trenes, fuente comunitaria de SOFSE) arrancó el 2026-11-05:** ver `00-plan.md`, `01d-api-trenes-sofse.md` y `briefs/07-trenes.md`. Para instalar y correr el proyecto, ver el [`README.md`](../README.md) de la raíz.
 
 ## Cómo leer esto
 
@@ -33,10 +33,12 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 |---|---|---|
 | [`01-api-transporte.md`](01-api-transporte.md) | Endpoints verificados con credenciales: status, tamaño, formato, frecuencia, inconsistencias | ✅ |
 | [`01b-gtfs-alternativos.md`](01b-gtfs-alternativos.md) | Fuentes alternativas de GTFS de colectivos evaluadas, cruce con el tiempo real (`tools/gtfs-cruce/`) y plan B de paradas | ✅ |
+| [`01d-api-trenes-sofse.md`](01d-api-trenes-sofse.md) | Trenes: la instancia comunitaria no oficial de la API de SOFSE (qué es, cobertura, endpoints con sus formas, mediciones, riesgos y plan de salida) | ✅ (Fase 6) |
 | [`01a-api-console.md`](01a-api-console.md) | Inventario de la spec RAML oficial (`/console/api/?raml`): endpoints, recursos comentados, tipos GTFS-RT, matriz MVP vs spec | ✅ |
 | [`01c-portal-datosabiertos-apis.md`](01c-portal-datosabiertos-apis.md) | Portal 3scale `datosabiertos-apis` y host alternativo `datosabiertos-transporte-apis`: spec OpenAPI `Transporte_3` vs. realidad, comparación con `apitransporte` (2026-11-02) | ✅ |
 | [`02-obelisco-tokens.md`](02-obelisco-tokens.md) | Tokens del sistema de diseño Obelisco v2 (color, tipografía, espaciado, radios, sombras, foco) con archivo y línea de origen; paleta oscura derivada | ✅ |
 | [`02b-colores-subte.md`](02b-colores-subte.md) | Colores oficiales de las líneas de subte (GTFS vs. fuentes públicas) y estaciones por línea | ✅ |
+| [`02c-colores-trenes.md`](02c-colores-trenes.md) | Colores de las 6 líneas de tren (**provisorios**: sin manual oficial con hex), contraste y reglas de uso | ✅ (Fase 6) |
 | [`briefs/`](briefs/) | Un brief por pantalla del MVP (Impeccable `shape`), con estados y sin código | ✅ |
 | [`fuentes/`](fuentes/) | Materiales de origen: `api-transporte-v1.raml` (spec RAML oficial) y `transporte-3-openapi.json` (spec OpenAPI del portal 3scale) | ✅ |
 | [`../tools/api-probe/`](../tools/api-probe/README.md) | Script reproducible del sondeo de la API (`node probe.mjs`) y `last-run.json` | ✅ |

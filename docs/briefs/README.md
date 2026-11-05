@@ -14,21 +14,23 @@
 | 4 | Tránsito **(diferido: tab oculto, sin fuente de cortes)** | "¿Hay cortes en mi camino?" | [04-transito.md](04-transito.md) |
 | 5 | Favoritos | "Lo mío, sin buscarlo de nuevo" | [05-favoritos.md](05-favoritos.md) |
 | 6 | Ajustes (+ Acerca de) | "Configurar y saber de dónde salen los datos" | [06-ajustes.md](06-ajustes.md) |
+| 7 | Trenes **(Fase 6, fuente comunitaria no oficial)** | "¿Funciona mi ramal y cuándo sale el próximo tren desde mi estación?" | [07-trenes.md](07-trenes.md) |
 
 ## Mapa de navegación
 
 Según `docs/00-plan.md` (tarea 3.8) y `docs/03-arquitectura.md` §7.
 
 ```
-Tab bar (iOS) / Navigation bar (Android) — 5 destinos, siempre visibles
+Tab bar (iOS) / Navigation bar (Android) — 5 destinos, siempre visibles (con Tránsito oculto y Trenes de la Fase 6, los visibles son Inicio, Colectivos, Subtes, Trenes y Favoritos)
 ├── Inicio ───────────────┬─► Ajustes (stack, ícono en la barra superior de Inicio)
 │                         │      └─► Acerca de (stack)
 │                         ├─► Detalle de línea de subte  (→ tab Subtes, ver nota)
 │                         └─► Favorito tocado            (→ su pantalla de detalle)
 ├── Colectivos ─► Línea (mapa + lista de vehículos y alertas) ─► Parada (info estática)
 ├── Subtes ─────► Línea (estado + alertas + estaciones) ─► Estación (arribos por andén)
+├── Trenes ─────► Línea (estado + alertas + ramales) ─► Ramal (alertas + estaciones) ─► Estación (arribos por destino)   [Fase 6]
 ├── Tránsito ───► Lista ⇄ Mapa ─► Detalle de corte
-└── Favoritos ──► (abre el detalle del tipo: línea/parada de colectivo, línea/estación de subte)
+└── Favoritos ──► (abre el detalle del tipo: línea/parada de colectivo, línea/estación de subte, ramal/estación de tren)
 ```
 
 - Cada tab tiene su propio stack; el gesto/botón de volver nativo funciona en todos los niveles (borde izquierdo en iOS, Back predictivo en Android).
@@ -147,6 +149,17 @@ Todos se construyen una vez en `shared/ui` (plan, tarea 3.7) y se usan igual en 
 31. **S31** — Colectivos: un vehículo con `timestamp` > 5 min se atenúa aunque el feed sea fresco; se identifica por interno (`label`), no por patente.
 32. **S32** — El permiso de ubicación se pide en contexto (al tocar "Paradas cercanas" o "centrar en mí"), nunca al abrir la app.
 33. **S33** — Favoritos es una lista única con orden manual (no agrupada por tipo); los datos vivos se piden solo para las filas visibles.
+
+### Agregadas por Trenes (Fase 6, 2026-11-05)
+34. **S34** — Trenes es un tab propio, espejo de Subtes, **sin mapa** en esta fase (la fuente trae la posición del tren, pero no se muestra).
+35. **S35** — Las 6 líneas de SOFSE van en orden fijo: Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa. Belgrano Norte y Urquiza no tienen fuente y no se muestran.
+36. **S36** — El estado de línea y ramal se deriva solo de las alertas, porque el `estado` de la fuente es siempre «Alertas por ramal»: efecto `NO_SERVICE` → «Interrumpida»; `SIGNIFICANT_DELAYS` o `REDUCED_SERVICE` → «Con demoras»; `DETOUR`, `MODIFIED_SERVICE` o `STOP_MOVED` → «Servicio modificado»; `OTHER_EFFECT` y el resto (casi todas las de hoy, como el aviso del CUD) **no cambian el estado** y se muestran como aviso; sin alertas con efecto → «Sin novedades». Nunca «Normal» sin datos. Las reglas finales las fija el adaptador con alertas reales.
+37. **S37** — Los favoritos de tren son de **ramal** y de **estación**, no de línea (una línea tiene varios ramales). El de ramal muestra el estado del ramal; el de estación, el próximo tren por destino.
+38. **S38** — Refresco de Trenes: estado cada 60 s y arribos cada 30 s, o el intervalo de Ajustes si es mayor; los TTL del proxy no dan datos nuevos más seguido.
+39. **S39** — «Hacia X» usa la cabecera del ramal: `sentido` 1 = hacia la cabecera final y 2 = hacia la inicial (deducido de las alertas de la fuente; a confirmar con datos reales).
+40. **S40** — Un tren cancelado no cuenta como el próximo; la forma del dato `cancelacion` no está verificada (en las muestras siempre es `null`).
+41. **S41** — Fuera de horario («No hay trenes programados a esta hora.») se deduce de que la fuente devuelve cero arribos con la fuente viva; a validar.
+42. **S42** — Con la fuente caída Trenes muestra «Sin información» (y «La fuente de datos de trenes no responde.»), nunca «Sin novedades» ni horarios inventados; la atribución de Acerca de dice «Trenes: datos de Trenes Argentinos (SOFSE) a través de una API comunitaria no oficial».
 
 ## Decisiones abiertas transversales
 
