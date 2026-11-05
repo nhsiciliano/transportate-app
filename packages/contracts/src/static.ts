@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { HexColor, IsoDateTime } from './common.js';
 import { LineaColectivoV1 } from './colectivos.js';
 import { LineaSubteId } from './subtes.js';
+import { LineaTrenId } from './trenes.js';
 
 /*
  * Paquete estático versionado en R2 (lo genera tools/gtfs y lo consume la app directamente).
@@ -191,6 +192,66 @@ export const IndiceColectivosArchivoV1 = z.object({
 });
 export type IndiceColectivosArchivoV1 = z.infer<typeof IndiceColectivosArchivoV1>;
 
+// ---------------------------------------------------------------- trenes (Fase 6)
+
+/**
+ * Ramal de una línea de tren (`trenes-lineas.json`). Los ids de ramal y de estación son los
+ * numéricos de SOFSE como string: son lo único que cruza con `/v1/trenes/estaciones/:id/arribos`.
+ */
+export const RamalTrenV1 = z.object({
+  id: z.string().min(1),
+  linea: LineaTrenId,
+  /** Como lo nombra SOFSE («Once-Moreno»). */
+  nombre: z.string().min(1),
+  siglas: z.string().optional(),
+  cabeceraInicial: z.object({ id: z.string().min(1), nombre: z.string().min(1) }),
+  cabeceraFinal: z.object({ id: z.string().min(1), nombre: z.string().min(1) }),
+  electrico: z.boolean(),
+  /** De `cabeceraInicial` a `cabeceraFinal`, en el orden del upstream. */
+  estacionIds: z.array(z.string()).min(2),
+});
+export type RamalTrenV1 = z.infer<typeof RamalTrenV1>;
+
+export const LineaTrenV1 = z.object({
+  id: LineaTrenId,
+  /** `id` de `gerencias` en la fuente actual (SOFSE), por si hay que cruzar con ella. */
+  idGerencia: z.string().min(1),
+  nombre: z.string().min(1),
+  /** Colores de `docs/02c-colores-trenes.md` (la API no los trae). */
+  color: HexColor,
+  colorTexto: HexColor,
+  /** Solo ramales `publico`, en el `orden_ramal` del upstream. */
+  ramales: z.array(RamalTrenV1).min(1),
+});
+export type LineaTrenV1 = z.infer<typeof LineaTrenV1>;
+
+export const EstacionTrenV1 = z.object({
+  id: z.string().min(1),
+  nombre: z.string().min(1),
+  lat: Lat,
+  lon: Lon,
+  lineas: z.array(LineaTrenId).min(1),
+  ramalIds: z.array(z.string()).min(1),
+});
+export type EstacionTrenV1 = z.infer<typeof EstacionTrenV1>;
+
+export const TrenesLineasArchivoV1 = z.object({
+  version: z.literal(1),
+  fuente: z.string(),
+  /** Fecha de captura de los volcados de `tools/sofse-probe` (ISO), para saber cuánto envejeció. */
+  capturadoEn: z.string(),
+  lineas: z.array(LineaTrenV1),
+});
+export type TrenesLineasArchivoV1 = z.infer<typeof TrenesLineasArchivoV1>;
+
+export const TrenesEstacionesArchivoV1 = z.object({
+  version: z.literal(1),
+  fuente: z.string(),
+  capturadoEn: z.string(),
+  estaciones: z.array(EstacionTrenV1),
+});
+export type TrenesEstacionesArchivoV1 = z.infer<typeof TrenesEstacionesArchivoV1>;
+
 // ---------------------------------------------------------------- GeoJSON del paquete
 
 /** Posición GeoJSON `[lon, lat]` (RFC 7946 §3.1.1; una altura opcional se tolera). */
@@ -266,4 +327,6 @@ export const ARCHIVOS_ESTATICOS_V1 = {
   'subte-lineas.json': SubteLineasArchivoV1,
   'subte-estaciones.json': SubteEstacionesArchivoV1,
   'indice-colectivos.json': IndiceColectivosArchivoV1,
+  'trenes-lineas.json': TrenesLineasArchivoV1,
+  'trenes-estaciones.json': TrenesEstacionesArchivoV1,
 } as const;

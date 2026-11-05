@@ -36,6 +36,8 @@ import {
   ParadasArchivoV1,
   SubteEstacionesArchivoV1,
   SubteLineasArchivoV1,
+  TrenesEstacionesArchivoV1,
+  TrenesLineasArchivoV1,
   PosicionesLineaResponseV1,
   PosicionesLineaV1,
   SentidoTrenV1,
@@ -389,6 +391,87 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
       nota: 'semilla',
       capturadoEn: '2026-11-01',
       lineas: [{ lineaId: '1858', linea: '10', empresa: 'LINEA 10 S.A.' }],
+    },
+  ],
+  [
+    'TrenesLineasArchivoV1',
+    TrenesLineasArchivoV1,
+    {
+      version: 1,
+      fuente: 'https://ariedro.dev/api-trenes',
+      capturadoEn: '2026-11-05T12:00:00.000Z',
+      lineas: [
+        {
+          id: 'sarmiento',
+          idGerencia: '1',
+          nombre: 'Sarmiento',
+          color: '#B766C2',
+          colorTexto: '#000000',
+          ramales: [
+            {
+              id: '1',
+              linea: 'sarmiento',
+              nombre: 'Once-Moreno',
+              siglas: 'OM',
+              cabeceraInicial: { id: '293', nombre: 'Once' },
+              cabeceraFinal: { id: '278', nombre: 'Moreno' },
+              electrico: true,
+              estacionIds: ['293', '50', '278'],
+            },
+          ],
+        },
+      ],
+    },
+    // Una línea sin ramales no sirve para nada en la app.
+    {
+      version: 1,
+      fuente: 'x',
+      capturadoEn: '2026-11-05',
+      lineas: [
+        {
+          id: 'roca',
+          idGerencia: '11',
+          nombre: 'Roca',
+          color: '#FAB700',
+          colorTexto: '#000000',
+          ramales: [],
+        },
+      ],
+    },
+  ],
+  [
+    'TrenesEstacionesArchivoV1',
+    TrenesEstacionesArchivoV1,
+    {
+      version: 1,
+      fuente: 'x',
+      capturadoEn: '2026-11-05',
+      estaciones: [
+        {
+          id: '50',
+          nombre: 'Caballito',
+          lat: -34.619244,
+          lon: -58.443652,
+          lineas: ['sarmiento'],
+          ramalIds: ['1', '111'],
+        },
+      ],
+    },
+    // `linea` suelta en vez de `lineas` (como el error clásico de subtes).
+    {
+      version: 1,
+      fuente: 'x',
+      capturadoEn: '2026-11-05',
+      estaciones: [
+        {
+          id: '50',
+          nombre: 'Caballito',
+          lat: -34.6,
+          lon: -58.4,
+          linea: 'sarmiento',
+          ramalIds: ['1'],
+        },
+      ],
     },
   ],
 ];
