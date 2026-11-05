@@ -13,6 +13,7 @@ import {
   posiciones,
   type Routes,
 } from '../../../../test/subtes/fixtures';
+import { arribosTren, estadoTrenes } from '../../../../test/trenes/fixtures';
 import { FavoritoLiveData, SIN_ARRIBOS, SIN_INFORMACION, useFavoritoLiveData } from '..';
 import type { FavoritoV1 } from '../model';
 
@@ -187,6 +188,106 @@ describe('useFavoritoLiveData', () => {
     });
     const sin = await live({ tipo: 'parada_colectivo', refId: 'p-corrientes' });
     expect(sin.result.current.status).toBe('none');
+  });
+});
+
+describe('useFavoritoLiveData (trenes)', () => {
+  const conTrenes = (extra: Routes = {}): Routes => ({
+    ...defaultRoutes(),
+    '/v1/trenes/estado': () => jsonResponse(estadoTrenes()),
+    ...extra,
+  });
+
+  it('ramal_tren: estado del ramal (no el de la línea)', async () => {
+    const { result } = await live(
+      { tipo: 'ramal_tren', refId: '111' },
+      conTrenes({
+        '/v1/trenes/estado': () =>
+          jsonResponse(
+            estadoTrenes({
+              sarmiento: {
+                estado: 'demorada',
+                ramales: [
+                  { ramalId: '1', nombre: 'Once-Moreno', estado: 'demorada', alertaIds: [] },
+                  { ramalId: '111', nombre: 'Once-Bragado', estado: 'interrumpida', alertaIds: [] },
+                ],
+              },
+            }),
+          ),
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('ok');
+    });
+    expect(result.current.estado).toBe('interrumpida');
+    expect(result.current.primary).toBe('Interrumpida');
+  });
+
+  it('estacion_tren: próximo tren por destino, el más cercano primero', async () => {
+    const { result } = await live(
+      { tipo: 'estacion_tren', refId: '50' },
+      conTrenes({
+        '/v1/trenes/estaciones/50/arribos': () =>
+          jsonResponse(
+            arribosTren('50', [
+              {
+                ramalId: '1',
+                ramal: 'Once-Moreno',
+                destino: 'Moreno',
+                sentido: '1',
+                enSegundos: 420,
+                cancelado: false,
+              },
+              {
+                ramalId: '1',
+                ramal: 'Once-Moreno',
+                destino: 'Once',
+                sentido: '2',
+                enSegundos: 60,
+                cancelado: true,
+              },
+              {
+                ramalId: '1',
+                ramal: 'Once-Moreno',
+                destino: 'Once',
+                sentido: '2',
+                enSegundos: 300,
+                cancelado: false,
+              },
+            ]),
+          ),
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('ok');
+    });
+    expect(result.current.text).toBe('→ Once 5 min · → Moreno 7 min');
+    expect(result.current.primary).toBe('5 min');
+    expect(result.current.primaryIsArribo).toBe(true);
+    expect(result.current.sentido).toBe('Once');
+  });
+
+  it('estacion_tren: huérfano si la estación ya no está en el estático', async () => {
+    const { result } = await live({ tipo: 'estacion_tren', refId: '999999' }, conTrenes());
+    await waitFor(() => {
+      expect(result.current.status).toBe('orphan');
+    });
+    expect(result.current.text).toBe('Esta estación ya no figura en los datos oficiales');
+    expect(result.current.primary).toBe('Ya no figura');
+  });
+
+  it('estacion_tren: 503 → «Sin información»', async () => {
+    const { result } = await live(
+      { tipo: 'estacion_tren', refId: '50' },
+      conTrenes({
+        '/v1/trenes/estaciones/50/arribos': () =>
+          jsonResponse(errorBody('upstream_unavailable'), 503),
+      }),
+    );
+    await waitFor(() => {
+      expect(result.current.status).toBe('error');
+    });
+    expect(result.current.primary).toBe(SIN_INFORMACION);
   });
 });
 

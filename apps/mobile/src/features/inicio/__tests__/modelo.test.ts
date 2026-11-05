@@ -3,7 +3,7 @@
 import type { FavoritoV1 } from '@/features/favoritos';
 import type { LineaConEstado } from '@/features/subtes';
 
-import { elegirLider, resumenSubte, SUBTE_NORMAL } from '../InicioScreen';
+import { elegirLider, hrefDeFavorito, resumenSubte, SUBTE_NORMAL } from '../InicioScreen';
 
 const linea = (
   key: string,
@@ -76,7 +76,33 @@ describe('elegirLider', () => {
     expect(elegirLider(visibles, obelisco, undefined, undefined)).toBe('linea_subte:D');
   });
 
+  it('una estación de tren compite por cercanía; un ramal no', () => {
+    const conTren = [
+      fav({ tipo: 'ramal_tren', refId: '1', nombre: 'Once – Moreno' }),
+      ...visibles,
+      fav({ tipo: 'estacion_tren', refId: '332', nombre: 'Retiro (LGM)' }),
+    ];
+    const trenes = new Map([['332', { lat: -34.6036, lon: -58.3815 }]]);
+    // Sin la parada (justo en el Obelisco), gana Retiro a 14 m antes que la estación lejana.
+    expect(elegirLider(conTren, obelisco, estaciones, undefined, trenes)).toBe('estacion_tren:332');
+    // Sin posiciones de tren, Retiro no compite.
+    expect(elegirLider(conTren, obelisco, estaciones, undefined)).toBe('estacion_subte:lejos');
+  });
+
   it('sin favoritos: nada', () => {
     expect(elegirLider([], obelisco, estaciones, paradas)).toBeUndefined();
+  });
+});
+
+describe('hrefDeFavorito', () => {
+  it('ramal y estación de tren abren su detalle en el tab Trenes', () => {
+    expect(hrefDeFavorito({ tipo: 'ramal_tren', refId: '111' })).toEqual({
+      pathname: '/trenes/ramal/[id]',
+      params: { id: '111' },
+    });
+    expect(hrefDeFavorito({ tipo: 'estacion_tren', refId: '50' })).toEqual({
+      pathname: '/trenes/estacion/[id]',
+      params: { id: '50' },
+    });
   });
 });
