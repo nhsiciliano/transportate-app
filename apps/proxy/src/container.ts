@@ -1,9 +1,15 @@
 // Composición de dependencias de la app: qué adaptadores usa cada request y el reloj.
-import type { ColectivosAdapter, SubtesAdapter, TransitoAdapter } from './adapters/types';
+import type {
+  ColectivosAdapter,
+  SubtesAdapter,
+  TransitoAdapter,
+  TrenesAdapter,
+} from './adapters/types';
 
 export interface Adapters {
   subtes: SubtesAdapter;
   colectivos: ColectivosAdapter;
+  trenes: TrenesAdapter;
   transito: TransitoAdapter;
 }
 

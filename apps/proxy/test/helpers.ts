@@ -1,8 +1,11 @@
 import type {
+  AlertasTrenV1,
   AlertasV1,
+  ArribosEstacionTrenV1,
   ArribosEstacionV1,
   ArribosParadaV1,
   EnvelopeV1,
+  EstadoLineasTrenV1,
   EstadoLineasV1,
   LineasColectivoV1,
   MetaV1,
@@ -43,6 +46,42 @@ export const alertas: EnvelopeV1<AlertasV1> = wrap(
   { alertas: [] },
   { stale: true, ttlSeconds: 15 },
 );
+export const estadoTrenes: EnvelopeV1<EstadoLineasTrenV1> = wrap(
+  {
+    lineas: [
+      {
+        linea: 'sarmiento',
+        nombre: 'Sarmiento',
+        color: '#B766C2',
+        colorTexto: '#000000',
+        estado: 'demorada',
+        resumen: 'El tren de las 08:11hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
+        alertaIds: ['99284'],
+        ramales: [
+          { ramalId: '51', nombre: 'Moreno-Mercedes', estado: 'demorada', alertaIds: ['99284'] },
+        ],
+      },
+    ],
+  },
+  { ttlSeconds: 60 },
+);
+export const alertasTrenes: EnvelopeV1<AlertasTrenV1> = wrap(
+  {
+    alertas: [
+      {
+        id: '99284',
+        linea: 'sarmiento',
+        ramalId: '51',
+        sentido: '2',
+        titulo: 'El tren de las 08:11hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
+        descripcion: 'El tren de las 08:11hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
+        efecto: 'SIGNIFICANT_DELAYS',
+        desde: '2026-11-05T11:32:00.000Z',
+      },
+    ],
+  },
+  { ttlSeconds: 60 },
+);
 export const lineas: EnvelopeV1<LineasColectivoV1> = wrap({
   lineas: [{ lineaId: '1858', linea: '10', empresa: 'LINEA 10 S.A.' }],
 });
@@ -51,11 +90,12 @@ export interface Calls {
   arribosSubte: string[];
   posiciones: string[];
   arribosColectivo: string[];
+  arribosTren: string[];
 }
 
 /** Adaptadores falsos que devuelven sobres fijos y registran los ids recibidos. */
 export function fakeAdapters(
-  calls: Calls = { arribosSubte: [], posiciones: [], arribosColectivo: [] },
+  calls: Calls = { arribosSubte: [], posiciones: [], arribosColectivo: [], arribosTren: [] },
 ): Adapters {
   return {
     subtes: {
@@ -75,6 +115,14 @@ export function fakeAdapters(
       arribos: (paradaId): Promise<EnvelopeV1<ArribosParadaV1>> => {
         calls.arribosColectivo.push(paradaId);
         return Promise.resolve(wrap({ paradaId, arribos: [] }));
+      },
+    },
+    trenes: {
+      estadoLineas: () => Promise.resolve(estadoTrenes),
+      alertas: () => Promise.resolve(alertasTrenes),
+      arribos: (estacionId): Promise<EnvelopeV1<ArribosEstacionTrenV1>> => {
+        calls.arribosTren.push(estacionId);
+        return Promise.resolve(wrap({ estacionId, arribos: [] }, { ttlSeconds: 30 }));
       },
     },
     transito: createTransitoAdapter(),

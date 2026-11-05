@@ -11,6 +11,7 @@ import { index } from './routes/index';
 import { staticRoutes } from './routes/static';
 import { subtes } from './routes/subtes';
 import { transito } from './routes/transito';
+import { trenes } from './routes/trenes';
 
 export type { AppEnv } from './container';
 
@@ -26,6 +27,7 @@ export function createApp(deps: AppDeps): Hono<AppEnv> {
   app.route('/v1/health', health);
   app.route('/v1/subtes', subtes);
   app.route('/v1/colectivos', colectivos);
+  app.route('/v1/trenes', trenes);
   app.route('/v1/transito', transito);
   app.route('/v1/static', staticRoutes);
 

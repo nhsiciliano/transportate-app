@@ -1,9 +1,12 @@
 import {
   AlertasResponseV1,
+  AlertasTrenResponseV1,
   ArribosEstacionResponseV1,
+  ArribosEstacionTrenResponseV1,
   ArribosParadaResponseV1,
   ErrorV1,
   EstadoLineasResponseV1,
+  EstadoLineasTrenResponseV1,
   LineasColectivoResponseV1,
   PosicionesLineaResponseV1,
 } from '@transportate/contracts';
@@ -15,7 +18,7 @@ import { resetEdgeCacheMemory } from '../src/sources/edge-cached';
 import { alertas, type Calls, estado, FAKE_SECRET, fakeAdapters, lineas, testEnv } from './helpers';
 
 function setup() {
-  const calls: Calls = { arribosSubte: [], posiciones: [], arribosColectivo: [] };
+  const calls: Calls = { arribosSubte: [], posiciones: [], arribosColectivo: [], arribosTren: [] };
   const app = createApp({ adapters: fakeAdapters(calls) });
   const get = (path: string, headers: Record<string, string> = {}) =>
     app.request(path, { headers }, testEnv());
@@ -26,6 +29,9 @@ const casos: [string, z.ZodType][] = [
   ['/v1/subtes/estado', EstadoLineasResponseV1],
   ['/v1/subtes/alertas', AlertasResponseV1],
   ['/v1/subtes/estaciones/1059N/arribos', ArribosEstacionResponseV1],
+  ['/v1/trenes/estado', EstadoLineasTrenResponseV1],
+  ['/v1/trenes/alertas', AlertasTrenResponseV1],
+  ['/v1/trenes/estaciones/332/arribos', ArribosEstacionTrenResponseV1],
   ['/v1/colectivos/lineas', LineasColectivoResponseV1],
   ['/v1/colectivos/lineas/1858/posiciones', PosicionesLineaResponseV1],
   ['/v1/colectivos/paradas/ba-1524-defensa/arribos', ArribosParadaResponseV1],
@@ -82,10 +88,12 @@ describe('rutas de datos v1', () => {
     await get('/v1/subtes/estaciones/1059N/arribos?foo=bar');
     await get('/v1/colectivos/lineas/1858/posiciones');
     await get('/v1/colectivos/paradas/S00085138/arribos');
+    await get('/v1/trenes/estaciones/332/arribos?cantidad=50');
     expect(calls).toEqual({
       arribosSubte: ['1059N'],
       posiciones: ['1858'],
       arribosColectivo: ['S00085138'],
+      arribosTren: ['332'],
     });
   });
 
@@ -93,6 +101,8 @@ describe('rutas de datos v1', () => {
     '/v1/subtes/estaciones/1059N%24/arribos',
     `/v1/colectivos/lineas/${'1'.repeat(65)}/posiciones`,
     '/v1/colectivos/paradas/a.b/arribos',
+    '/v1/trenes/estaciones/x%20y/arribos',
+    '/v1/trenes/estaciones/332%2F1/arribos',
   ])('param inválido en %s → 400 bad_request', async (path) => {
     const { get, calls } = setup();
     const res = await get(path);
@@ -100,7 +110,10 @@ describe('rutas de datos v1', () => {
     expect(res.headers.get('Cache-Control')).toBe('no-store');
     expect(ErrorV1.parse(await res.json()).error.code).toBe('bad_request');
     expect(
-      calls.arribosSubte.length + calls.posiciones.length + calls.arribosColectivo.length,
+      calls.arribosSubte.length +
+        calls.posiciones.length +
+        calls.arribosColectivo.length +
+        calls.arribosTren.length,
     ).toBe(0);
   });
 
@@ -119,6 +132,23 @@ describe('rutas de datos v1', () => {
     expect(res.status).toBe(200);
     const body = await res.json<{ rutas: string[] }>();
     expect(body.rutas).toEqual([...V1_ROUTES]);
+    expect(body.rutas).toEqual(
+      expect.arrayContaining([
+        '/v1/trenes/estado',
+        '/v1/trenes/alertas',
+        '/v1/trenes/estaciones/:estacionId/arribos',
+      ]),
+    );
+  });
+
+  it('las rutas de trenes usan el TTL del adaptador (60 s estado, 30 s arribos)', async () => {
+    const { get } = setup();
+    expect((await get('/v1/trenes/estado')).headers.get('Cache-Control')).toBe(
+      'public, max-age=60, stale-while-revalidate=120',
+    );
+    expect((await get('/v1/trenes/estaciones/50/arribos')).headers.get('Cache-Control')).toBe(
+      'public, max-age=30, stale-while-revalidate=60',
+    );
   });
 });
 
@@ -152,5 +182,68 @@ describe('createAdapters (adaptadores reales, sin red)', () => {
     const alertasRes = await app.request('/v1/subtes/alertas', {}, testEnv());
     expect(alertasRes.status).toBe(503);
     expect(await alertasRes.text()).not.toContain(FAKE_SECRET);
+  });
+
+  it('trenes: fuente caída sin caché → /estado 200 sin_datos + stale, /alertas y /arribos 503, sin credenciales', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('Not Found', { status: 500 }));
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const { createAdapters } = await import('../src/adapters/index');
+    const app = createApp({ adapters: createAdapters });
+
+    const res = await app.request('/v1/trenes/estado', {}, testEnv());
+    expect(res.status).toBe(200);
+    expect(res.headers.get('X-Transportate-Stale')).toBe('1');
+    const body = EstadoLineasTrenResponseV1.parse(await res.json());
+    expect(body.data.lineas.map((l) => l.linea)).toEqual([
+      'roca',
+      'sarmiento',
+      'mitre',
+      'san-martin',
+      'belgrano-sur',
+      'tren-de-la-costa',
+    ]);
+    expect(new Set(body.data.lineas.map((l) => l.estado))).toEqual(new Set(['sin_datos']));
+
+    const hosts = new Set(
+      fetchSpy.mock.calls.map(([input]) => {
+        const url = new URL(input instanceof Request ? input.url : String(input));
+        expect(url.searchParams.has('client_secret')).toBe(false);
+        return `${url.origin}${url.pathname.split('/').slice(0, 2).join('/')}`;
+      }),
+    );
+    expect(hosts).toEqual(new Set(['https://ariedro.dev/api-trenes']));
+
+    const alertasRes = await app.request('/v1/trenes/alertas', {}, testEnv());
+    expect(alertasRes.status).toBe(503);
+    expect(ErrorV1.parse(await alertasRes.json()).error.message).toBe(
+      'Servicio de trenes no disponible',
+    );
+    const arribosRes = await app.request('/v1/trenes/estaciones/50/arribos', {}, testEnv());
+    expect(arribosRes.status).toBe(503);
+  });
+
+  it('trenes con TRENES_ENABLED distinto de "true": no llama a la fuente', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const { createAdapters } = await import('../src/adapters/index');
+    const app = createApp({ adapters: createAdapters });
+    const env = testEnv({ TRENES_ENABLED: 'false' } as unknown as Partial<CloudflareBindings>);
+
+    const res = await app.request('/v1/trenes/estado', {}, env);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('X-Transportate-Stale')).toBe('1');
+    const body = EstadoLineasTrenResponseV1.parse(await res.json());
+    expect(body.data.lineas.every((l) => l.estado === 'sin_datos' && l.ramales.length === 0)).toBe(
+      true,
+    );
+    const alertasRes = await app.request('/v1/trenes/alertas', {}, env);
+    expect(alertasRes.status).toBe(503);
+    expect(ErrorV1.parse(await alertasRes.json()).error.message).toBe(
+      'Trenes no disponible por ahora',
+    );
+    expect((await app.request('/v1/trenes/estaciones/50/arribos', {}, env)).status).toBe(503);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
