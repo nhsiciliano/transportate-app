@@ -149,7 +149,11 @@ function peorSeveridad(xs: readonly Severidad[]): Severidad | null {
   return peor;
 }
 
-/** Alerta de SOFSE → v1 (`undefined` si su línea no es una de las seis). */
+/** Una alerta de ramal aporta a la línea como mucho `demorada`. */
+function topeDemorada(s: Severidad): Severidad {
+  return s === 'interrumpida' ? 'demorada' : s;
+}
+
 /**
  * Alerta de SOFSE → v1. Sin `linea_id` (o sin `ramal_id`) toma la línea (o el ramal) de la lista
  * donde vino; con un `linea_id` que no es de las seis líneas, `undefined`.
@@ -317,7 +321,15 @@ export function createTrenesAdapter(deps: TrenesDeps): TrenesAdapter {
         const { deLinea, porRamal } = alertasDeLinea(l, gerencia, ramalesFuente ?? [], t);
         const sevMensaje = severidadEstadoSofse(gerencia.estado?.mensaje);
         const peorAlerta = deLinea[0];
-        const sevLinea = peorSeveridad([sevMensaje, ...(peorAlerta ? [peorAlerta.severidad] : [])]);
+        // Solo las alertas de línea y el `estado.mensaje` pueden poner la línea en `interrumpida`:
+        // un ramal cortado (un regional con obras) no apaga a los demás. Las de ramal aportan como
+        // mucho `demorada` a la línea.
+        const sevLinea = peorSeveridad([
+          sevMensaje,
+          ...deLinea.map((a) =>
+            a.v1.ramalId === undefined ? a.severidad : topeDemorada(a.severidad),
+          ),
+        ]);
         const linea: EstadoLineaTrenV1 = {
           ...base,
           estado: estadoDe(sevLinea),
@@ -332,7 +344,11 @@ export function createTrenesAdapter(deps: TrenesDeps): TrenesAdapter {
         ) {
           linea.resumen = mensaje;
         } else if (peorAlerta) {
-          linea.resumen = peorAlerta.v1.titulo;
+          // Si la más severa es de un ramal, el resumen dice de cuál.
+          const ramalDeAlerta = ramalesFuente?.find((r) => String(r.id) === peorAlerta.v1.ramalId);
+          linea.resumen = ramalDeAlerta
+            ? `${normalizarTexto(ramalDeAlerta.nombre)}: ${peorAlerta.v1.titulo}`
+            : peorAlerta.v1.titulo;
         }
         // Alertas de la línea que no son de un ramal: pesan sobre todos sus ramales.
         const generales = deLinea.filter((a) => a.v1.ramalId === undefined);

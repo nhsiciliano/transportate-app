@@ -111,7 +111,7 @@ describe('TrenesAdapter.estadoLineas (fixture real 2026-11-05 08:56)', () => {
     expect(EstadoLineasTrenResponseV1.parse(res)).toEqual(res);
     expect(res.data.lineas.map((l) => l.linea)).toEqual(ORDEN);
     expect(Object.fromEntries(res.data.lineas.map((l) => [l.linea, l.estado]))).toEqual({
-      roca: 'interrumpida', // ramal Cañuelas-Lobos «interrumpido por obras»
+      roca: 'demorada', // ramal Constitución-Lobos «interrumpido por obras»: un ramal no apaga la línea
       sarmiento: 'demorada', // Moreno-Mercedes con SIGNIFICANT_DELAYS
       mitre: 'normal',
       'san-martin': 'normal',
@@ -129,7 +129,7 @@ describe('TrenesAdapter.estadoLineas (fixture real 2026-11-05 08:56)', () => {
     // 99285 (criticidad 2) antes que 99284 (criticidad 3): ambas demoras.
     expect(sarmiento?.alertaIds.slice(0, 2)).toEqual(['99285', '99284']);
     expect(sarmiento?.resumen).toBe(
-      'El tren de las 08:42 hs. partiendo desde Moreno hacia Luján ha sido cancelado por problemas técnicos en Moreno.',
+      'Moreno-Mercedes: El tren de las 08:42 hs. partiendo desde Moreno hacia Luján ha sido cancelado por problemas técnicos en Moreno.',
     );
     expect(sarmiento?.ramales.map((r) => [r.ramalId, r.nombre, r.estado])).toEqual([
       ['1', 'Once-Moreno', 'normal'],
@@ -142,15 +142,18 @@ describe('TrenesAdapter.estadoLineas (fixture real 2026-11-05 08:56)', () => {
     expect(mercedes?.alertaIds).toEqual(['99285', '99284', '98462']);
   });
 
-  it('Roca: 12 ramales públicos y solo Cañuelas-Lobos interrumpido', async () => {
+  it('Roca: un solo ramal interrumpido no apaga la línea; el resumen nombra el ramal', async () => {
     const { trenes } = adapter(CAPTURA_MS);
     const roca = (await trenes.estadoLineas()).data.lineas[0];
+    expect(roca?.estado).toBe('demorada');
     expect(roca?.ramales).toHaveLength(12);
+    // La alerta más severa es de un ramal (55, Constitución-Lobos): el resumen lo antepone.
     expect(roca?.resumen).toBe(
-      'El servicio Cañuelas - Lobos se encuentra interrumpido por obras de renovación de vías.',
+      'Constitución-Lobos: El servicio Cañuelas - Lobos se encuentra interrumpido por obras de renovación de vías.',
     );
-    const noNormales = roca?.ramales.filter((r) => r.estado !== 'normal').map((r) => r.ramalId);
-    expect(noNormales).toEqual(['55']);
+    // El estado de cada ramal no cambia: solo el 55 está interrumpido y los otros 11 andan.
+    const noNormales = roca?.ramales.filter((r) => r.estado !== 'normal');
+    expect(noNormales?.map((r) => [r.ramalId, r.estado])).toEqual([['55', 'interrumpida']]);
   });
 
   it('sin alertas que cambien el estado, la línea es normal y el resumen es la informativa', async () => {
@@ -158,6 +161,70 @@ describe('TrenesAdapter.estadoLineas (fixture real 2026-11-05 08:56)', () => {
     const mitre = (await trenes.estadoLineas()).data.lineas.find((l) => l.linea === 'mitre');
     expect(mitre).toMatchObject({ estado: 'normal', alertaIds: ['98355'] });
     expect(mitre?.resumen).toBe('Las personas con CUD pueden viajar en tren sin costo con SUBE.');
+  });
+
+  it('alerta de línea NO_SERVICE → la línea queda interrumpida (y todos sus ramales)', async () => {
+    const bodies = red();
+    const g = clone(gerenciasFixture);
+    const mitre = g.find((x) => x.id === 5);
+    if (!mitre) throw new Error('falta Mitre');
+    (mitre as unknown as { alerta: unknown[] }).alerta = [
+      {
+        id: 7001,
+        linea_id: 5,
+        ramal_id: null,
+        estacion_id: null,
+        sentido: null,
+        causa_gtfs: 'STRIKE',
+        efecto_gtfs: 'NO_SERVICE',
+        contenido: 'Servicio suspendido en toda la línea por medida de fuerza.',
+        habilitado: 1,
+        vigencia_desde: '2026-11-05 08:00:00',
+        vigencia_hasta: null,
+        criticidad_orden: 2,
+      },
+    ];
+    bodies['trenes:gerencias'] = g;
+    const { trenes } = adapter(CAPTURA_MS, bodies);
+    const res = (await trenes.estadoLineas()).data.lineas.find((l) => l.linea === 'mitre');
+    expect(res?.estado).toBe('interrumpida');
+    // Es de la línea, no de un ramal: el resumen no lleva prefijo.
+    expect(res?.resumen).toBe('Servicio suspendido en toda la línea por medida de fuerza.');
+    expect(res?.ramales.length).toBeGreaterThan(0);
+    expect(res?.ramales.every((r) => r.estado === 'interrumpida')).toBe(true);
+  });
+
+  it('alerta de ramal NO_SERVICE → la línea queda demorada con resumen prefijado y el ramal interrumpido', async () => {
+    const bodies = red();
+    const mitre = clone(ramales5);
+    const tigre = mitre.find((r) => r.id === 5);
+    if (!tigre) throw new Error('falta Retiro-Tigre');
+    (tigre as unknown as { alerta: unknown[] }).alerta = [
+      {
+        id: 7002,
+        linea_id: 5,
+        ramal_id: 5,
+        estacion_id: null,
+        sentido: null,
+        causa_gtfs: 'CONSTRUCTION',
+        efecto_gtfs: 'NO_SERVICE',
+        contenido: 'Servicio interrumpido entre Retiro y Tigre por obras.',
+        habilitado: 1,
+        vigencia_desde: '2026-11-05 08:00:00',
+        vigencia_hasta: null,
+        criticidad_orden: 2,
+      },
+    ];
+    bodies['trenes:ramales:5'] = mitre;
+    const { trenes } = adapter(CAPTURA_MS, bodies);
+    const res = (await trenes.estadoLineas()).data.lineas.find((l) => l.linea === 'mitre');
+    expect(res?.estado).toBe('demorada');
+    expect(res?.resumen).toBe(
+      'Retiro-Tigre: Servicio interrumpido entre Retiro y Tigre por obras.',
+    );
+    expect(res?.ramales.find((r) => r.ramalId === '5')?.estado).toBe('interrumpida');
+    expect(res?.ramales.find((r) => r.ramalId === '9')?.estado).toBe('normal');
+    expect(res?.alertaIds).toContain('7002');
   });
 
   it('un ramal con alerta de demora pone la línea en demorada', async () => {
@@ -185,7 +252,9 @@ describe('TrenesAdapter.estadoLineas (fixture real 2026-11-05 08:56)', () => {
     const { trenes } = adapter(CAPTURA_MS, bodies);
     const res = (await trenes.estadoLineas()).data.lineas.find((l) => l.linea === 'mitre');
     expect(res?.estado).toBe('demorada');
-    expect(res?.resumen).toBe('Servicio con frecuencia reducida entre Retiro y Tigre.');
+    expect(res?.resumen).toBe(
+      'Retiro-Tigre: Servicio con frecuencia reducida entre Retiro y Tigre.',
+    );
     expect(res?.ramales.find((r) => r.ramalId === '5')?.estado).toBe('demorada');
     expect(res?.ramales.find((r) => r.ramalId === '9')?.estado).toBe('normal');
   });
