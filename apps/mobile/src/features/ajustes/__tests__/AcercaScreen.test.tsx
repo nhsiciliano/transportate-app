@@ -5,7 +5,13 @@ import { AcercaScreen, describeVersion, PRIVACIDAD_BULLETS } from '@/features/aj
 import { dark, fontFamily, light } from '@/shared/theme';
 
 import { renderThemed } from '../../../shared/ui/__fixtures__/renderThemed';
-import { CC_LICENSE_URL, DATOS_ABIERTOS_URL, DISENO_TEXTO } from '../AcercaScreen';
+import {
+  CC_LICENSE_URL,
+  DATOS_ABIERTOS_URL,
+  DISENO_TEXTO,
+  TRENES_ATRIBUCION,
+  TRENES_FUENTE_URL,
+} from '../AcercaScreen';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -140,6 +146,33 @@ describe('AcercaScreen', () => {
     expect(
       screen.getByText('Transportate no es una app oficial del Gobierno de la Ciudad.'),
     ).toBeOnTheScreen();
+  });
+
+  it('atribuye los datos de trenes a SOFSE a través de una API comunitaria no oficial', async () => {
+    await renderThemed(<AcercaScreen />);
+    expect(TRENES_ATRIBUCION).toBe(
+      'Trenes: datos de Trenes Argentinos (SOFSE) a través de una API comunitaria no oficial.',
+    );
+    // Mismo bloque y estilo que la atribución al GCBA: párrafo de lectura 17/26.
+    expect(screen.getByText(TRENES_ATRIBUCION)).toHaveStyle({
+      fontFamily: fontFamily.text[400],
+      fontSize: 17,
+      lineHeight: 26,
+      color: light.text.primary,
+    });
+  });
+
+  it('el enlace a la fuente de trenes abre el repositorio de la API comunitaria', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    await renderThemed(<AcercaScreen />);
+    const link = screen.getByRole('link', { name: 'API comunitaria de trenes' });
+    expect(
+      within(link).getByTestId('fila-externo', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    await user.press(link);
+    expect(open).toHaveBeenLastCalledWith(TRENES_FUENTE_URL);
+    expect(TRENES_FUENTE_URL).toBe('https://github.com/ariedro/api-trenes');
   });
 
   it('lista la privacidad en bullets, el mapa y el diseño', async () => {

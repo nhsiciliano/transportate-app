@@ -1,7 +1,8 @@
 // Acerca de (tarea 4.10; brief `docs/briefs/06-ajustes.md`, §3): lectura corta de 150–250
 // palabras. Nombre, versión y build; de dónde salen los datos (CC BY 2.5 AR, S27: no es una app
 // oficial); privacidad en bullets (`docs/05-privacidad.md:89-90`); mapa; diseño; y la pantalla de
-// licencias de terceros. Sin contacto ni "reportar un problema" (F4-ajustes-3).
+// licencias de terceros. La atribución de trenes (fuente comunitaria no oficial, Fase 6) va en
+// «Datos», con su enlace a la fuente. Sin contacto ni "reportar un problema" (F4-ajustes-3).
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Image, Linking, ScrollView, View } from 'react-native';
@@ -15,6 +16,7 @@ import appIcon from '../../../assets/images/icon.png';
 
 export const CC_LICENSE_URL = 'https://creativecommons.org/licenses/by/2.5/ar/';
 export const DATOS_ABIERTOS_URL = 'https://www.buenosaires.gob.ar/datosabiertos';
+export const TRENES_FUENTE_URL = 'https://github.com/ariedro/api-trenes';
 
 export const PRIVACIDAD_BULLETS = [
   'No necesitás crear una cuenta.',
@@ -23,6 +25,9 @@ export const PRIVACIDAD_BULLETS = [
   'No medimos ni rastreamos lo que hacés.',
 ] as const;
 
+/** Copy oficial de la atribución de trenes (`PRODUCT.md`, Brand Commitments). */
+export const TRENES_ATRIBUCION =
+  'Trenes: datos de Trenes Argentinos (SOFSE) a través de una API comunitaria no oficial.';
 export const MAPA_ATRIBUCION =
   'Mapa base: © OpenStreetMap contributors, © OpenMapTiles, tiles de OpenFreeMap.';
 export const MAPA_PRIVACIDAD =
@@ -101,6 +106,7 @@ export function AcercaScreen() {
           publicados bajo licencia Creative Commons Atribución 2.5 Argentina. Las paradas de
           colectivo salen del catálogo «Colectivos: paradas» de BA Data, con la misma licencia.
         </Parrafo>
+        <Parrafo>{TRENES_ATRIBUCION}</Parrafo>
         <Parrafo>Transportate no es una app oficial del Gobierno de la Ciudad.</Parrafo>
         <Parrafo>
           Los datos pueden tardar en actualizarse o fallar: siempre te mostramos hace cuánto se
@@ -123,6 +129,15 @@ export function AcercaScreen() {
             titleTone="link"
             onPress={() => {
               openLink(DATOS_ABIERTOS_URL);
+            }}
+          />
+          <Row
+            title="API comunitaria de trenes"
+            role="link"
+            trailing="externo"
+            titleTone="link"
+            onPress={() => {
+              openLink(TRENES_FUENTE_URL);
             }}
           />
         </Section>
