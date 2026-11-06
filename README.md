@@ -1,19 +1,19 @@
 # Transportate
 
-App móvil (iOS y Android, Expo) con **colectivos, subte y tránsito de CABA en tiempo real**, sin cuentas, sin analytics y con la ubicación solo en el teléfono. Un proxy en Cloudflare Workers esconde las credenciales del GCBA, cachea y le entrega a la app un contrato JSON propio.
+App móvil (iOS y Android, Expo) con **colectivos, subte y trenes del área metropolitana de Buenos Aires en tiempo real**, sin cuentas, sin analytics y con la ubicación solo en el teléfono. Un proxy en Cloudflare Workers esconde las credenciales del GCBA, cachea, aísla las fuentes y le entrega a la app un contrato JSON propio.
 
-**Estado: Fase 4 (features) cerrada técnicamente el 2026-11-03, pendiente de validación en el iPhone; Fase 5 (pulido y escalado) sin iniciar.** La Fase 3 la validó el usuario el 2026-11-03 en un iPhone con el dev build. El proxy (Fase 2) tiene las rutas `/v1/*` con caché, rate limit, estáticos desde R2 y los adaptadores de subte y colectivos, con los contratos v1 en `packages/contracts`. `apps/mobile` ya consume el proxy: Inicio con el estado del subte y los favoritos, Subtes (raíz, línea, estación y mapa de la red), Colectivos (búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real), Favoritos (alias, Deshacer, búsqueda y reorden por arrastre) y Ajustes, Acerca de y Licencias, con tema Obelisco claro y oscuro, MapLibre, ubicación solo en el teléfono y datos guardados con MMKV. Tránsito sigue oculto (no hay fuente de cortes). Hay 760 tests que corren (contracts 74, proxy 86, app 600; 3 `skipped`). Falta probar lo nuevo en un dev build real: la guía está en [`docs/11-prueba-manual.md`](docs/11-prueba-manual.md). Plan y fases: [`docs/00-plan.md`](docs/00-plan.md); qué se hizo en cada fase: [`docs/bitacora.md`](docs/bitacora.md).
+**Estado (2026-11-06): Fase 6 (Trenes) integrada en `main`, pendiente de la prueba del usuario en el iPhone; Fase 5 (rediseño «Señalética de terminal») mergeada y validada en el teléfono, a falta de la revisión final de diseño.** La app tiene cuatro tabs nativas, Inicio, Colectivos, Subtes y Trenes, y Favoritos se abre con la estrella del header de Inicio. Inicio muestra el estado del subte y los favoritos con dato vivo; Subtes tiene raíz, línea, estación y mapa de la red; Colectivos, búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real; Trenes, tablero de las 6 líneas de Trenes Argentinos (Roca, Sarmiento, Mitre, San Martín, Belgrano Sur y Tren de la Costa), ramales, estaciones con arribos por destino y favoritos de ramal y estación; Favoritos, con alias, Deshacer, búsqueda y reorden por arrastre; y Ajustes, Acerca de y Licencias. Tema Obelisco claro y oscuro, Fira Sans, MapLibre, MMKV. Tránsito sigue oculto (no hay fuente de cortes). Hay 1.154 tests (contratos 116, proxy 130, `tools/gtfs` 104, app 804). El paquete estático (versión `6abe94f97629`) ya está en R2; el Worker todavía no está desplegado. La guía de prueba en el teléfono está en [`docs/11-prueba-manual.md`](docs/11-prueba-manual.md). Plan y fases: [`docs/00-plan.md`](docs/00-plan.md); qué se hizo en cada fase: [`docs/bitacora.md`](docs/bitacora.md).
 
 ## Estructura del repo
 
 | Carpeta | Qué hay |
 |---|---|
-| [`apps/mobile/`](apps/mobile/README.md) | App iOS/Android con Expo SDK 58 y Expo Router (base de la Fase 3 y features de la Fase 4 listas). |
-| [`apps/proxy/`](apps/proxy/README.md) | Worker de Cloudflare con Hono 4: rutas `/v1/*`, adaptadores, caché, rate limit, estáticos desde R2. |
-| `packages/contracts/` | Esquemas Zod 4 del JSON v1 y tipos compartidos entre proxy y app. |
-| [`tools/`](tools/README.md) | Herramientas de investigación y preprocesado (paquetes npm sueltos, fuera del workspace pnpm). |
+| [`apps/mobile/`](apps/mobile/README.md) | App iOS/Android con Expo SDK 58 y Expo Router: features por carpeta en `src/features/` (inicio, colectivos, subtes, trenes, favoritos, ajustes) y UI compartida en `src/shared/`. |
+| [`apps/proxy/`](apps/proxy/README.md) | Worker de Cloudflare con Hono 4: rutas `/v1/*` (subtes, colectivos, trenes, estáticos), adaptadores por fuente, caché, rate limit, R2. |
+| `packages/contracts/` | Esquemas Zod 4 del JSON v1 (incluidos trenes y el paquete estático) y tipos compartidos entre proxy y app. |
+| [`tools/`](tools/README.md) | Herramientas de investigación y preprocesado (paquetes npm sueltos, fuera del workspace pnpm): `gtfs` (paquete estático), `sofse-probe` (volcados de la fuente de trenes), `contraste`, etc. |
 | [`docs/`](docs/README.md) | Toda la documentación: plan, API, arquitectura, escalabilidad, privacidad, ADR, bitácora. |
-| `PRODUCT.md` | Contexto de producto y diseño (lo lee el skill Impeccable desde la raíz). |
+| `PRODUCT.md`, `DESIGN.md` | Contexto de producto y sistema de diseño (los lee el skill Impeccable desde la raíz; los contratos de dirección por pantalla están en `apps/mobile/.impeccable/surfaces/`). |
 
 El workspace pnpm incluye solo `apps/*` y `packages/*` (`pnpm-workspace.yaml`).
 
@@ -66,7 +66,7 @@ cd apps/mobile && pnpm ios                    # o: pnpm android
 
 La guía completa está en [`apps/mobile/README.md`](apps/mobile/README.md): builds con EAS, la variable `EXPO_PUBLIC_API_URL`, los tests y la estructura de rutas.
 
-## Paquete estático (paradas, líneas, subte)
+## Paquete estático (paradas, líneas, subte, trenes)
 
 La búsqueda y las paradas cercanas se resuelven en el teléfono contra JSON preprocesado que sirve el proxy desde R2. Lo genera `tools/gtfs`, que es un paquete npm standalone:
 
@@ -77,7 +77,7 @@ npm run build        # genera out/ (JSON versionado + manifest.json); necesita l
 ./upload-r2.sh       # sube out/ al bucket R2 (requiere wrangler login; DRY_RUN=1 para ensayar)
 ```
 
-Las entradas necesarias, las salidas y las decisiones están en [`tools/gtfs/README.md`](tools/gtfs/README.md).
+Los archivos de trenes (`trenes-lineas.json`, `trenes-estaciones.json`) salen de los volcados que hace `tools/sofse-probe` de la fuente de trenes; los colores de las líneas están en [`docs/02c-colores-trenes.md`](docs/02c-colores-trenes.md). Las entradas necesarias, las salidas y las decisiones están en [`tools/gtfs/README.md`](tools/gtfs/README.md).
 
 ## Despliegue
 
@@ -89,7 +89,7 @@ Sin cuentas, sin analytics, sin tracking; los favoritos y la ubicación no salen
 
 ## Datos y atribución
 
-Los datos de transporte provienen de los datos abiertos del **Gobierno de la Ciudad de Buenos Aires** ([API Transporte](https://apitransporte.buenosaires.gob.ar/) y [BA Data](https://data.buenosaires.gob.ar/)), publicados bajo licencia [**CC BY 2.5 AR**](https://creativecommons.org/licenses/by/2.5/ar/): se reconoce autoría, fuente y licencia. Transportate es un proyecto independiente: no está desarrollado ni respaldado por el GCBA. El mapa base usa datos de OpenStreetMap (atribución en la app, ver [`docs/05-privacidad.md`](docs/05-privacidad.md)).
+Los datos de colectivos y subte provienen de los datos abiertos del **Gobierno de la Ciudad de Buenos Aires** ([API Transporte](https://apitransporte.buenosaires.gob.ar/) y [BA Data](https://data.buenosaires.gob.ar/)), publicados bajo licencia [**CC BY 2.5 AR**](https://creativecommons.org/licenses/by/2.5/ar/): se reconoce autoría, fuente y licencia. Los datos de trenes son de **Trenes Argentinos (SOFSE)** y llegan a través de una [API comunitaria no oficial](https://github.com/ariedro/api-trenes), sin términos ni garantía de servicio (evaluación y riesgos en [`docs/01d-api-trenes-sofse.md`](docs/01d-api-trenes-sofse.md)). Transportate es un proyecto independiente: no está desarrollado ni respaldado por el GCBA ni por Trenes Argentinos. El mapa base usa datos de OpenStreetMap (atribución en la app, ver [`docs/05-privacidad.md`](docs/05-privacidad.md)).
 
 ## Licencia
 

@@ -87,13 +87,14 @@ describe('AcercaScreen · lectura', () => {
     expect(screen.getByText(PRIVACIDAD_BULLETS[0])).toHaveStyle({ fontSize: 17, lineHeight: 26 });
   });
 
-  it('«Diseño» nombra Obelisco v2, Fira Sans y la dirección «Señalética de terminal»', async () => {
+  it('«Diseño» nombra Obelisco v2 adaptado a nativo, sin tipografías ni nombres internos', async () => {
+    // Copy fijado por el usuario el 2026-11-06: la dirección «Señalética de terminal» y Fira Sans
+    // son vocabulario del equipo, no de la persona que lee Acerca de.
     await renderThemed(<AcercaScreen />);
     const texto = screen.getByText(DISENO_TEXTO);
     expect(DISENO_TEXTO).toMatch(/Obelisco v2/);
-    expect(DISENO_TEXTO).toMatch(/Fira Sans/);
-    expect(DISENO_TEXTO).toMatch(/«Señalética de terminal»/);
-    expect(DISENO_TEXTO).not.toMatch(/Nunito|Open Sans/);
+    expect(DISENO_TEXTO).toMatch(/adaptado a nativo/);
+    expect(DISENO_TEXTO).not.toMatch(/Fira Sans|Señalética|Nunito|Open Sans/);
     expect(texto).toBeOnTheScreen();
   });
 

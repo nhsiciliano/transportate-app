@@ -2,7 +2,7 @@
 
 App de Transportate para iOS y Android: **Expo SDK 58** (React Native 0.88, React 19.3) con **Expo Router** y TypeScript strict. Consume el proxy de `apps/proxy` con el contrato JSON v1 de `packages/contracts`.
 
-Estado: **Fase 4 cerrada técnicamente (2026-11-03)**. La base (Fase 3) y las features están: Inicio, Subtes (raíz, línea, estación y mapa de la red), Colectivos (búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real), Favoritos (alias, Deshacer, búsqueda, datos vivos y reorden por arrastre), Ajustes, Acerca de y Licencias. Tránsito sigue oculto (tarea 4.8 diferida). Falta validar en el iPhone: [`docs/11-prueba-manual.md`](../../docs/11-prueba-manual.md). Referencia técnica: [`docs/07-app.md`](../../docs/07-app.md); tests: [`docs/09-testing.md`](../../docs/09-testing.md) §8 (600 tests en 59 suites).
+Estado (2026-11-06): **Fase 6 (Trenes) integrada**, Fase 5 («Señalética de terminal») mergeada y validada en el iPhone. Cuatro tabs nativas: Inicio, Colectivos, Subtes y Trenes; Favoritos se abre con la estrella del header de Inicio (`/inicio/favoritos`). Inicio, Subtes (raíz, línea, estación y mapa de la red), Colectivos (búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real), Trenes (tablero de 6 líneas, ramales, estación con arribos por destino), Favoritos (alias, Deshacer, búsqueda, datos vivos y reorden por arrastre), Ajustes, Acerca de y Licencias. Tránsito sigue oculto (tarea 4.8 diferida). Prueba en el iPhone: [`docs/11-prueba-manual.md`](../../docs/11-prueba-manual.md). Referencia técnica: [`docs/07-app.md`](../../docs/07-app.md); tests: [`docs/09-testing.md`](../../docs/09-testing.md) §8 (804 tests en 72 suites).
 
 ## Instalar
 
@@ -175,13 +175,13 @@ apps/mobile/
     │   ├── index.tsx                  # "/" redirige a /inicio
     │   ├── +not-found.tsx
     │   └── (tabs)/
-    │       ├── _layout.tsx            # NativeTabs: Inicio, Colectivos, Subtes, Favoritos (+ Tránsito oculto)
-    │       ├── inicio/                # index, ajustes, acerca, licencias
+    │       ├── _layout.tsx            # NativeTabs: Inicio, Colectivos, Subtes, Trenes (+ Tránsito oculto)
+    │       ├── inicio/                # index, favoritos, ajustes, acerca, licencias
     │       ├── colectivos/            # index, [linea], parada/[id]
     │       ├── subtes/                # index, [linea], estacion/[id], mapa
-    │       ├── favoritos/             # index
+    │       ├── trenes/                # index, [linea], ramal/[id], estacion/[id]
     │       └── transito/              # index (tab oculto)
-    ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, transito, favoritos, ajustes, ubicacion)
+    ├── features/          # lógica y componentes por feature (inicio, colectivos, subtes, trenes, transito, favoritos, ajustes, ubicacion)
     └── shared/            # theme, ui, icons, fonts, storage, api, query, static, map
 ```
 
@@ -189,11 +189,12 @@ apps/mobile/
 
 | URL                                                           | Pantalla                                                    |
 | ------------------------------------------------------------- | ----------------------------------------------------------- |
-| `/inicio`                                                     | Inicio. Botón "Ajustes" en el header                        |
+| `/inicio`                                                     | Inicio. Botones «Favoritos» y «Ajustes» en el header        |
+| `/inicio/favoritos`                                           | Favoritos (stack dentro de Inicio; antes era una tab)       |
 | `/inicio/ajustes` → `/inicio/acerca` → `/inicio/licencias`    | Ajustes → Acerca de → Licencias (stack dentro de Inicio, suposición S2) |
 | `/colectivos`, `/colectivos/:linea`, `/colectivos/parada/:id` | Colectivos → línea → parada                                 |
 | `/subtes`, `/subtes/:linea`, `/subtes/estacion/:id`, `/subtes/mapa` | Subtes → línea → estación; mapa de la red            |
-| `/favoritos`                                                  | Favoritos                                                   |
+| `/trenes`, `/trenes/:linea`, `/trenes/ramal/:id`, `/trenes/estacion/:id` | Trenes → línea → ramal → estación                 |
 
 ## Decisiones
 

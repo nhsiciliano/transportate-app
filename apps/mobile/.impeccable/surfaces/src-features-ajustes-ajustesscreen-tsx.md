@@ -26,4 +26,4 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Decisiones abiertas
 
 - Contacto o «Reportar un problema» en Acerca de: sigue abierto (F4-ajustes-3).
-- El texto «Diseño» de Acerca de nombra la dirección y Fira Sans; la redacción final la revisa el usuario.
+- El texto «Diseño» de Acerca de: **resuelto el 2026-11-06**. El usuario lo fijó en «La app sigue Obelisco v2, el sistema de diseño de la Ciudad de Buenos Aires, adaptado a nativo.», sin nombrar la dirección ni Fira Sans.

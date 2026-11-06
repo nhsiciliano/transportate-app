@@ -33,7 +33,7 @@ export const MAPA_ATRIBUCION =
 export const MAPA_PRIVACIDAD =
   'El mapa se descarga de un servicio externo, que puede ver tu dirección IP y la zona que mirás.';
 export const DISENO_TEXTO =
-  'La app sigue Obelisco v2, el sistema de diseño de la Ciudad de Buenos Aires, adaptado a nativo y con la tipografía Fira Sans. Sobre esa paleta tiene una dirección visual propia: «Señalética de terminal».';
+  'La app sigue Obelisco v2, el sistema de diseño de la Ciudad de Buenos Aires, adaptado a nativo.';
 
 /** "Versión 0.1.0 (build 12)"; sin build (Expo Go, web) queda "Versión 0.1.0". */
 export function describeVersion(version: string | undefined, build: string | null): string {

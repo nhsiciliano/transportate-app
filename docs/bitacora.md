@@ -350,7 +350,7 @@ En los README de cada feature: `F5-inicio-1…8`, `F5-subtes-1…7`, `F5-favorit
 - **F5-colectivos-6**: `Board.Row` no tiene `selected`; el vehículo elegido se marca con fondo `bg.pressed` y «Seleccionado» en la etiqueta. Candidato a prop compartido.
 - **F5-ajustes-8**: el rojo de la fila destructiva mientras se toca da 4,03:1 (solo durante la pulsación).
 - **F5-inicio-1**: la «decisión seguida de pantalla en pantalla» del contrato se resolvió por construcción: el detalle abre con la misma forma de banda arriba (línea, estación, línea de colectivos); Parada no lleva banda porque no tiene valor vivo (N4).
-- La redacción del párrafo «Diseño» de Acerca de es provisional.
+- La redacción del párrafo «Diseño» de Acerca de: fijada por el usuario el 2026-11-06 (solo Obelisco v2 adaptado a nativo).
 
 ### Validación del usuario en el iPhone y correcciones (2026-11-04)
 
