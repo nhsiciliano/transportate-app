@@ -425,7 +425,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | # | Qué | Quién | Estado |
 | --- | --- | --- | --- |
 | 1 | **Colores oficiales** de las 6 líneas: comparar con señalética y mapas oficiales, confirmar o reemplazar los provisorios y regenerar el paquete estático (tarea 6.6) | Coordinador | Abierto |
-| 2 | **Subida a R2** de `trenes-lineas.json` y `trenes-estaciones.json` (manifiesto `31dc9fa8bcfd`, `tools/gtfs/upload-r2.sh`) | Coordinador | Abierto: requiere `wrangler login` del usuario (el proxy tampoco está desplegado en `preview`) |
+| 2 | **Subida a R2** de `trenes-lineas.json` y `trenes-estaciones.json` (manifiesto `31dc9fa8bcfd`, `tools/gtfs/upload-r2.sh`) | Coordinador | Abierto. `wrangler login` hecho el 2026-11-05, pero la cuenta de Cloudflare **no tiene R2 habilitado** (la API responde `10042: Please enable R2 through the Cloudflare Dashboard`): los buckets no existen y ninguna subida pudo llegar. Falta habilitar R2 en el dashboard; después `r2 bucket create` ×2 (`docs/10-deploy.md` §2) y `upload-r2.sh`. El Worker tampoco está desplegado en ningún entorno |
 | 3 | **Smoke en el simulador** de la tab Trenes contra el proxy local (`07-app.md` §11) | Coordinador | Hecho el 2026-11-05 (raíz, línea, ramal, estación en claro y oscuro); `TRENES_ENABLED=false` probado con `curl` por high-dev |
 | 4 | **Prueba manual en el iPhone** con la sección 3b de [`11-prueba-manual.md`](11-prueba-manual.md) | Usuario | Abierto |
 | 5 | **Capturas y finish review** de Trenes contra el brief y el contrato de superficie (tarea 6.7) | Coordinador | Abierto, junto con las de la Fase 5 |
