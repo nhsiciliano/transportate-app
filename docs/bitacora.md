@@ -389,6 +389,14 @@ El usuario re-probó y los headers seguían vacíos: la hipótesis de la fuente 
 | **Prueba de la hipótesis** | Sacando solo esas dos líneas: «Transportate», «Colectivos» y «Subtes» se dibujan, en claro y con el sistema en oscuro. Con Fira Sans de vuelta en `fontFamily` **también** se dibujan: la fuente nunca fue el problema. |
 | **Corrección** | `stackScreenOptions` sin `headerStyle` ni `headerLargeStyle`; la barra translúcida del sistema se apoya sobre `contentStyle` (celeste en claro, oscuro en oscuro) y sigue el `userInterfaceStyle` del tema, así que el modo forzado desde Ajustes sigue funcionando. Los títulos quedan con la fuente del sistema por la regla del modo Operate (no por el defecto); el comentario del módulo, el brief de Inicio, `07-app.md` y `11-prueba-manual.md` se corrigieron. Tests de `chrome.test.tsx`: ahora exigen que no haya `headerStyle`/`headerLargeStyle` y que el header nativo salga con `backgroundColor: 'transparent'`. |
 
+### Pedidos del usuario del 2026-11-06 (tras ver la ola 2)
+
+| Pedido | Resolución |
+| --- | --- |
+| **Favoritos sale de la barra de tabs**: quedan Inicio, Colectivos, Subtes y Trenes; Favoritos se abre desde un botón (estrella) en el header de Inicio, a la izquierda del engranaje de Ajustes | F6-HIGH-C (high-dev, `ctx_97275f961826`): la ruta pasa a `/inicio/favoritos` (una tab `hidden` no se puede navegar) |
+| **Líneas en placas separadas**: el tablero de líneas de Subtes y de Trenes deja de ser una sola placa pegada; cada línea va en su placa, levemente separada | F6-HIGH-C: `Board layout="cards"` (mismo material: placa blanca, outline hairline, radio 6, sin sombra; `gap` 8). Solo en los tableros de líneas y en los ramales; las listas de estaciones conservan la placa única por el trazo continuo. Los briefs de Subtes y Trenes decían «una sola placa» y se actualizan con la decisión fechada |
+| **Plano de la red con los colores** de los trenes | Aplicado (pendiente 1) |
+
 ### Pendiente
 
 1. **Re-prueba del usuario en el iPhone** (ahora sí con reproducción previa en el simulador): títulos de los headers visibles en claro y con «Oscuro» forzado, «Transportate» con el lema en Inicio, panel sobre la tab bar, lista a 3 km, flecha en Parada; después, **capturas finales** de cada tab en claro, oscuro, Dynamic Type grande y vacío. Las capturas locales ahora salen del simulador (`07-app.md` §11); las del iPhone siguen valiendo para lo que el simulador no tiene (ubicación real, háptico).
@@ -424,8 +432,8 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 
 | # | Qué | Quién | Estado |
 | --- | --- | --- | --- |
-| 1 | **Colores oficiales** de las 6 líneas: comparar con señalética y mapas oficiales, confirmar o reemplazar los provisorios y regenerar el paquete estático (tarea 6.6) | Coordinador | Abierto |
-| 2 | **Subida a R2** de `trenes-lineas.json` y `trenes-estaciones.json` (manifiesto `31dc9fa8bcfd`, `tools/gtfs/upload-r2.sh`) | Coordinador | Abierto. `wrangler login` hecho el 2026-11-05, pero la cuenta de Cloudflare **no tiene R2 habilitado** (la API responde `10042: Please enable R2 through the Cloudflare Dashboard`): los buckets no existen y ninguna subida pudo llegar. Falta habilitar R2 en el dashboard; después `r2 bucket create` ×2 (`docs/10-deploy.md` §2) y `upload-r2.sh`. El Worker tampoco está desplegado en ningún entorno |
+| 1 | **Colores de las 6 líneas** (tarea 6.6) | Coordinador | Hecho el 2026-11-06: el usuario aportó el plano de la red (`mapa-red-trenes-buenos-aires.pdf`, no oficial pero elegido como referencia); se midió el color del trazo de cada línea y se reemplazaron los provisorios de Wikipedia (`02c` §2, commit 593e061). Sarmiento, San Martín y Belgrano Sur pasan a texto blanco |
+| 2 | **Subida a R2** del paquete estático | Coordinador | Hecho el 2026-11-06. El 2026-11-05 la cuenta no tenía R2 habilitado (API `10042`); el usuario lo habilitó (con medio de pago) y el coordinador creó `transportate-static` y `transportate-static-preview` y subió la versión **`6abe94f97629`** (10 archivos, con los colores nuevos de trenes) a los dos buckets con `upload-r2.sh`; `latest/manifest.json` verificado en remoto. El Worker sigue sin desplegar en ningún entorno |
 | 3 | **Smoke en el simulador** de la tab Trenes contra el proxy local (`07-app.md` §11) | Coordinador | Hecho el 2026-11-05 (raíz, línea, ramal, estación en claro y oscuro); `TRENES_ENABLED=false` probado con `curl` por high-dev |
 | 4 | **Prueba manual en el iPhone** con la sección 3b de [`11-prueba-manual.md`](11-prueba-manual.md) | Usuario | Abierto |
 | 5 | **Capturas y finish review** de Trenes contra el brief y el contrato de superficie (tarea 6.7) | Coordinador | Abierto, junto con las de la Fase 5 |
