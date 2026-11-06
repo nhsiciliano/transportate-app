@@ -37,7 +37,7 @@ describe('buildRedTrenes', () => {
       'tren-de-la-costa',
     ]);
     const sarmiento = red.lineaPorId.get('sarmiento');
-    expect(sarmiento).toMatchObject({ nombre: 'Línea Sarmiento', siglas: 'S', color: '#B766C2' });
+    expect(sarmiento).toMatchObject({ nombre: 'Línea Sarmiento', siglas: 'S', color: '#B8237A' });
     expect(sarmiento?.ramales.map((r) => r.nombreVisible)).toEqual([
       'Once – Moreno',
       'Once – Bragado',
@@ -85,8 +85,8 @@ const estado: EstadoLineasTrenV1 = {
     {
       linea: 'sarmiento',
       nombre: 'Sarmiento',
-      color: '#B766C2',
-      colorTexto: '#000000',
+      color: '#B8237A',
+      colorTexto: '#FFFFFF',
       estado: 'demorada',
       resumen: 'Demoras en Moreno – Mercedes.',
       alertaIds: ['a1'],
@@ -98,7 +98,7 @@ const estado: EstadoLineasTrenV1 = {
     {
       linea: 'roca',
       nombre: 'Roca',
-      color: '#FAB700',
+      color: '#F07D2B',
       colorTexto: '#000000',
       estado: 'normal',
       alertaIds: [],

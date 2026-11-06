@@ -150,7 +150,7 @@ describe('armarTrenes (muestra: 2 líneas, 3 ramales públicos)', () => {
       expect(l.color).toBe(COLORES_TRENES[l.id]?.color);
       expect(l.colorTexto).toBe(COLORES_TRENES[l.id]?.texto);
     }
-    expect(r.lineas.lineas[0]).toMatchObject({ color: '#FAB700', colorTexto: '#000000' });
+    expect(r.lineas.lineas[0]).toMatchObject({ color: '#F07D2B', colorTexto: '#000000' });
   });
 
   it('descarta ramales no públicos y ordena por orden_ramal y nombre', () => {

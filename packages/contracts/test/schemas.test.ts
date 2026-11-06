@@ -405,8 +405,8 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
           id: 'sarmiento',
           idGerencia: '1',
           nombre: 'Sarmiento',
-          color: '#B766C2',
-          colorTexto: '#000000',
+          color: '#B8237A',
+          colorTexto: '#FFFFFF',
           ramales: [
             {
               id: '1',
@@ -432,7 +432,7 @@ const casos: [string, z.ZodType, unknown, unknown][] = [
           id: 'roca',
           idGerencia: '11',
           nombre: 'Roca',
-          color: '#FAB700',
+          color: '#F07D2B',
           colorTexto: '#000000',
           ramales: [],
         },

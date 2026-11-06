@@ -52,8 +52,8 @@ export const estadoTrenes: EnvelopeV1<EstadoLineasTrenV1> = wrap(
       {
         linea: 'sarmiento',
         nombre: 'Sarmiento',
-        color: '#B766C2',
-        colorTexto: '#000000',
+        color: '#B8237A',
+        colorTexto: '#FFFFFF',
         estado: 'demorada',
         resumen: 'El tren de las 08:11hs. de Fco. Álvarez hacia Moreno se encuentra demorado.',
         alertaIds: ['99284'],

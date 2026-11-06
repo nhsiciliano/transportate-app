@@ -25,14 +25,14 @@ Las líneas, en el orden fijo de `/v1/trenes/estado`, salen de la tabla `LINEAS_
 
 | Línea              | `idGerencia` | Color     | Texto     |
 | ------------------ | -----------: | --------- | --------- |
-| `roca`             |           11 | `#FAB700` | `#000000` |
-| `sarmiento`        |            1 | `#B766C2` | `#000000` |
-| `mitre`            |            5 | `#8FBE00` | `#000000` |
-| `san-martin`       |           31 | `#6495ED` | `#000000` |
-| `belgrano-sur`     |           21 | `#F85900` | `#000000` |
-| `tren-de-la-costa` |           41 | `#002D9A` | `#FFFFFF` |
+| `roca`             |           11 | `#F07D2B` | `#000000` |
+| `sarmiento`        |            1 | `#B8237A` | `#FFFFFF` |
+| `mitre`            |            5 | `#42B874` | `#000000` |
+| `san-martin`       |           31 | `#6438C4` | `#FFFFFF` |
+| `belgrano-sur`     |           21 | `#5C4858` | `#FFFFFF` |
+| `tren-de-la-costa` |           41 | `#A020B8` | `#FFFFFF` |
 
-La API no trae colores. Los de la tabla son **provisorios** y salen de [`docs/02c-colores-trenes.md`](../../../../../docs/02c-colores-trenes.md) (fuente de verdad, todos AA con su texto).
+La API no trae colores. Los de la tabla salen de [`docs/02c-colores-trenes.md`](../../../../../docs/02c-colores-trenes.md) (fuente de verdad, todos AA con su texto).
 
 ## Alertas
 

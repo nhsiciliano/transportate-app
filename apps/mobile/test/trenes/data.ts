@@ -71,23 +71,23 @@ export const lineasTren = TrenesLineasArchivoV1.parse({
   fuente: 'prueba',
   capturadoEn: '2026-11-05T11:56:14.337Z',
   lineas: [
-    linea('roca', '11', 'Roca', '#FAB700', '#000000', [
+    linea('roca', '11', 'Roca', '#F07D2B', '#000000', [
       ramal('11', 'roca', 'Constitución-La Plata', ['1', '2']),
     ]),
-    linea('sarmiento', '1', 'Sarmiento', '#B766C2', '#000000', [
+    linea('sarmiento', '1', 'Sarmiento', '#B8237A', '#FFFFFF', [
       ramal('1', 'sarmiento', 'Once-Moreno', ['293', '50', '139', '278']),
       ramal('111', 'sarmiento', 'Once-Bragado', ['293', '50', '139', '400']),
     ]),
-    linea('mitre', '5', 'Mitre', '#8FBE00', '#000000', [
+    linea('mitre', '5', 'Mitre', '#42B874', '#000000', [
       ramal('5', 'mitre', 'Retiro-Tigre', ['332', '900']),
     ]),
-    linea('san-martin', '31', 'San Martín', '#6495ED', '#000000', [
+    linea('san-martin', '31', 'San Martín', '#6438C4', '#FFFFFF', [
       ramal('65', 'san-martin', 'Retiro-Cabred', ['331', '901']),
     ]),
-    linea('belgrano-sur', '21', 'Belgrano Sur', '#F85900', '#000000', [
+    linea('belgrano-sur', '21', 'Belgrano Sur', '#5C4858', '#FFFFFF', [
       ramal('21', 'belgrano-sur', 'Buenos Aires-M.C.G. Belgrano', ['902', '903']),
     ]),
-    linea('tren-de-la-costa', '41', 'Tren de la Costa', '#002D9A', '#FFFFFF', [
+    linea('tren-de-la-costa', '41', 'Tren de la Costa', '#A020B8', '#FFFFFF', [
       ramal('41', 'tren-de-la-costa', 'Maipú-Delta', ['248', '104']),
     ]),
   ],

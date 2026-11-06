@@ -124,21 +124,21 @@ describe('LineBadge, OfflineBanner y Skeleton', () => {
   it('LineBadge de tren: siglas en un rectángulo con borde solo si el color no llega a 3:1', async () => {
     await renderThemed(
       <>
-        {/* Roca (#FAB700) sobre el fondo claro: 1,60:1 → borde. */}
+        {/* Roca (#F07D2B) sobre el fondo claro: 2,47:1 → borde. */}
         <LineBadge
           kind="tren"
           label="R"
-          color="#FAB700"
+          color="#F07D2B"
           textColor="#000000"
           surface="#edf4ff"
           accessibilityLabel="Línea Roca"
           testID="badge-roca"
         />
-        {/* Tren de la Costa (#002D9A) sobre el fondo claro: 10,31:1 → sin borde. */}
+        {/* Tren de la Costa (#A020B8) sobre el fondo claro: 5,59:1 → sin borde. */}
         <LineBadge
           kind="tren"
           label="TC"
-          color="#002D9A"
+          color="#A020B8"
           textColor="#FFFFFF"
           surface="#edf4ff"
           accessibilityLabel="Tren de la Costa"
@@ -152,7 +152,7 @@ describe('LineBadge, OfflineBanner y Skeleton', () => {
     const estilo = (el: typeof roca) =>
       Object.assign({}, ...[el.props.style as object].flat(Infinity)) as Record<string, unknown>;
     expect(estilo(roca).borderWidth).toBeGreaterThan(0);
-    expect(estilo(roca).backgroundColor).toBe('#FAB700');
+    expect(estilo(roca).backgroundColor).toBe('#F07D2B');
     expect(estilo(costa).borderWidth).toBe(0);
     // Rectángulo redondeado (no círculo como el subte).
     expect(estilo(costa).borderRadius).not.toBe((estilo(costa).height as number) / 2);

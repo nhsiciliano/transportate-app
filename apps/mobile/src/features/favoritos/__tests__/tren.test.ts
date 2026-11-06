@@ -44,11 +44,11 @@ describe('resolveFavoritoTren', () => {
   it('ramal y estación toman la insignia (siglas y color) de su línea', () => {
     expect(resolveFavoritoTren(ramal, red)).toEqual({
       orphan: false,
-      badge: { label: 'S', color: '#B766C2', textColor: '#000000' },
+      badge: { label: 'S', color: '#B8237A', textColor: '#FFFFFF' },
     });
     expect(
       resolveFavoritoTren(fav({ tipo: 'estacion_tren', refId: '248', nombre: 'Maipú' }), red),
-    ).toEqual({ orphan: false, badge: { label: 'TC', color: '#002D9A', textColor: '#FFFFFF' } });
+    ).toEqual({ orphan: false, badge: { label: 'TC', color: '#A020B8', textColor: '#FFFFFF' } });
   });
 
   it('id que ya no está en el estático → huérfano; sin estático no se afirma nada', () => {

@@ -97,8 +97,8 @@ export const estadoTrenes = EstadoLineasTrenResponseV1.parse({
       {
         linea: 'sarmiento',
         nombre: 'Sarmiento',
-        color: '#B766C2',
-        colorTexto: '#000000',
+        color: '#B8237A',
+        colorTexto: '#FFFFFF',
         estado: 'demorada',
         resumen: 'El tren de las 08:42 hs. desde Moreno ha sido cancelado.',
         alertaIds: ['99285'],

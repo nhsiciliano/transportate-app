@@ -65,10 +65,10 @@ export const FUENTES = {
     licencia: 'sin licencia explícita; fuente no oficial (docs/01d-api-trenes-sofse.md)',
   },
   coloresTrenes: {
-    nombre: 'docs/02c-colores-trenes.md §1 (tabla final, provisoria)',
+    nombre: 'docs/02c-colores-trenes.md §1 (tabla final)',
     url: 'docs/02c-colores-trenes.md',
     fecha: '2026-11-05',
-    licencia: 'Wikipedia (CC BY-SA 4.0); no oficial',
+    licencia: 'plano de la red aportado por el usuario (2026-11-06); no oficial',
   },
 } as const;
 
@@ -100,16 +100,16 @@ export const COLORES_SUBTE: Record<string, { color: string; texto: string }> = {
 
 /**
  * Colores de las líneas de tren, copiados de docs/02c-colores-trenes.md §1 (fuente de verdad;
- * provisorios, no oficiales). Si cambia un color, se cambia primero en ese doc. Orden fijo de las
+ * del plano de la red, 2026-11-06). Si cambia un color, se cambia primero en ese doc. Orden fijo de las
  * líneas de la red: Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa.
  */
 export const COLORES_TRENES: Record<string, { color: string; texto: string }> = {
-  roca: { color: '#FAB700', texto: '#000000' },
-  sarmiento: { color: '#B766C2', texto: '#000000' },
-  mitre: { color: '#8FBE00', texto: '#000000' },
-  'san-martin': { color: '#6495ED', texto: '#000000' },
-  'belgrano-sur': { color: '#F85900', texto: '#000000' },
-  'tren-de-la-costa': { color: '#002D9A', texto: '#FFFFFF' },
+  roca: { color: '#F07D2B', texto: '#000000' },
+  sarmiento: { color: '#B8237A', texto: '#FFFFFF' },
+  mitre: { color: '#42B874', texto: '#000000' },
+  'san-martin': { color: '#6438C4', texto: '#FFFFFF' },
+  'belgrano-sur': { color: '#5C4858', texto: '#FFFFFF' },
+  'tren-de-la-costa': { color: '#A020B8', texto: '#FFFFFF' },
 };
 
 /** Líneas de tren en orden fijo: `id` (slug del contrato) e `idGerencia` de SOFSE. Regionales (501) se ignora. */
