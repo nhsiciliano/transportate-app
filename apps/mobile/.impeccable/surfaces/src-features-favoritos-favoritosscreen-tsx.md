@@ -7,7 +7,7 @@ related_targets: ["src/features/favoritos/FavoritoRow.tsx","src/features/favorit
 
 # Favoritos — brief de superficie
 
-Modo **Operate**. Tab Favoritos: `src/features/favoritos/FavoritosScreen.tsx` con `FavoritoRow.tsx`, `FavoritoItem.tsx`, `EditMode.tsx` y `AliasSheet.tsx`. Audiencia: la persona que ya guardó sus líneas, paradas y estaciones y vuelve todos los días. Tarea: ver todo lo guardado con su dato vivo y gestionarlo (renombrar, quitar, reordenar). Contenido real: hasta decenas de favoritos en el orden fijado, alias de 30 caracteres, dato vivo por tipo, huérfanos, Alert única de servicio caído, búsqueda desde 15. Restricciones: las de Inicio; el arrastre con `react-native-reorderable-list` y los hápticos quedan como están; «Editar/Listo» en el header nativo.
+Modo **Operate**. Pantalla Favoritos (desde el 2026-11-06 apilada en Inicio, `/inicio/favoritos`; antes era tab): `src/features/favoritos/FavoritosScreen.tsx` con `FavoritoRow.tsx`, `FavoritoItem.tsx`, `EditMode.tsx` y `AliasSheet.tsx`. Audiencia: la persona que ya guardó sus líneas, paradas y estaciones y vuelve todos los días. Tarea: ver todo lo guardado con su dato vivo y gestionarlo (renombrar, quitar, reordenar). Contenido real: hasta decenas de favoritos en el orden fijado, alias de 30 caracteres, dato vivo por tipo, huérfanos, Alert única de servicio caído, búsqueda desde 15. Restricciones: las de Inicio; el arrastre con `react-native-reorderable-list` y los hápticos quedan como están; «Editar/Listo» en el header nativo.
 
 ## Direction contract
 
@@ -27,3 +27,4 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 - Menú contextual con long press: sigue fuera (F4-inicio-1).
 - El alias se edita en la `formSheet` actual; solo cambia la tipografía.
+- **Deja de ser tab: resuelto el 2026-11-06.** Pedido del usuario: Favoritos sale de la barra y se abre desde la estrella del header de Inicio (a la izquierda del engranaje de Ajustes) o desde «Ver todos los favoritos (N)». Es una pantalla apilada (`/inicio/favoritos`) con large title «Favoritos», «Editar»/«Listo» a la derecha y «Atrás» del sistema; la pantalla en sí no cambia. Al volver atrás se apaga la edición: siempre abre en modo lectura.

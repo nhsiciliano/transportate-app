@@ -108,7 +108,7 @@ Brief de producto: [`docs/briefs/05-favoritos.md`](../../../../../docs/briefs/05
 
 ## Lógica
 
-Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la ruta es `src/app/(tabs)/favoritos/index.tsx`. Todo se importa desde `@/features/favoritos`.
+Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la ruta es `src/app/(tabs)/inicio/favoritos.tsx` (`/inicio/favoritos`): desde el 2026-11-06 Favoritos no es tab, se abre con la estrella del header de Inicio. Todo se importa desde `@/features/favoritos`.
 
 | Archivo                 | Qué hay                                                                                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -156,7 +156,7 @@ Lógica de favoritos (tarea 3.10). La pantalla (tarea 4.9) está más arriba; la
 
 ## Montaje
 
-`FavoritosProvider` está montado en `src/app/_layout.tsx` (tarea 3.11). `EditModeProvider` se monta en `src/app/(tabs)/favoritos/_layout.tsx`, alrededor del `Stack`, para que el botón del header y la pantalla compartan el modo edición.
+`FavoritosProvider` está montado en `src/app/_layout.tsx` (tarea 3.11). `EditModeProvider` se monta en `src/app/(tabs)/inicio/_layout.tsx`, alrededor del `Stack` de Inicio, para que el botón del header y la pantalla compartan el modo edición; la ruta lo apaga al desmontarse, así Favoritos siempre abre en modo lectura.
 
 ## Qué falta (otras tareas)
 

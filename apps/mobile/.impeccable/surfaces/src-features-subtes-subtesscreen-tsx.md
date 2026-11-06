@@ -11,7 +11,7 @@ Modo **Operate**. Tab Subtes: raíz (`src/features/subtes/SubtesScreen.tsx`), l�
 
 ## Direction contract
 
-THESIS: Subtes es el tablero de estado de la red y la estación es el cartel de andén. La raíz lista las siete líneas en **una sola placa blanca** con el estado alineado a la derecha, para leer de arriba abajo como un tablero de salidas; la estación responde «¿cuándo viene?» con una banda por sentido y el minuto monumental. Se rechaza la lista de tarjetas sueltas con chips de colores y el detalle como ficha de datos.
+THESIS: Subtes es el tablero de estado de la red y la estación es el cartel de andén. La raíz lista las siete líneas en **una sola placa blanca** (desde el 2026-11-06, una placa del mismo material por línea: ver «Decisiones abiertas») con el estado alineado a la derecha, para leer de arriba abajo como un tablero de salidas; la estación responde «¿cuándo viene?» con una banda por sentido y el minuto monumental. Se rechaza la lista de tarjetas sueltas con chips de colores y el detalle como ficha de datos.
 
 OWN-WORLD: hereda el de Inicio (`src-features-inicio-inicioscreen-tsx.md`): fondo `#edf4ff`, placas blancas con outline `#d6e4f6` y radio 6, bandas azul `#035c80` (decisión en curso) y navy `#1d3343` (siguientes), pictograma blanco en cuadrado `#08202f`, flecha al borde solo donde hay destino, Fira Sans 400/600/700, discos de línea GTFS con letra, cuadrados ámbar/rojo de estado solo con texto al lado. Nuevo acá: la **placa de tablero** (filas de 56 pt separadas por hairline `#d6e4f6` dentro de una placa) y el **trazo de recorrido** del color de la línea con las estaciones como filas.
 
@@ -27,3 +27,4 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 - Si el mapa de la red cambia algo más que la tipografía de sus controles: no en esta ronda (el mapa es MapLibre con estilo externo).
 - Combinaciones entre líneas: siguen fuera (el estático no trae `transfers.txt`).
+- **Placas separadas por línea: resuelto el 2026-11-06.** El usuario pidió que cada línea sea una placa propia, levemente separada de la siguiente, para que se lea mejor. Se implementa como **placas del mismo material** (`Board layout="cards"`: `bg.card`, outline hairline `border.subtle`, radio 6, sin sombra, 8 pt entre placas, sin hairlines entre filas), **no** como tarjetas decorativas: sin chips de colores, sin sombra, la misma fila con la flecha al borde y el estado a la derecha. El rechazo de la tesis a «la lista de tarjetas sueltas con chips» sigue en pie. Aplica al tablero de las 7 líneas y a su skeleton; la lista de estaciones sigue en una sola placa porque el trazo del recorrido tiene que ser continuo.

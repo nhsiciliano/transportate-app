@@ -1,10 +1,13 @@
 // Navegación del stack de Inicio con los layouts y pantallas reales (sin las tabs nativas,
-// que necesitan el módulo nativo de react-native-screens): Inicio → Ajustes → Acerca de.
-import { userEvent } from '@testing-library/react-native';
+// que necesitan el módulo nativo de react-native-screens): Inicio → Ajustes → Acerca de, e
+// Inicio → Favoritos (desde el 2026-11-06 se abre con la estrella del header, no es tab).
+import { act, userEvent } from '@testing-library/react-native';
+import { router } from 'expo-router';
 import { renderRouter, screen } from 'expo-router/testing-library';
 
 import AcercaScreen from '@/app/(tabs)/inicio/acerca';
 import AjustesScreen from '@/app/(tabs)/inicio/ajustes';
+import FavoritosRoute from '@/app/(tabs)/inicio/favoritos';
 import LicenciasScreen from '@/app/(tabs)/inicio/licencias';
 import InicioScreen from '@/app/(tabs)/inicio/index';
 import InicioLayout from '@/app/(tabs)/inicio/_layout';
@@ -17,6 +20,7 @@ const routes = {
   'inicio/_layout': InicioLayout,
   'inicio/index': InicioScreen,
   'inicio/ajustes': AjustesScreen,
+  'inicio/favoritos': FavoritosRoute,
   'inicio/acerca': AcercaScreen,
   'inicio/licencias': LicenciasScreen,
 };
@@ -46,6 +50,34 @@ describe('stack de Inicio', () => {
     await user.press(screen.getByRole('button', { name: 'Licencias de software de terceros' }));
     expect(await screen.findByText(/librerías de código abierto/)).toBeOnTheScreen();
     expect(screen).toHavePathname('/inicio/licencias');
+  });
+
+  it('el header tiene Favoritos y después Ajustes; la estrella abre Favoritos con Editar', async () => {
+    const user = userEvent.setup();
+    const app = renderWithApp(<></>, {
+      fetch: () => jsonResponse({}, { status: 500 }),
+      favoritos: [{ tipo: 'linea_subte', refId: 'A', nombre: 'Línea A' }],
+    });
+    await renderRouter(routes, { initialUrl: '/inicio', wrapper: app.Wrapper });
+    const botones = screen
+      .getAllByRole('button')
+      .map((b) => b.props.accessibilityLabel as string | undefined)
+      .filter((l) => l === 'Favoritos' || l === 'Ajustes');
+    expect(botones).toEqual(['Favoritos', 'Ajustes']);
+
+    await user.press(screen.getByRole('button', { name: 'Favoritos' }));
+    expect(screen).toHavePathname('/inicio/favoritos');
+    expect(await screen.findByRole('button', { name: 'Editar' })).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Editar' }));
+    expect(screen.getByRole('button', { name: 'Listo' })).toBeOnTheScreen();
+
+    // Volver atrás apaga la edición: la próxima vez Favoritos abre en modo lectura.
+    await act(() => {
+      router.back();
+    });
+    expect(screen).toHavePathname('/inicio');
+    await user.press(screen.getByRole('button', { name: 'Favoritos' }));
+    expect(await screen.findByRole('button', { name: 'Editar' })).toBeOnTheScreen();
   });
 
   it('una ruta inexistente cae en "no encontrado"', async () => {

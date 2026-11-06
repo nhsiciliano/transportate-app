@@ -1,6 +1,6 @@
 // Modo edición de la pantalla Favoritos. El botón "Editar"/"Listo" vive en el header del Stack
-// (`src/app/(tabs)/favoritos/_layout.tsx`) y la lista en la pantalla: comparten el estado por
-// contexto, así no hay un singleton de módulo y cada árbol de tests tiene el suyo.
+// de Inicio (`src/app/(tabs)/inicio/_layout.tsx`) y la lista en la pantalla: comparten el estado
+// por contexto, así no hay un singleton de módulo y cada árbol de tests tiene el suyo.
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { Pressable } from 'react-native';
 

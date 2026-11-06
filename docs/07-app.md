@@ -43,25 +43,26 @@ apps/mobile/
 
 ## 2. Navegación
 
-Mapa de [`briefs/README.md`](briefs/README.md). Con la corrección de **4 tabs** de [`00-plan.md`](00-plan.md) ("Correcciones tras la Fase 1") la barra tenía Inicio, Colectivos, Subtes y Favoritos; desde la **Fase 6 tiene 5**: Inicio, Colectivos, **Subtes, Trenes**, Favoritos (Tránsito sigue oculto).
+Mapa de [`briefs/README.md`](briefs/README.md). Con la corrección de **4 tabs** de [`00-plan.md`](00-plan.md) ("Correcciones tras la Fase 1") la barra tenía Inicio, Colectivos, Subtes y Favoritos; en la **Fase 6** llegó a 5 con Trenes, y desde el **2026-11-06 tiene 4**: Inicio, Colectivos, Subtes, **Trenes** (Tránsito sigue oculto). **Favoritos salió de la barra** (pedido del usuario): es una pantalla del stack de Inicio que se abre con la estrella del header, a la izquierda del engranaje de Ajustes.
 
 | Ruta                                                            | Pantalla                                         | Archivo                                   |
 | --------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
 | `/`                                                             | Redirige a `/inicio`                             | `src/app/index.tsx`                       |
-| `/inicio`                                                       | Inicio (§15). Engranaje "Ajustes" en el header   | `(tabs)/inicio/index.tsx`                 |
+| `/inicio`                                                       | Inicio (§15). Estrella "Favoritos" y engranaje "Ajustes" en el header | `(tabs)/inicio/index.tsx`                 |
+| `/inicio/favoritos`                                             | Favoritos (§16), apilada en el stack de Inicio (desde el 2026-11-06; antes era la tab `/favoritos`) | `(tabs)/inicio/favoritos.tsx`             |
 | `/inicio/ajustes` → `/inicio/acerca`                            | Ajustes → Acerca de (stack dentro de Inicio, S2) | `(tabs)/inicio/ajustes.tsx`, `acerca.tsx` |
 | `/inicio/acerca` → `/inicio/licencias`                          | Acerca de → Licencias de software de terceros    | `(tabs)/inicio/licencias.tsx`             |
 | `/colectivos` → `/colectivos/:linea` → `/colectivos/parada/:id` | Colectivos (§19) → línea (`lineaId`, `?parada=`) → parada | `(tabs)/colectivos/…`                     |
 | `/subtes` → `/subtes/:linea` → `/subtes/estacion/:id`           | Subtes → línea (`A`…`H`, `PM`) → estación (§14)  | `(tabs)/subtes/…`                         |
 | `/subtes/mapa`                                                  | Mapa de la red (tarea 4.3), desde "Ver mapa"     | `(tabs)/subtes/mapa.tsx`                  |
 | `/trenes` → `/trenes/:linea` → `/trenes/ramal/:id` → `/trenes/estacion/:id` | Trenes (§22) → línea (`roca`, `sarmiento`, `mitre`, `san-martin`, `belgrano-sur`, `tren-de-la-costa`) → ramal → estación (también desde la búsqueda y desde Favoritos) | `(tabs)/trenes/…`                         |
-| `/favoritos`                                                    | Favoritos                                        | `(tabs)/favoritos/index.tsx`              |
 | `/transito`                                                     | **Oculto** (no navegable)                        | `(tabs)/transito/…`                       |
 | cualquier otra                                                  | "No encontramos esta pantalla" + link a Inicio   | `+not-found.tsx`                          |
 
 - **Tabs nativas** (`NativeTabs` de `expo-router/native-tabs`): UITabBarController en iOS y la barra de Material en Android.
   - No tienen header: cada tab anida su `Stack`, con back nativo y `headerBackTitle` "Atrás" en iOS.
-  - La tab **Trenes** va entre Subtes y Favoritos, con SF Symbol `train.side.front.car` y Material `train`.
+  - La tab **Trenes** va última, después de Subtes, con SF Symbol `train.side.front.car` y Material `train`.
+- **Favoritos desde Inicio** (2026-11-06): `headerRight` de Inicio es una fila con dos botones de 44×44 sin separación extra: **Favoritos** (ícono `favoritos`, estrella llena de 24, `text.primary`) → `router.push('/inicio/favoritos')` y **Ajustes**. Sin texto ni conteo. `EditModeProvider` envuelve el `Stack` de Inicio (el botón Editar/Listo lo dibuja ese Stack); la ruta apaga la edición al desmontarse, así Favoritos siempre abre en modo lectura.
   - Íconos provisorios: SF Symbols (`sf`) y Material Symbols (`md`) del sistema. Se reemplazan por `Icon` cuando las tabs acepten imágenes propias.
 - **Tránsito oculto:** el trigger va con `hidden`. Decisión del usuario del 2026-11-01: el upstream devuelve 500 y las tareas 2.7 y 4.8 están diferidas.
 - **Rutas tipadas:** `experiments.typedRoutes`. `expo start` genera `.expo/types/router.d.ts` y `expo-env.d.ts`, que no se commitean. `tsc` pasa con y sin ellos.
@@ -223,7 +224,7 @@ xcrun simctl io booted screenshot captura.png
 ```
 
 - `--initialUrl` lo lee expo-dev-launcher y evita tocar el launcher; `disableOnboarding=1` saca el cartel del menú de desarrollo.
-- Para navegar sin tocar la pantalla (no hace falta `Simulator.app`): deep links, `xcrun simctl openurl booted "transportate://subtes"`. iOS pregunta «¿Abrir en Transportate?» salvo que el esquema esté aprobado: agregá las claves `com.apple.CoreSimulator.CoreSimulatorBridge-->transportate` y `…-->exp+transportate` con valor `app.transportate.mobile` en `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Library/Preferences/com.apple.launchservices.schemeapproval.plist` (`/usr/libexec/PlistBuddy`, es lo mismo que hace Expo CLI) y reiniciá el simulador.
+- Para navegar sin tocar la pantalla (no hace falta `Simulator.app`): deep links, `xcrun simctl openurl booted "transportate://subtes"` (Favoritos ya no es tab: `transportate://inicio/favoritos`). iOS pregunta «¿Abrir en Transportate?» salvo que el esquema esté aprobado: agregá las claves `com.apple.CoreSimulator.CoreSimulatorBridge-->transportate` y `…-->exp+transportate` con valor `app.transportate.mobile` en `~/Library/Developer/CoreSimulator/Devices/<udid>/data/Library/Preferences/com.apple.launchservices.schemeapproval.plist` (`/usr/libexec/PlistBuddy`, es lo mismo que hace Expo CLI) y reiniciá el simulador.
 - Modo oscuro del sistema: `xcrun simctl ui booted appearance dark` (la preferencia de Ajustes se prueba desde la app).
 - Un build nuevo hace falta solo cuando cambia una dependencia nativa; el JS llega por Metro.
 
@@ -328,7 +329,7 @@ Tarea 4.10 de la Fase 4. Las tres rutas (`/inicio/ajustes`, `/inicio/acerca`, `/
   - `test/layout.test.tsx` (banner global).
 ## 16. Favoritos (pantalla)
 
-Tarea 4.9 de la Fase 4 (parte base). La ruta `/favoritos` es fina y monta `FavoritosScreen` de [`src/features/favoritos/`](../apps/mobile/src/features/favoritos/README.md), que tiene el brief operativo, los estados con su copy y las suposiciones `F4-favoritos-n`.
+Tarea 4.9 de la Fase 4 (parte base). La ruta `/inicio/favoritos` (hasta el 2026-11-06, la tab `/favoritos`) es fina y monta `FavoritosScreen` de [`src/features/favoritos/`](../apps/mobile/src/features/favoritos/README.md), que tiene el brief operativo, los estados con su copy y las suposiciones `F4-favoritos-n`.
 
 **Fase 5 (F5-HIGH-B, «Señalética de terminal»):** cada favorito es una `SignBand` `next` con el mismo contenido que en Inicio (`features/favoritos/banda.ts`: `mensajeDeFavorito`, `modeloBanda`; Inicio los importa de ahí). Toda la banda abre el detalle; el huérfano no navega (sin flecha, cuadrado rojo «Ya no figura», «Quitar» siempre). En edición la banda conserva su forma: manija «Reordenar» a la izquierda (`leading`), «Quitar» en lugar de la flecha (`trailing`) y el texto abre el alias (con «Mover arriba/abajo» como acciones del lector); al entrar y salir, fundido de 200 ms (corte seco con Reducir movimiento). Las estaciones llevan el estado de su línea (el estado del subte se pide solo si hay estaciones guardadas). Fondo `bg.elevated` en claro. Las tablas de abajo describen la Fase 4; lo que cambió de forma está en el README de la feature (`F5-favoritos-1…7`).
 
@@ -402,7 +403,7 @@ Agregado en la tarea F4-HIGH-C (arrastre, 4.9):
   - Valor (`primary` de `useFavoritoLiveData`): primer arribo («4 min», «Llegando»; en la líder, a 56 pt con «Próximo»), «N en servicio», el estado de la línea de subte, las líneas de una parada, «Sin información» o «Ya no figura».
   - Estado: cuadrado ámbar «Con demoras» o rojo «Interrumpida» si la estación es de una línea con problemas; «hace 6 min» si el dato está viejo.
   - Tocar abre el detalle en su tab (S3).
-- **Fila meta:** `FreshnessLabel` con el dato más viejo de lo visible (bandas y tira) y «Ver todos los favoritos (N)» → `/favoritos`. Sin favoritos: `EmptyState` + "Explorar subtes" y la frescura de la tira.
+- **Fila meta:** `FreshnessLabel` con el dato más viejo de lo visible (bandas y tira) y «Ver todos los favoritos (N)» → `/inicio/favoritos`. Sin favoritos: `EmptyState` + "Explorar subtes" y la frescura de la tira.
 - **Movimiento firma:** cuando cambia el favorito líder o su valor, el contenido de la banda líder cruza en fundido de 200 ms (Reanimated); con Reducir movimiento, corte seco. Un refresco sin cambio de valor no anima; del skeleton al primer valor tampoco.
 - **Datos vivos de favoritos** (`features/favoritos/useFavoritoLiveData.ts`, [README](../apps/mobile/src/features/favoritos/README.md#datos-vivos-tarea-44)): estado de línea, próximo arribo por sentido, vehículos en servicio o el subtítulo guardado. Suma `primary`, `primaryIsArribo` y `sentido` para las bandas; `text`/`spoken` siguen siendo los de Favoritos. Reutilizan las queries de cada feature, sin endpoints ni polling nuevos.
 - **Pull to refresh:** `invalidateRealtime`, que refresca el estado del subte y los datos vivos activos.
@@ -623,7 +624,7 @@ Las líneas, los ramales y las ~300 estaciones salen del paquete estático (`tre
 
 - `src/features/trenes/__tests__/model.test.ts`: modelo puro.
 - `test/trenes/{fixtures.tsx, TrenesScreen.test.tsx, LineaRamalEstacion.test.tsx}`: pantallas con `fetch` mockeado por ruta y el estático validado con los contratos.
-- Casos nuevos en favoritos, inicio y `test/layout.test.tsx` (5 tabs).
+- Casos nuevos en favoritos, inicio y `test/tabs.test.tsx` (5 tabs en la Fase 6; 4 desde el 2026-11-06).
 - `src/features/ajustes/__tests__/AcercaScreen.test.tsx`: la atribución de trenes.
 
 Detalle y cómo se capturan las fixtures de SOFSE en [`09-testing.md`](09-testing.md) §4 y §8. Conteos al cierre de la ola 2 (2026-11-05): contratos 116, proxy 130, `tools/gtfs` 104, app 803 tests en 72 suites.

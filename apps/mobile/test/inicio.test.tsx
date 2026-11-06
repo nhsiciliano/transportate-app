@@ -5,7 +5,7 @@ import { act, userEvent, waitFor } from '@testing-library/react-native';
 import * as Location from 'expo-location';
 import { renderRouter, screen } from 'expo-router/testing-library';
 
-import FavoritosRoute from '@/app/(tabs)/favoritos/index';
+import FavoritosRoute from '@/app/(tabs)/inicio/favoritos';
 import InicioLayout from '@/app/(tabs)/inicio/_layout';
 import InicioRoute from '@/app/(tabs)/inicio/index';
 import SubtesLayout from '@/app/(tabs)/subtes/_layout';
@@ -50,7 +50,7 @@ async function renderInicio(routes: Routes = defaultRoutes(), favoritos: NuevoFa
       'subtes/index': SubtesRoute,
       'subtes/[linea]': LineaRoute,
       'subtes/estacion/[id]': EstacionRoute,
-      'favoritos/index': FavoritosRoute,
+      'inicio/favoritos': FavoritosRoute,
       'trenes/_layout': TrenesLayout,
       'trenes/estacion/[id]': EstacionTrenRoute,
     },
@@ -289,7 +289,7 @@ describe('Inicio: bandas de favoritos', () => {
     await userEvent
       .setup()
       .press(screen.getByRole('button', { name: 'Ver todos los favoritos (7)' }));
-    expect(screen).toHavePathname('/favoritos');
+    expect(screen).toHavePathname('/inicio/favoritos');
   });
 
   it('líder con arribo: mensaje, «Próximo», minutos a 56 pt y etiqueta compuesta; abre el detalle', async () => {
