@@ -119,7 +119,8 @@ export function LineaTrenScreen({ lineaParam }: { lineaParam: string | undefined
           alertasLinea.map((a) => <AlertaTren key={a.id} alerta={a} estado={e} />)
         )}
 
-        <Board label="Ramales" testID="linea-ramales">
+        {/* Una placa por ramal, como las líneas de la raíz (2026-11-06). */}
+        <Board label="Ramales" layout="cards" testID="linea-ramales">
           {linea.ramales.map((r) => (
             <RamalRow
               key={r.id}
@@ -187,7 +188,7 @@ function LineaSkeleton() {
       style={{ gap: 12 }}
     >
       <SignBand.Skeleton variant="lead" />
-      <Board.Skeleton rows={4} />
+      <Board.Skeleton rows={4} layout="cards" />
     </SkeletonGroup>
   );
 }

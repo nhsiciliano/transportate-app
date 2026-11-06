@@ -34,6 +34,7 @@ export {
   Board,
   boardStatusLabel,
   boardStatusPalette,
+  type BoardLayout,
   type BoardNoteTone,
   type BoardProps,
   type BoardRowProps,

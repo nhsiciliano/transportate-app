@@ -17,6 +17,7 @@ describe('Trenes (raíz)', () => {
   it('sin caché muestra el skeleton de las 6 líneas', async () => {
     await renderTrenes('/trenes', { ...trenesRoutes(), '/v1/trenes/estado': () => undefined });
     expect(await screen.findByTestId('trenes-skeleton')).toBeOnTheScreen();
+    expect(screen.getAllByTestId(/^trenes-skeleton-placa-\d+$/)).toHaveLength(6);
     expect(screen.queryByTestId('linea-roca')).toBeNull();
   });
 
@@ -58,7 +59,13 @@ describe('Trenes (raíz)', () => {
     expect(screen.getByText('El servicio a La Plata está interrumpido.')).toHaveStyle({
       color: light.role.danger.text,
     });
-    expect(screen.getByTestId('trenes-lineas')).toHaveStyle({ backgroundColor: light.bg.card });
+    // Una placa por línea (2026-11-06), del mismo material y sin hairlines entre filas.
+    const placas = screen.getAllByTestId(/^trenes-lineas-placa-\d+$/);
+    expect(placas).toHaveLength(6);
+    for (const placa of placas) {
+      expect(placa).toHaveStyle({ backgroundColor: light.bg.card, borderRadius: 6 });
+    }
+    expect(screen.queryByTestId('board-separador')).toBeNull();
     expect(
       screen.getByRole('button', {
         name: 'Línea Sarmiento, con demoras. 2 ramales. El tren de las 08:11 hs. hacia Moreno se encuentra demorado.',

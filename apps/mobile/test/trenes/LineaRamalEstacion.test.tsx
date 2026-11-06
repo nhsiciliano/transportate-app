@@ -51,6 +51,8 @@ describe('Línea de tren', () => {
     expect(screen.queryByTestId('alerta-99144')).toBeNull();
     expect(screen.getByTestId('ramal-111-estado')).toHaveTextContent('Con demoras');
     expect(screen.getByTestId('ramal-1-estado')).toHaveTextContent('Normal');
+    // Un ramal por placa, como las líneas de la raíz.
+    expect(screen.getAllByTestId(/^linea-ramales-placa-\d+$/)).toHaveLength(2);
     // Se guarda el ramal o la estación, nunca la línea.
     expect(screen.queryByRole('button', { name: /en favoritos$/ })).toBeNull();
     await userEvent.setup().press(screen.getByTestId('ramal-111'));
