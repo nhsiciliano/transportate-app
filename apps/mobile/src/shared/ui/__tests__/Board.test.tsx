@@ -1,5 +1,5 @@
 import { fireEvent, screen } from '@testing-library/react-native';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Board, boardStatusPalette } from '..';
 import { contrastRatio } from '../../theme/contrast';
@@ -191,6 +191,51 @@ describe('Board', () => {
     expect(screen.getByTestId('sk')).toHaveStyle({
       backgroundColor: light.bg.card,
       borderRadius: 6,
+    });
+  });
+
+  describe('layout="cards"', () => {
+    it('una placa del mismo material por fila, a 8 pt, sin separadores; la etiqueta sigue afuera', async () => {
+      await renderThemed(
+        <Board label="Líneas" layout="cards" testID="tablero">
+          <Board.Row title="Uno" onPress={() => undefined} />
+          <Board.Row title="Dos" />
+          <Board.Row title="Tres" />
+          {null}
+        </Board>,
+      );
+      expect(screen.queryByTestId('board-separador')).toBeNull();
+      expect(screen.getAllByTestId(/^tablero-placa-\d+$/)).toHaveLength(3);
+      expect(screen.getByTestId('tablero')).toHaveStyle({ gap: 8 });
+      for (const i of [0, 1, 2]) {
+        expect(screen.getByTestId(`tablero-placa-${i}`)).toHaveStyle({
+          backgroundColor: light.bg.card,
+          borderColor: light.border.subtle,
+          borderWidth: 1,
+          borderRadius: 6,
+        });
+        // Sin sombra: el mismo material que la placa única.
+        const estilo = StyleSheet.flatten(
+          screen.getByTestId(`tablero-placa-${i}`).props.style as StyleProp<ViewStyle>,
+        );
+        expect(estilo?.shadowOpacity).toBeUndefined();
+        expect(estilo?.elevation).toBeUndefined();
+      }
+      expect(screen.getByRole('header', { name: 'Líneas' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Uno' })).toBeOnTheScreen();
+    });
+
+    it('Board.Skeleton con cards: una placa por fila', async () => {
+      await renderThemed(
+        <Board.Skeleton rows={4} layout="cards" testID="sk" accessibilityLabel="Cargando…" />,
+      );
+      expect(screen.getByRole('progressbar', { name: 'Cargando…' })).toBeOnTheScreen();
+      expect(screen.getAllByTestId(/^sk-placa-\d+$/)).toHaveLength(4);
+      expect(screen.getByTestId('sk-placa-0')).toHaveStyle({
+        backgroundColor: light.bg.card,
+        borderRadius: 6,
+      });
+      expect(screen.getByTestId('sk')).not.toHaveStyle({ backgroundColor: light.bg.card });
     });
   });
 });

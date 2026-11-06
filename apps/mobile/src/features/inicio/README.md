@@ -72,7 +72,7 @@ Calculado con la función `ratio` del script (los colores al 80/85 % se mezclan 
 
 ### Suposiciones (Fase 4)
 
-1. **F4-inicio-1** — Sin menú contextual con long press (el brief lo propone): las acciones sobre un favorito viven en el tab Favoritos. Sin reordenar acá.
+1. **F4-inicio-1** — Sin menú contextual con long press (el brief lo propone): las acciones sobre un favorito viven en la pantalla Favoritos (desde el 2026-11-06, `/inicio/favoritos`, que se abre con la estrella del header). Sin reordenar acá.
 2. **F4-inicio-2** — Tocar un favorito abre su detalle en el tab correspondiente: línea o estación de subte → `/subtes/…`; línea de colectivo → `/colectivos/[linea]`; parada → `/colectivos/parada/[id]` (S3).
 3. **F4-inicio-3** — La Alert destacada usa el `resumen` del estado (`header_text` de la alerta más severa) para no pedir `/v1/subtes/alertas` en Inicio. Premetro cuenta como una línea (S8).
 4. **F4-inicio-4** — El nombre corto de cada fila es el de la línea ("Línea B", "Premetro"); las cabeceras viven en Subtes.

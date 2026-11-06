@@ -1,4 +1,7 @@
-// Tabs: Inicio, Colectivos, Subtes, Trenes (Fase 6) y Favoritos (5 visibles; Tránsito oculto).
+// Tabs: Inicio, Colectivos, Subtes y Trenes (Fase 6): 4 visibles; Tránsito oculto. Favoritos
+// salió de la barra (pedido del usuario, 2026-11-06): es una pantalla del Stack de Inicio
+// (`inicio/favoritos.tsx`) que se abre con la estrella del header. No alcanzaba con esconderla:
+// una tab `hidden` no se puede navegar.
 //
 // Se usan las tabs nativas de Expo Router (`expo-router/native-tabs` en SDK 58; hasta SDK 57 era `unstable-native-tabs`):
 // UITabBarController en iOS y BottomNavigationView de Material en Android, en línea con la
@@ -35,10 +38,6 @@ export default function TabsLayout() {
           sf={{ default: 'train.side.front.car', selected: 'train.side.front.car' }}
           md="train"
         />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="favoritos">
-        <NativeTabs.Trigger.Label>Favoritos</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'star', selected: 'star.fill' }} md="star" />
       </NativeTabs.Trigger>
       {/*
         Tránsito queda OCULTO: decisión del usuario del 2026-11-01 (`docs/00-plan.md`,

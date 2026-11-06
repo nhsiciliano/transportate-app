@@ -1,5 +1,5 @@
-// Tabs nativas: 5 visibles en orden (Inicio, Colectivos, Subtes, Trenes, Favoritos) y Tránsito
-// oculto. `NativeTabs` es nativo (UITabBarController): se reemplaza por componentes de prueba que
+// Tabs nativas: 4 visibles en orden (Inicio, Colectivos, Subtes, Trenes) y Tránsito oculto;
+// Favoritos ya no es tab (se abre desde el header de Inicio). `NativeTabs` es nativo (UITabBarController): se reemplaza por componentes de prueba que
 // dibujan lo que reciben, para verificar la configuración sin el módulo nativo.
 import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
@@ -39,7 +39,7 @@ jest.mock('expo-router/native-tabs', () => {
 import TabsLayout from '@/app/(tabs)/_layout';
 
 describe('Tabs', () => {
-  it('cinco tabs visibles en orden, con Trenes entre Subtes y Favoritos; Tránsito oculta', async () => {
+  it('cuatro tabs visibles en orden, Trenes la última; sin Favoritos; Tránsito oculta', async () => {
     await render(<TabsLayout />);
     const tabs = screen.getAllByTestId(/^tab-[a-z]+$/);
     expect(tabs.map((t) => t.props.testID as string)).toEqual([
@@ -47,10 +47,10 @@ describe('Tabs', () => {
       'tab-colectivos',
       'tab-subtes',
       'tab-trenes',
-      'tab-favoritos',
       'tab-transito',
     ]);
-    expect(tabs.filter((t) => t.props.accessibilityHint === 'visible')).toHaveLength(5);
+    expect(tabs.filter((t) => t.props.accessibilityHint === 'visible')).toHaveLength(4);
+    expect(screen.queryByTestId('tab-favoritos')).toBeNull();
     expect(screen.getByTestId('tab-transito').props.accessibilityHint).toBe('oculta');
     expect(screen.getByText('Trenes')).toBeOnTheScreen();
     expect(screen.getByTestId('tab-trenes')).toHaveTextContent(

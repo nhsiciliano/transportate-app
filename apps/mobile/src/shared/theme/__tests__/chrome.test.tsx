@@ -6,7 +6,6 @@ import { renderRouter, screen } from 'expo-router/testing-library';
 import type { ReactNode } from 'react';
 import { Appearance, Text, type ColorSchemeName } from 'react-native';
 
-import FavoritosLayout from '@/app/(tabs)/favoritos/_layout';
 import InicioLayout from '@/app/(tabs)/inicio/_layout';
 import SubtesLayout from '@/app/(tabs)/subtes/_layout';
 import { FavoritosProvider, MmkvFavoritosRepository } from '@/features/favoritos';
@@ -175,7 +174,6 @@ describe('headers reales de los tabs', () => {
 
   const layouts = [
     ['subtes', SubtesLayout],
-    ['favoritos', FavoritosLayout],
     ['inicio', InicioLayout],
   ] as const;
 

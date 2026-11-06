@@ -20,6 +20,8 @@ describe('Subtes (raíz)', () => {
   it('sin caché muestra el skeleton de las líneas', async () => {
     await renderSubtes('/subtes', { ...defaultRoutes(), '/v1/subtes/estado': () => undefined });
     expect(await screen.findByTestId('subtes-skeleton')).toBeOnTheScreen();
+    // La silueta coincide con el tablero: una placa por línea.
+    expect(screen.getAllByTestId(/^subtes-skeleton-placa-\d+$/)).toHaveLength(7);
     expect(screen.queryByTestId('linea-A')).toBeNull();
   });
 
@@ -56,11 +58,14 @@ describe('Subtes (raíz)', () => {
     expect(screen.getByTestId('linea-PM-estado')).toHaveTextContent('Interrumpida');
     expect(screen.getByTestId('linea-A-estado')).toHaveTextContent('Normal');
     expect(screen.getAllByTestId('board-estado-cuadrado')).toHaveLength(2);
-    // Una sola placa con las 7 filas y la flecha en cada una (todas abren su línea).
-    expect(screen.getByTestId('subtes-lineas')).toHaveStyle({
-      backgroundColor: light.bg.card,
-      borderRadius: 6,
-    });
+    // Una placa por línea (2026-11-06), del mismo material y sin hairlines entre filas; la
+    // flecha en cada una (todas abren su línea).
+    const placas = screen.getAllByTestId(/^subtes-lineas-placa-\d+$/);
+    expect(placas).toHaveLength(7);
+    for (const placa of placas) {
+      expect(placa).toHaveStyle({ backgroundColor: light.bg.card, borderRadius: 6 });
+    }
+    expect(screen.queryByTestId('board-separador')).toBeNull();
     expect(
       screen.getAllByTestId(/^linea-[A-Z]+-flecha$/, { includeHiddenElements: true }),
     ).toHaveLength(7);

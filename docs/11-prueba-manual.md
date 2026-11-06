@@ -17,7 +17,7 @@ Todas las pantallas de la Fase 4 están integradas en `main`, incluidas Colectiv
 - [ ] **IP de la Mac:** `ipconfig getifaddr en0`. En `apps/mobile/.env` poné `EXPO_PUBLIC_API_URL=http://<IP-de-la-Mac>:8787`. Abrí `http://<IP-de-la-Mac>:8787/v1/health` desde Safari del iPhone: tiene que responder `ok`.
 - [ ] **Metro:** en `apps/mobile`, `pnpm exec expo start --dev-client`. Dejá esa terminal a la vista: ahí salen los logs.
 - [ ] iPhone y Mac en la **misma red Wi‑Fi**. Abrí el dev client y elegí el servidor de Metro.
-- [ ] Primer arranque: se ve el splash con la marca y después **Inicio**, con las 5 tabs nativas (Inicio, Colectivos, Subtes, Trenes, Favoritos). Sin pantalla roja.
+- [ ] Primer arranque: se ve el splash con la marca y después **Inicio**, con las 4 tabs nativas (Inicio, Colectivos, Subtes, Trenes). Favoritos ya no es tab. Sin pantalla roja.
 
 ### Cómo forzar cada estado
 
@@ -138,7 +138,7 @@ Tab nueva, espejo de Subtes y sin mapa. Los datos vienen de una **fuente comunit
 
 ### Tab y raíz
 
-- [ ] **📱 Tab visible y orden:** la barra tiene 5 tabs: Inicio, Colectivos, Subtes, **Trenes**, Favoritos (Trenes entre Subtes y Favoritos), con el ícono de tren del sistema. Tránsito sigue oculto.
+- [ ] **📱 Tab visible y orden:** la barra tiene 4 tabs: Inicio, Colectivos, Subtes, **Trenes** (Trenes la última), con el ícono de tren del sistema. Favoritos no está en la barra y Tránsito sigue oculto.
 - [ ] **📱 Large title** «Trenes» grande, que se achica al scrollear; **no hay mapa** ni botón de mapa.
 - [ ] **📱 Placa de tablero:** las 6 líneas en **una sola placa blanca**, en orden fijo: Roca, Sarmiento, Mitre, San Martín, Belgrano Sur, Tren de la Costa. Cada fila: insignia **rectangular** del color de la línea con sus siglas (R, S, M, SM, BS, TC), «Línea Roca» y debajo «12 ramales» (o las cabeceras si tiene un solo ramal, como Tren de la Costa); a la derecha el estado y la flecha al borde. Belgrano Norte y Urquiza **no** están (no tienen fuente).
 - [ ] **Estado de cada línea:** «Normal» en gris; «Con demoras» con cuadrado ámbar; «Interrumpida» con cuadrado rojo, y, solo si la línea tiene un problema, el resumen de la alerta en hasta dos líneas. Compará con las alertas de la app oficial de Trenes Argentinos. Ojo: **un ramal interrumpido deja su línea en «Con demoras»**, con el resumen prefijado por el ramal (por ejemplo «Cañuelas-Lobos: …» en Roca); «Interrumpida» en la línea solo con una alerta de toda la línea. El detalle por ramal sí muestra «Interrumpida». 
@@ -186,6 +186,7 @@ Tab nueva, espejo de Subtes y sin mapa. Los datos vienen de una **fuente comunit
 
 ## 4. Favoritos
 
+- [ ] **📱 Botón Favoritos en el header de Inicio:** arriba a la derecha de Inicio hay una estrella llena **a la izquierda** del engranaje de Ajustes, los dos del mismo tamaño y fáciles de tocar, sin texto ni número. VoiceOver la anuncia como botón «Favoritos». Tocarla apila Favoritos (large title, «Editar» a la derecha, «Atrás» del sistema); volvé con el gesto de borde. Si saliste en modo edición, al volver a abrir arranca en modo lectura.
 - [ ] **📱 Large title** "Favoritos" grande, que se achica al scrollear; "Editar"/"Listo" a la derecha. Nada queda debajo del header: ni la primera fila ni el estado vacío.
 - [ ] **Vacío:** estrella, "Todavía no guardaste favoritos.", "Tocá la estrella en una línea, parada o estación para tenerla acá." y los botones "Ver subtes" y "Buscar colectivo", que cambian de tab.
 - [ ] **Agregar:** desde una línea y una estación de subte (y una línea/parada de colectivo) con la estrella. Volvé a Favoritos: aparecen en el orden en que los guardaste, de forma inmediata (sin skeleton de estructura).
@@ -226,7 +227,7 @@ Desde la Fase 5, Ajustes, Acerca de y Licencias siguen la dirección «Señalét
 - [ ] Recorré Inicio, Subtes (raíz, línea, estación, mapa), Trenes (raíz, línea, ramal, estación), Favoritos y Ajustes en **Claro** y en **Oscuro**.
 - [ ] Nada queda con texto ilegible, fondo que no cambió o un borde que desaparece. Los colores de línea (A, H, Premetro) siguen distinguibles en los dos temas.
 - [ ] **📱 Oscuro con el sistema en claro:** dejá el iPhone en modo claro y elegí **Oscuro** en Ajustes. Los títulos grandes («Subtes», «Colectivos», «Favoritos»), los títulos de header («Ajustes», el nombre de una parada, «Línea 15A»), el botón «Atrás», «Editar/Listo» y la tab bar tienen que verse **oscuros y legibles** (texto claro sobre fondo oscuro), igual que la hora de la barra de estado. Volvé a **Sistema**: todo vuelve a claro. Repetí al revés (sistema en oscuro, elegí **Claro**).
-- [ ] **📱 Títulos de header visibles:** cada tab raíz muestra su large title («Transportate», «Colectivos», «Subtes», «Trenes», «Favoritos») en la fuente del sistema, y el large title se achica al scrollear. Si un header queda alto y sin texto, es el defecto de iOS 26+ con fondo explícito en el header (`docs/07-app.md` §4, chrome nativo): anotalo.
+- [ ] **📱 Títulos de header visibles:** cada tab raíz muestra su large title («Transportate», «Colectivos», «Subtes», «Trenes»; también «Favoritos» al abrirla desde Inicio) en la fuente del sistema, y el large title se achica al scrollear. Si un header queda alto y sin texto, es el defecto de iOS 26+ con fondo explícito en el header (`docs/07-app.md` §4, chrome nativo): anotalo.
 
 ## 7. Texto grande y Reducir movimiento
 

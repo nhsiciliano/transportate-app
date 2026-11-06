@@ -511,7 +511,7 @@ function Favoritos({
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            router.push('/favoritos');
+            router.push('/inicio/favoritos');
           }}
           hitSlop={8}
           style={{ minHeight: component.hitSlop, justifyContent: 'center' }}

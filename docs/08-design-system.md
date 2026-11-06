@@ -120,7 +120,7 @@ Columnas: uso en la app → nombre en Material Symbols → archivo en `@material
 | Tab Inicio | `home` | `rounded/home-fill.svg` | HTTP 200 · 503 B |
 | Tab Colectivos | `directions_bus` | `rounded/directions_bus-fill.svg` | HTTP 200 · 614 B |
 | Tab Subtes | `subway` | `rounded/subway-fill.svg` | HTTP 200 · 662 B |
-| Tab Favoritos | `star` | `rounded/star-fill.svg` | HTTP 200 · 387 B |
+| Botón Favoritos del header de Inicio | `star` | `rounded/star-fill.svg` | HTTP 200 · 387 B |
 | Tab Tránsito (oculto en el MVP. N3) | `traffic` | `rounded/traffic-fill.svg` | HTTP 200 · 743 B |
 | Ajustes (barra superior de Inicio) | `settings` | `rounded/settings-fill.svg` | HTTP 200 · 716 B |
 | Acerca de | `info` | `rounded/info-fill.svg` | HTTP 200 · 698 B |
@@ -168,7 +168,7 @@ Columnas: uso en la app → nombre en Material Symbols → archivo en `@material
 ### Notas
 
 1. **Excepción de FILL: la estrella apagada.** `PRODUCT.md` fija FILL 1, pero un favorito *desactivado* con el mismo glifo lleno solo se distinguiría por el color, y el color no puede ser el único canal (`PRODUCT.md`, "Accessibility & Inclusion"). Por eso el estado "no es favorito" usa **`rounded/star.svg` (FILL 0, contorno)** y el estado "es favorito" usa `rounded/star-fill.svg`. Es el único ícono del mapa sin `-fill` *(suposición: a validar por el usuario; si no se acepta, la alternativa es mantener el glifo lleno y variar color + etiqueta de accesibilidad)*. El archivo `star.svg` también devolvió HTTP 200 (474 B).
-2. **Nombres repetidos a propósito.** `star` (tab Favoritos y favorito activado), `info` (Acerca de y Alert info) `subway` (tab Subtes y estación) y `arrow_forward` (sentido hacia la cabecera e «ir al detalle» de la banda de señal, `irA`) se usan con el mismo glifo en dos lugares. En el mapa de código son una sola entrada con dos alias semánticos.
+2. **Nombres repetidos a propósito.** `star` (botón Favoritos del header de Inicio y favorito activado), `info` (Acerca de y Alert info) `subway` (tab Subtes y estación) y `arrow_forward` (sentido hacia la cabecera e «ir al detalle» de la banda de señal, `irA`) se usan con el mismo glifo en dos lugares. En el mapa de código son una sola entrada con dos alias semánticos.
 3. **Tránsito.** `traffic` está en el mapa solo para el tab Tránsito, que está oculto (N3 de `docs/briefs/README.md`). No hay que renderizarlo en el MVP.
 4. **Compartir.** No se usa en el MVP, por eso no figura.
 5. **Flecha de navegación.** `chevron_right` es el indicador de fila navegable; el botón "atrás" lo pone la navegación nativa (gesto de borde en iOS, Back predictivo en Android) y `arrow_back` queda para pantallas modales propias.

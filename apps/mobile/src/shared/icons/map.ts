@@ -58,7 +58,7 @@ export const iconMap = {
   inicio: HomeFillSvg, // Tab Inicio
   colectivos: DirectionsBusFillSvg, // Tab Colectivos
   subtes: SubwayFillSvg, // Tab Subtes
-  favoritos: StarFillSvg, // Tab Favoritos
+  favoritos: StarFillSvg, // Botón Favoritos del header de Inicio
   transito: TrafficFillSvg, // Tab Tránsito (oculto en el MVP, N3)
   ajustes: SettingsFillSvg, // Ajustes (barra superior de Inicio)
   acercaDe: InfoFillSvg, // Acerca de

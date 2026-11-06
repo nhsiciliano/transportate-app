@@ -85,6 +85,7 @@ export function TrenesScreen() {
             ) : lineas === undefined || (estado.isPending && !estado.isLoadingError) ? (
               <Board.Skeleton
                 rows={6}
+                layout="cards"
                 accessibilityLabel="Cargando el estado de las líneas…"
                 testID="trenes-skeleton"
               />
@@ -98,7 +99,8 @@ export function TrenesScreen() {
                     onRetry={() => void estado.refetch()}
                   />
                 ) : null}
-                <Board testID="trenes-lineas">
+                {/* Una placa por línea (pedido del usuario, 2026-11-06), del mismo material. */}
+                <Board layout="cards" testID="trenes-lineas">
                   {lineas.map((item) => (
                     <LineaRow
                       key={item.linea.id}

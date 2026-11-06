@@ -5,6 +5,9 @@
 //
 // - `Board`: la placa. `label` opcional arriba y afuera (13/600 `text.secondary`, como la
 //   etiqueta «Subte ahora» de Inicio). Separadores entre filas, nunca después de la última.
+//   Con `layout="cards"` (pedido del usuario, 2026-11-06) cada fila va en su propia placa del
+//   mismo material (sin sombra, mismo outline y radio), apiladas a 8 pt y sin separadores: para
+//   los tableros de líneas, no para recorridos (el trazo tiene que seguir continuo entre filas).
 // - `Board.Row`: una fila; con `onPress` es un botón con flecha, sin él no hay flecha. Siempre es un
 //   solo elemento accesible con etiqueta compuesta.
 // - `Board.Status`: el estado que va a la derecha de una fila («Con demoras» con cuadrado ámbar).
@@ -32,7 +35,12 @@ export const BOARD = {
   arrowInset: 12,
   arrowReserve: 44,
   statusSquare: 10,
+  /** Separación entre placas con `layout="cards"`. */
+  cardGap: 8,
 } as const;
+
+/** `single`: una placa con hairlines entre filas. `cards`: una placa por fila, a `cardGap`. */
+export type BoardLayout = 'single' | 'cards';
 
 // ---------------------------------------------------------------- placa
 
@@ -45,13 +53,30 @@ export interface BoardProps {
    * dibujado en `leading` (recorrido de una línea) siga continuo entre filas.
    */
   separatorInset?: number;
+  /**
+   * `cards`: cada fila en su placa (testID `${testID}-placa-${i}`); `testID` y `style` van al
+   * contenedor de las placas. Default `single`.
+   */
+  layout?: BoardLayout;
   style?: StyleProp<ViewStyle>;
   testID?: string | undefined;
 }
 
-function BoardRoot({ children, label, separatorInset = 0, style, testID }: BoardProps) {
+function BoardRoot({
+  children,
+  label,
+  separatorInset = 0,
+  layout = 'single',
+  style,
+  testID,
+}: BoardProps) {
   const { colors, fontFamily, borderWidth } = useTheme();
   const filas = Children.toArray(children).filter(isValidElement);
+  const placa = {
+    backgroundColor: colors.bg.card,
+    borderColor: colors.border.subtle,
+    borderWidth: borderWidth.hairline,
+  };
   return (
     <View style={styles.wrapper}>
       {label === undefined ? null : (
@@ -64,34 +89,37 @@ function BoardRoot({ children, label, separatorInset = 0, style, testID }: Board
           {label}
         </Text>
       )}
-      <View
-        testID={testID}
-        style={[
-          styles.board,
-          {
-            backgroundColor: colors.bg.card,
-            borderColor: colors.border.subtle,
-            borderWidth: borderWidth.hairline,
-          },
-          style,
-        ]}
-      >
-        {filas.map((fila, i) => (
-          <Fragment key={fila.key ?? i}>
-            {i === 0 ? null : (
-              <View
-                testID="board-separador"
-                style={{
-                  height: StyleSheet.hairlineWidth,
-                  marginLeft: separatorInset,
-                  backgroundColor: colors.border.subtle,
-                }}
-              />
-            )}
-            {fila}
-          </Fragment>
-        ))}
-      </View>
+      {layout === 'cards' ? (
+        <View testID={testID} style={[styles.cards, style]}>
+          {filas.map((fila, i) => (
+            <View
+              key={fila.key ?? i}
+              testID={testID === undefined ? undefined : `${testID}-placa-${i}`}
+              style={[styles.board, placa]}
+            >
+              {fila}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View testID={testID} style={[styles.board, placa, style]}>
+          {filas.map((fila, i) => (
+            <Fragment key={fila.key ?? i}>
+              {i === 0 ? null : (
+                <View
+                  testID="board-separador"
+                  style={{
+                    height: StyleSheet.hairlineWidth,
+                    marginLeft: separatorInset,
+                    backgroundColor: colors.border.subtle,
+                  }}
+                />
+              )}
+              {fila}
+            </Fragment>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -276,37 +304,49 @@ function BoardRow({
 
 function BoardSkeleton({
   rows,
+  layout = 'single',
   accessibilityLabel,
   testID,
 }: {
   rows: number;
+  /** La misma que la del tablero que reemplaza: con `cards`, una placa por fila. */
+  layout?: BoardLayout;
   accessibilityLabel?: string;
   testID?: string;
 }) {
   const { colors, borderWidth } = useTheme();
+  const placa = {
+    backgroundColor: colors.bg.card,
+    borderColor: colors.border.subtle,
+    borderWidth: borderWidth.hairline,
+  };
+  const fila = (i: number) => (
+    <View key={i} style={[styles.row, { alignItems: 'center' }]}>
+      <Skeleton height={32} circle />
+      <View style={styles.skeletonTexts}>
+        <Skeleton height={16} width="45%" radius={4} />
+        <Skeleton height={12} width="70%" radius={4} />
+      </View>
+    </View>
+  );
+  const filas = Array.from({ length: rows }, (_, i) => i);
   return (
     <SkeletonGroup
       testID={testID}
       {...(accessibilityLabel === undefined ? {} : { accessibilityLabel })}
-      style={[
-        styles.board,
-        {
-          gap: 0,
-          backgroundColor: colors.bg.card,
-          borderColor: colors.border.subtle,
-          borderWidth: borderWidth.hairline,
-        },
-      ]}
+      style={layout === 'cards' ? styles.cards : [styles.board, { gap: 0 }, placa]}
     >
-      {Array.from({ length: rows }, (_, i) => (
-        <View key={i} style={[styles.row, { alignItems: 'center' }]}>
-          <Skeleton height={32} circle />
-          <View style={styles.skeletonTexts}>
-            <Skeleton height={16} width="45%" radius={4} />
-            <Skeleton height={12} width="70%" radius={4} />
-          </View>
-        </View>
-      ))}
+      {layout === 'cards'
+        ? filas.map((i) => (
+            <View
+              key={i}
+              testID={testID === undefined ? undefined : `${testID}-placa-${i}`}
+              style={[styles.board, placa]}
+            >
+              {fila(i)}
+            </View>
+          ))
+        : filas.map(fila)}
     </SkeletonGroup>
   );
 }
@@ -320,6 +360,7 @@ export const Board = Object.assign(BoardRoot, {
 const styles = StyleSheet.create({
   wrapper: { gap: 8 },
   board: { borderRadius: BOARD.radius, overflow: 'hidden' },
+  cards: { gap: BOARD.cardGap },
   row: {
     flexDirection: 'row',
     alignItems: 'stretch',
