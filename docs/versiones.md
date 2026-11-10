@@ -321,7 +321,7 @@ Notas y límites de la verificación:
 Para `transportate-site` (`site/wrangler.jsonc`, [`10-deploy.md`](10-deploy.md) §10):
 
 - Un Worker **solo de assets** no lleva `main`: alcanza con `name`, `compatibility_date` y `assets: { "directory": "…" }`. Sin Worker, un pedido que no coincide con un archivo recibe **404**.
-- `assets.directory`: carpeta de archivos estáticos. `assets.html_handling`: `"auto-trailing-slash"` (default), `"force-trailing-slash"`, `"drop-trailing-slash"` o `"none"`; con el default, `/privacidad` sirve `privacidad.html` o `privacidad/index.html` sin redirección explícita. `assets.not_found_handling`: `"none"` (default), `"404-page"` (sirve el `404.html` más cercano con 404) o `"single-page-application"`.
+- `assets.directory`: carpeta de archivos estáticos. `assets.html_handling`: `"auto-trailing-slash"` (default), `"force-trailing-slash"`, `"drop-trailing-slash"` o `"none"`; con el default, los archivos sueltos (`privacidad.html`) se sirven **sin** barra final (`/privacidad`) y los índices de carpeta (`privacidad/index.html`) **con** barra (`/privacidad/`); para que `/privacidad` y `/soporte` salgan sin barra, usar `privacidad.html` y `soporte.html` o `drop-trailing-slash`. `assets.not_found_handling`: `"none"` (default), `"404-page"` (sirve el `404.html` más cercano con 404) o `"single-page-application"`.
 - Otros campos documentados que no usamos: `binding`, `base_path`, `run_worker_first`.
 - Límite de la verificación: la documentación consultada no está fijada a wrangler 4.156.1; no se corrió `wrangler deploy --dry-run` sobre `site/` porque la carpeta aún no existe (la escribe otro worker).
 
