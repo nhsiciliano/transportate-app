@@ -2,7 +2,9 @@
 // palabras. Nombre, versión y build; de dónde salen los datos (CC BY 2.5 AR, S27: no es una app
 // oficial); privacidad en bullets (`docs/05-privacidad.md:89-90`); mapa; diseño; y la pantalla de
 // licencias de terceros. La atribución de trenes (fuente comunitaria no oficial, Fase 6) va en
-// «Datos», con su enlace a la fuente. Sin contacto ni "reportar un problema" (F4-ajustes-3).
+// «Datos», con su enlace a la fuente. El contacto vive en la web, no en la app: la placa
+// «Información» enlaza la política de privacidad y la página de soporte y contacto del sitio
+// público (`site/`, Fase 7, 2026-11-10). Con eso se cierra F4-ajustes-3.
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Image, Linking, ScrollView, View } from 'react-native';
@@ -17,6 +19,10 @@ import appIcon from '../../../assets/images/icon.png';
 export const CC_LICENSE_URL = 'https://creativecommons.org/licenses/by/2.5/ar/';
 export const DATOS_ABIERTOS_URL = 'https://www.buenosaires.gob.ar/datosabiertos';
 export const TRENES_FUENTE_URL = 'https://github.com/ariedro/api-trenes';
+/** Sitio público (`site/`): App Store pide estas URLs de privacidad y soporte. */
+export const SITIO_URL = 'https://transportate-site.nhsiciliano.workers.dev';
+export const PRIVACIDAD_URL = `${SITIO_URL}/privacidad`;
+export const SOPORTE_URL = `${SITIO_URL}/soporte`;
 
 export const PRIVACIDAD_BULLETS = [
   'No necesitás crear una cuenta.',
@@ -165,6 +171,27 @@ export function AcercaScreen() {
         <Titulo>Diseño</Titulo>
         <Parrafo>{DISENO_TEXTO}</Parrafo>
       </View>
+
+      <Section title="Información">
+        <Row
+          title="Política de privacidad"
+          role="link"
+          trailing="externo"
+          titleTone="link"
+          onPress={() => {
+            openLink(PRIVACIDAD_URL);
+          }}
+        />
+        <Row
+          title="Soporte y contacto"
+          role="link"
+          trailing="externo"
+          titleTone="link"
+          onPress={() => {
+            openLink(SOPORTE_URL);
+          }}
+        />
+      </Section>
 
       <Section title="Software">
         <Row

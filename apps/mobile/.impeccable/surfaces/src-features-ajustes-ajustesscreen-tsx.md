@@ -25,5 +25,5 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## Decisiones abiertas
 
-- Contacto o «Reportar un problema» en Acerca de: sigue abierto (F4-ajustes-3).
+- Contacto o «Reportar un problema» en Acerca de: **resuelto el 2026-11-10** (F4-ajustes-3). El contacto vive en la web: Acerca de suma, entre «Diseño» y «Software», la placa «Información» con dos filas de enlace externo del mismo material que «Enlaces» (`text.link`, ícono de salida): «Política de privacidad» y «Soporte y contacto», al sitio público `transportate-site.nhsiciliano.workers.dev` (las URLs que pide App Store). Sin mail ni formulario en la app. Alternativa a evaluar en la revisión: «Política de privacidad» como fila debajo de los bullets de «Privacidad», donde se lee como «el detalle de esto».
 - El texto «Diseño» de Acerca de: **resuelto el 2026-11-06**. El usuario lo fijó en «La app sigue Obelisco v2, el sistema de diseño de la Ciudad de Buenos Aires, adaptado a nativo.», sin nombrar la dirección ni Fira Sans.
