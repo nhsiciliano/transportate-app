@@ -9,6 +9,9 @@ import {
   CC_LICENSE_URL,
   DATOS_ABIERTOS_URL,
   DISENO_TEXTO,
+  PRIVACIDAD_URL,
+  SITIO_URL,
+  SOPORTE_URL,
   TRENES_ATRIBUCION,
   TRENES_FUENTE_URL,
 } from '../AcercaScreen';
@@ -198,6 +201,24 @@ describe('AcercaScreen', () => {
     await user.press(screen.getByRole('link', { name: 'Datos abiertos de la Ciudad' }));
     expect(open).toHaveBeenLastCalledWith(DATOS_ABIERTOS_URL);
     expect(CC_LICENSE_URL).toBe('https://creativecommons.org/licenses/by/2.5/ar/');
+  });
+
+  it('«Información» enlaza la política de privacidad y el soporte del sitio público', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    await renderThemed(<AcercaScreen />);
+
+    expect(screen.getByRole('header', { name: 'Información' })).toBeOnTheScreen();
+    await user.press(screen.getByRole('link', { name: 'Política de privacidad' }));
+    expect(open).toHaveBeenLastCalledWith(PRIVACIDAD_URL);
+    await user.press(screen.getByRole('link', { name: 'Soporte y contacto' }));
+    expect(open).toHaveBeenLastCalledWith(SOPORTE_URL);
+    expect(SITIO_URL).toBe('https://transportate-site.nhsiciliano.workers.dev');
+    for (const url of [PRIVACIDAD_URL, SOPORTE_URL]) {
+      expect(url).toMatch(/^https:\/\/transportate-site\.nhsiciliano\.workers\.dev\/[a-z]+$/);
+    }
+    // El contacto vive en la web: la app no muestra ningún mail.
+    expect(screen.queryByText(/@/)).toBeNull();
   });
 
   it('un enlace que el sistema no puede abrir no rompe la pantalla', async () => {
