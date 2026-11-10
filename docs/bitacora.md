@@ -406,7 +406,7 @@ El usuario re-probó y los headers seguían vacíos: la hipótesis de la fuente 
 3. Decisiones abiertas: texto de «Diseño» en Acerca de; contacto o «Reportar un problema» (F4-ajustes-3); `Board.Row selected`.
 4. Después, el resto de la fase (5.1–5.7).
 
-## Fase 6 — Trenes · **olas 1 y 2 integradas en `main`; falta la prueba del usuario, los colores oficiales y la subida a R2**
+## Fase 6 — Trenes · **integrada en `main`; falta la prueba del usuario en el iPhone**
 
 Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del GCBA: la instancia pública comunitaria de la API de SOFSE (`ariedro.dev/api-trenes`). Plan en la sección «Fase 6» de [`00-plan.md`](00-plan.md); evaluación de la fuente en [`01d-api-trenes-sofse.md`](01d-api-trenes-sofse.md).
 
@@ -435,7 +435,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | # | Qué | Quién | Estado |
 | --- | --- | --- | --- |
 | 1 | **Colores de las 6 líneas** (tarea 6.6) | Coordinador | Hecho el 2026-11-06: el usuario aportó el plano de la red (`mapa-red-trenes-buenos-aires.pdf`, no oficial pero elegido como referencia); se midió el color del trazo de cada línea y se reemplazaron los provisorios de Wikipedia (`02c` §2, commit 593e061). Sarmiento, San Martín y Belgrano Sur pasan a texto blanco |
-| 2 | **Subida a R2** del paquete estático | Coordinador | Hecho el 2026-11-06. El 2026-11-05 la cuenta no tenía R2 habilitado (API `10042`); el usuario lo habilitó (con medio de pago) y el coordinador creó `transportate-static` y `transportate-static-preview` y subió la versión **`6abe94f97629`** (10 archivos, con los colores nuevos de trenes) a los dos buckets con `upload-r2.sh`; `latest/manifest.json` verificado en remoto. El Worker sigue sin desplegar en ningún entorno |
+| 2 | **Subida a R2** del paquete estático | Coordinador | Hecho el 2026-11-06. El 2026-11-05 la cuenta no tenía R2 habilitado (API `10042`); el usuario lo habilitó (con medio de pago) y el coordinador creó `transportate-static` y `transportate-static-preview` y subió la versión **`6abe94f97629`** (10 archivos, con los colores nuevos de trenes) a los dos buckets con `upload-r2.sh`; `latest/manifest.json` verificado en remoto. El Worker se desplegó en `production` el 2026-11-10 (Fase 7, ola B) |
 | 3 | **Smoke en el simulador** de la tab Trenes contra el proxy local (`07-app.md` §11) | Coordinador | Hecho el 2026-11-05 (raíz, línea, ramal, estación en claro y oscuro); `TRENES_ENABLED=false` probado con `curl` por high-dev |
 | 4 | **Prueba manual en el iPhone** con la sección 3b de [`11-prueba-manual.md`](11-prueba-manual.md) | Usuario | Abierto |
 | 5 | **Capturas y finish review** de Trenes contra el brief y el contrato de superficie (tarea 6.7) | Coordinador | Abierto, junto con las de la Fase 5 |
@@ -443,3 +443,30 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 7 | Decisiones abiertas del brief: tira «Trenes ahora» en Inicio, nota sobre Belgrano Norte y Urquiza, orden de la tab | Usuario | Abierto |
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
+
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **ola B cerrada: proxy en producción**
+
+Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
+
+### Ola B — Proxy a producción (coordinador, 2026-11-10)
+
+- **Worker:** `transportate-proxy-production`, versión `41d8d184-8dcc-42a3-834f-d9dac341f2ca`, en **`https://transportate-proxy-production.nhsiciliano.workers.dev`**. Antes: `typecheck`, `lint` y 130 tests del proxy en verde, y `wrangler deploy --dry-run --env production`.
+- **Secrets:** `GCBA_CLIENT_ID` y `GCBA_CLIENT_SECRET` cargados en `production` por stdin desde `apps/proxy/.dev.vars` (el procedimiento sin prompt de [`10-deploy.md`](10-deploy.md) §2), sin imprimir valores; `secret list` muestra los dos nombres. Se cargaron **después** del primer deploy: con el Worker inexistente, `secret list` falla con «not found».
+- **Verificación con `curl`:**
+
+  | Endpoint | Resultado |
+  | --- | --- |
+  | `/v1/health` | 200, `environment: production`, `version: 0.1.0` |
+  | `/v1/subtes/estado`, `/alertas`, `/estaciones/1059/arribos` | 200 con datos del día; `Cache-Control: public, max-age=20, stale-while-revalidate=40`, `ETag`, `X-Transportate-Generated-At` |
+  | `/v1/colectivos/lineas`, `/lineas/1671/posiciones`, `/paradas/<id>/arribos` | 200 con vehículos y arribos reales |
+  | `/v1/trenes/estado`, `/alertas`, `/estaciones/526/arribos` | 200 con los colores del plano |
+  | `/v1/static/manifest` y `/v1/static/6abe94f97629/*` | 200 desde R2, versión `6abe94f97629`, 10 archivos; archivos con `immutable` |
+  | `/v1/transito/cortes` | 503 `upstream_unavailable` (esperado) |
+  | Rate limit | 90 pedidos seguidos a una ruta no exenta: 54 pasan y 36 reciben 429 con `Retry-After: 60`; `/v1/health` y `/v1/static/*` siguen en 200 |
+
+- **Observaciones:**
+  - El primer pedido de arribos de una parada de colectivos tardó 5,1 s y volvió con `stale: true`: `tripUpdates` del GCBA agotó `UPSTREAM_TIMEOUT_MS` en frío. Los cuatro siguientes tardaron entre 0,06 y 0,18 s.
+  - `/v1/health` informa `0.1.0`: cuando la ola A lleve la versión a 1.0.0 hay que **redesplegar** el proxy.
+  - Sin dominio, la Cache API no tiene efecto ([`10-deploy.md`](10-deploy.md) §4): cada pedido de la app llega al GCBA. Alcanza para pocos testers; sigue siendo gate antes de abrir en App Store.
+  - No se desplegó `preview`: los perfiles `preview` y `production` de EAS van a apuntar al Worker de producción.
+  - Queda a la vista del usuario, en el dashboard, confirmar que los invocation logs están apagados (la config desplegada tiene `invocation_logs: false`).

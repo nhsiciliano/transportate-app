@@ -49,12 +49,13 @@ pnpm --filter transportate-proxy run deploy --env production
 
 - Los secrets **no se heredan** entre entornos: hay que cargarlos en `preview` y en `production` por separado.
 - Los secrets se cargan **antes** del primer deploy del Worker de ese entorno. Si el Worker todavía no existe, `secret put` lo crea con un script vacío y el deploy siguiente lo reemplaza.
+- También funciona al revés (deploy y después secrets): así se hizo el primer despliegue de `production`, el 2026-11-10. Mientras el Worker no existe, `secret list` falla con «not found»; entre el deploy y los secrets, los endpoints del GCBA responden con error.
 - Si alguna vez hace falta pasar un secret sin prompt (por ejemplo, para rotarlo), se canaliza por stdin para que no quede en el historial: `printf '%s' "$VALOR" | wrangler secret put GCBA_CLIENT_SECRET --env production`.
 
-**Verificación** (reemplazá la URL por la que imprime `deploy`, por ejemplo `https://transportate-proxy-production.<subdominio>.workers.dev`):
+**Verificación** (la URL es la que imprime `deploy`; `production` quedó en `https://transportate-proxy-production.nhsiciliano.workers.dev` desde el 2026-11-10):
 
 ```sh
-BASE=https://transportate-proxy-production.<subdominio>.workers.dev
+BASE=https://transportate-proxy-production.nhsiciliano.workers.dev
 curl -s "$BASE/v1/health"                  # {"ok":true,"version":"…","environment":"production"}
 curl -s -D - -o /dev/null "$BASE/v1/subtes/estado" | grep -i -E '^HTTP|cache-control|etag|x-transportate'
 curl -s "$BASE/v1/transito/cortes"         # 503 upstream_unavailable (diferido, es lo esperado)
