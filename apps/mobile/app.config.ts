@@ -3,7 +3,9 @@
 //
 // Sin `expo-updates` ni analytics. El único permiso es la ubicación "mientras se usa"
 // (`expo-location`, `docs/05-privacidad.md` §3): nada de ubicación en segundo plano. La URL del
-// proxy NO va en `extra`: se lee de `process.env.EXPO_PUBLIC_API_URL` (ver `.env.example`).
+// proxy NO va en `extra`: se lee de `process.env.EXPO_PUBLIC_API_URL`, que en desarrollo sale de
+// `.env` (ver `.env.example`) y en los builds de EAS de `build.<perfil>.env` en `eas.json`.
+// Al evaluar la config, `assertReleaseApiUrl` corta los perfiles release sin URL `https://`.
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 // Identificador nativo confirmado por el usuario el 2026-11-02 (`docs/bitacora.md`, Fase 3).
@@ -14,13 +16,34 @@ const NATIVE_ID = 'app.transportate.mobile';
 export const LOCATION_WHEN_IN_USE_PERMISSION =
   'Transportate usa tu ubicación solo mientras la app está abierta, para mostrarte paradas cercanas. No sale de tu teléfono.';
 
+/** Perfiles de EAS que generan un build release: tienen que apuntar al proxy por HTTPS. */
+const RELEASE_PROFILES: readonly string[] = ['preview', 'preview-simulator', 'production'];
+
+/**
+ * Guardia de release: en un perfil release, `EXPO_PUBLIC_API_URL` tiene que empezar con
+ * `https://`. Con `development*` o sin perfil (Metro local) no hace nada. Pura: recibe el perfil y
+ * la URL en vez de leer `process.env`.
+ */
+export function assertReleaseApiUrl(profile: string | undefined, url: string | undefined): void {
+  if (profile === undefined || !RELEASE_PROFILES.includes(profile)) return;
+  if (url?.trim().startsWith('https://') !== true) {
+    throw new Error(
+      `El perfil de EAS "${profile}" necesita EXPO_PUBLIC_API_URL con una URL https:// ` +
+        `(recibió ${url?.trim() ? `"${url.trim()}"` : 'nada'}). Se define en ` +
+        `build.${profile}.env de apps/mobile/eas.json.`,
+    );
+  }
+}
+
+assertReleaseApiUrl(process.env.EAS_BUILD_PROFILE, process.env.EXPO_PUBLIC_API_URL);
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Transportate',
   slug: 'transportate',
   owner: 'nhsiciliano',
   scheme: 'transportate',
-  version: '0.1.0',
+  version: '1.0.0',
   orientation: 'portrait',
   // Claro y oscuro de primera clase (`docs/02-obelisco-tokens.md` §6).
   userInterfaceStyle: 'automatic',
@@ -29,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/images/icon.png',
   ios: {
     bundleIdentifier: NATIVE_ID,
-    supportsTablet: true,
+    supportsTablet: false,
     infoPlist: {
       // La app solo usa HTTPS estándar (exento de la declaración de cifrado de exportación);
       // sin esto, cada build pide la respuesta a mano en App Store Connect.

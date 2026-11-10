@@ -8,7 +8,7 @@ import path from 'node:path';
 
 import type { ConfigContext } from 'expo/config';
 
-import buildConfig from '../app.config';
+import buildConfig, { assertReleaseApiUrl } from '../app.config';
 
 const appRoot = path.resolve(__dirname, '..');
 const brandDir = path.resolve(appRoot, '../../design/brand');
@@ -96,5 +96,62 @@ describe('app.config.ts: assets de marca', () => {
 
   it('no declara ios.icon: iOS toma el ícono de nivel superior', () => {
     expect(config.ios?.icon).toBeUndefined();
+  });
+});
+
+describe('app.config.ts: publicación en iPhone (Fase 7)', () => {
+  const pkg: unknown = JSON.parse(fs.readFileSync(path.join(appRoot, 'package.json'), 'utf8'));
+  const pkgVersion = isRecord(pkg) ? pkg.version : undefined;
+
+  it('la versión es 1.0.0 y coincide con package.json', () => {
+    expect(config.version).toBe('1.0.0');
+    expect(pkgVersion).toBe(config.version);
+  });
+
+  it('es solo iPhone', () => {
+    expect(config.ios?.supportsTablet).toBe(false);
+  });
+
+  it('declara que no usa cifrado no exento', () => {
+    expect(config.ios?.infoPlist?.ITSAppUsesNonExemptEncryption).toBe(false);
+  });
+
+  it('no incluye expo-updates', () => {
+    const nombres = (config.plugins ?? []).map((plugin) =>
+      Array.isArray(plugin) ? plugin[0] : plugin,
+    );
+    expect(nombres).not.toContain('expo-updates');
+  });
+});
+
+describe('assertReleaseApiUrl', () => {
+  it('lanza en un perfil release sin URL o con una URL que no es https', () => {
+    expect(() => {
+      assertReleaseApiUrl('production', undefined);
+    }).toThrow(/production.*EXPO_PUBLIC_API_URL.*eas\.json/s);
+    expect(() => {
+      assertReleaseApiUrl('production', '  ');
+    }).toThrow(/EXPO_PUBLIC_API_URL/);
+    expect(() => {
+      assertReleaseApiUrl('preview-simulator', 'http://localhost:8787');
+    }).toThrow(/preview-simulator/);
+    expect(() => {
+      assertReleaseApiUrl('preview', 'http://proxy.test');
+    }).toThrow(/https:\/\//);
+  });
+
+  it('no hace nada con https, con perfiles de desarrollo ni sin perfil', () => {
+    expect(() => {
+      assertReleaseApiUrl('production', 'https://x.test');
+    }).not.toThrow();
+    expect(() => {
+      assertReleaseApiUrl('development', undefined);
+    }).not.toThrow();
+    expect(() => {
+      assertReleaseApiUrl('development-simulator', 'http://localhost:8787');
+    }).not.toThrow();
+    expect(() => {
+      assertReleaseApiUrl(undefined, undefined);
+    }).not.toThrow();
   });
 });

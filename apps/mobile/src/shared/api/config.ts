@@ -14,13 +14,29 @@ export function normalizeBaseUrl(value: string | undefined): string | null {
 let warned = false;
 
 /**
- * `EXPO_PUBLIC_API_URL` sin barra final. Si falta, en desarrollo avisa una vez con un error claro
- * en la consola (no corta la app) y usa `http://localhost:8787`.
+ * `EXPO_PUBLIC_API_URL` sin barra final.
+ *
+ * - Con URL: la devuelve normalizada.
+ * - Sin URL en desarrollo (`dev`): avisa una vez con un error claro en la consola (no corta la app)
+ *   y usa `http://localhost:8787`.
+ * - Sin URL fuera de desarrollo: lanza. Un build release nunca puede apuntar a localhost.
+ *
+ * El acceso por defecto a `process.env.EXPO_PUBLIC_API_URL` tiene que seguir siendo estático: así
+ * lo embebe Expo en el bundle.
  */
-export function getApiBaseUrl(value: string | undefined = process.env.EXPO_PUBLIC_API_URL): string {
+export function getApiBaseUrl(
+  value: string | undefined = process.env.EXPO_PUBLIC_API_URL,
+  dev: boolean = __DEV__,
+): string {
   const url = normalizeBaseUrl(value);
   if (url) return url;
-  if (__DEV__ && !warned) {
+  if (!dev) {
+    throw new Error(
+      '[api] Falta EXPO_PUBLIC_API_URL en un build release: definila en build.<perfil>.env de ' +
+        'apps/mobile/eas.json.',
+    );
+  }
+  if (!warned) {
     warned = true;
     console.error(
       `[api] Falta EXPO_PUBLIC_API_URL: copiá apps/mobile/.env.example a apps/mobile/.env y ` +

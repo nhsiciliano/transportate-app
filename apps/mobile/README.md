@@ -2,7 +2,7 @@
 
 App de Transportate para iOS y Android: **Expo SDK 58** (React Native 0.88, React 19.3) con **Expo Router** y TypeScript strict. Consume el proxy de `apps/proxy` con el contrato JSON v1 de `packages/contracts`.
 
-Estado (2026-11-06): **Fase 6 (Trenes) integrada**, Fase 5 («Señalética de terminal») mergeada y validada en el iPhone. Cuatro tabs nativas: Inicio, Colectivos, Subtes y Trenes; Favoritos se abre con la estrella del header de Inicio (`/inicio/favoritos`). Inicio, Subtes (raíz, línea, estación y mapa de la red), Colectivos (búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real), Trenes (tablero de 6 líneas, ramales, estación con arribos por destino), Favoritos (alias, Deshacer, búsqueda, datos vivos y reorden por arrastre), Ajustes, Acerca de y Licencias. Tránsito sigue oculto (tarea 4.8 diferida). Prueba en el iPhone: [`docs/11-prueba-manual.md`](../../docs/11-prueba-manual.md). Referencia técnica: [`docs/07-app.md`](../../docs/07-app.md); tests: [`docs/09-testing.md`](../../docs/09-testing.md) §8 (804 tests en 72 suites).
+Estado (2026-11-10): versión **1.0.0** (solo iPhone, `ios.supportsTablet: false`) en preparación para el primer build de tienda (Fase 7). **Fase 6 (Trenes) integrada**, Fase 5 («Señalética de terminal») mergeada y validada en el iPhone. Cuatro tabs nativas: Inicio, Colectivos, Subtes y Trenes; Favoritos se abre con la estrella del header de Inicio (`/inicio/favoritos`). Inicio, Subtes (raíz, línea, estación y mapa de la red), Colectivos (búsqueda local, paradas cercanas, parada y línea con mapa en tiempo real), Trenes (tablero de 6 líneas, ramales, estación con arribos por destino), Favoritos (alias, Deshacer, búsqueda, datos vivos y reorden por arrastre), Ajustes, Acerca de y Licencias. Tránsito sigue oculto (tarea 4.8 diferida). Prueba en el iPhone: [`docs/11-prueba-manual.md`](../../docs/11-prueba-manual.md). Referencia técnica: [`docs/07-app.md`](../../docs/07-app.md); tests: [`docs/09-testing.md`](../../docs/09-testing.md) §8 (804 tests en 72 suites).
 
 ## Instalar
 
@@ -37,7 +37,8 @@ npx eas-cli build --profile development --platform android         # APK interna
 | ----------------------- | --------------------------------------------------------------------------- |
 | `development`           | Dev client, distribución interna (dispositivos físicos)                     |
 | `development-simulator` | Igual, pero build para el simulador de iOS                                  |
-| `preview`               | Build de prueba sin dev client, distribución interna                        |
+| `preview`               | Build release de prueba sin dev client, distribución interna               |
+| `preview-simulator`     | Igual que `preview`, pero para el simulador de iOS (capturas de tienda)     |
 | `production`            | Tiendas; número de build autoincremental (`cli.appVersionSource: "remote"`) |
 
 El proyecto de EAS es `@nhsiciliano/transportate` (creado el 2026-11-02 con `eas init`; `owner` y `extra.eas.projectId` en `app.config.ts`). Hace falta tener sesión iniciada con `eas login` (el CLI se usa con `npx eas-cli@latest`). El repositorio remoto es `github.com/nhsiciliano/transportate-app`.
@@ -46,13 +47,15 @@ El identificador nativo `app.transportate.mobile` (`ios.bundleIdentifier` y `and
 
 ## Variables de entorno
 
-| Variable              | Default de `.env.example` | Uso                                                                                              |
-| --------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
-| `EXPO_PUBLIC_API_URL` | `http://localhost:8787`   | URL base del proxy (`pnpm --filter transportate-proxy dev` levanta `wrangler dev` en ese puerto) |
+| Variable              | De dónde sale según el perfil                                                                                                                                                              | Uso                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `EXPO_PUBLIC_API_URL` | `development`, `development-simulator` y Metro local: `apps/mobile/.env` (copia de `.env.example`, con la IP de la LAN). `preview`, `preview-simulator` y `production`: `env` de `eas.json` | URL base del proxy, sin barra final |
 
+- **Builds release:** `eas.json` apunta al Worker de producción (`https://transportate-proxy-production.nhsiciliano.workers.dev`, no es un secreto). `preview-simulator` lo hereda de `preview` por `extends` (EAS mergea el `env` del perfil base). Los perfiles `development*` no definen `env`: Metro lee `.env`.
+- **Sin URL en un release falla, nunca cae en localhost:** `app.config.ts` lanza al evaluarse si `EAS_BUILD_PROFILE` es `preview`, `preview-simulator` o `production` y `EXPO_PUBLIC_API_URL` no empieza con `https://` (`assertReleaseApiUrl`). Como segunda barrera, `getApiBaseUrl()` lanza si falta la URL con `__DEV__` en `false`. Solo en desarrollo avisa en consola y usa `http://localhost:8787`.
 - Expo solo expone a la app las variables con prefijo `EXPO_PUBLIC_`, y quedan **embebidas en el bundle**: nunca pongas secretos ahí. Las credenciales del GCBA viven solo en el proxy.
 - En un dispositivo físico, `localhost` no es tu computadora: usá la IP de tu red local. En el emulador de Android, `10.0.2.2`.
-- `.env` está en `.gitignore`.
+- `.env` está en `.gitignore`. Ojo: si existe, Expo lo carga también al correr `expo config` con `EAS_BUILD_PROFILE`; para probar la guardia, pisá la variable (`EXPO_PUBLIC_API_URL=`) o usá `assertReleaseApiUrl` en Jest.
 
 ## Fuentes
 
