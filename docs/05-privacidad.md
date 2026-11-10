@@ -117,11 +117,41 @@ Versión de la app: `x.y.z` · Versión del contrato de datos: `v1`
 
 ## 8. Lista de verificación antes de publicar
 
-- [ ] La app no incluye SDKs de analytics, ads ni crash reporting con identificadores (revisar dependencias).
-- [ ] La app no pide permisos más allá de ubicación "mientras se usa" (con texto en voseo en `Info.plist`/manifest).
-- [ ] La ubicación no se persiste ni se envía (revisión de código y de tráfico de red).
-- [ ] El Worker no loguea campos del request; `invocation_logs = false` en `wrangler`.
-- [ ] El tráfico de red de la app solo va a nuestro proxy y al proveedor de tiles declarado.
-- [ ] "Acerca de" incluye atribución a GCBA (CC BY 2.5 AR), OSM/OpenMapTiles/OpenFreeMap y esta política.
-- [ ] Formularios de privacidad de App Store y Google Play completados de acuerdo con este documento.
-- [ ] Decisiones pendientes de las secciones 2, 4 y 5 resueltas y anotadas en `bitacora.md`.
+Revisada contra el repo el 2026-11-10 (Fase 7). Lo tildado se verifica leyendo `apps/mobile/package.json`, `apps/mobile/app.config.ts`, `apps/proxy/wrangler.jsonc` y el código de `apps/mobile/src`.
+
+- [x] La app no incluye SDKs de analytics, ads ni crash reporting con identificadores. *(2026-11-10: ninguna dependencia de `apps/mobile/package.json` lo es; tampoco `expo-updates`.)*
+- [x] La app no pide permisos más allá de ubicación "mientras se usa", con texto en voseo en `Info.plist`/manifest. *(2026-11-10: `app.config.ts` declara solo `NSLocationWhenInUseUsageDescription` con `LOCATION_WHEN_IN_USE_PERMISSION`; las claves de "siempre" y de movimiento están en `false`.)*
+- [x] La ubicación no se persiste ni se envía: revisión de código. *(2026-11-10: `useUbicacion.ts` y `useLocationGranted.ts` no tocan MMKV, `fetch` ni `console`.)*
+- [ ] La ubicación no se persiste ni se envía: revisión del tráfico de red de un build real. *Se cierra en la Fase 7, con la prueba en TestFlight (`12-publicacion.md` §4).*
+- [x] El Worker no loguea campos del request; `invocation_logs = false` en `wrangler`. *(2026-11-10: `observability.logs.invocation_logs = false` en la raíz de `wrangler.jsonc`, desplegado en `production`. Falta ver en el dashboard que sigue apagado.)*
+- [x] El tráfico de red de la app solo va a nuestro proxy y al proveedor de tiles declarado. *(2026-11-10: los únicos hosts del código de la app son `EXPO_PUBLIC_API_URL` y `tiles.openfreemap.org`; los enlaces de Acerca de abren el navegador del sistema.)*
+- [ ] "Acerca de" incluye atribución a GCBA (CC BY 2.5 AR), OSM/OpenMapTiles/OpenFreeMap, trenes y esta política. *Están las atribuciones de datos, mapa y trenes; falta el enlace a la política de privacidad (ola A). Se cierra en la Fase 7.*
+- [ ] Formulario de App Privacy de App Store completado de acuerdo con este documento. *Se cierra en la Fase 7 (tarea 7.4); la respuesta y su justificación están en la sección 9.*
+- [ ] Formulario de Data safety de Google Play. *Fuera de alcance de la Fase 7 (solo iOS).*
+- [ ] Decisiones pendientes de las secciones 2, 4 y 5 resueltas y anotadas en `bitacora.md`. *Se cierra en la Fase 7. Estado al 2026-11-10: EAS Update no se usa (no hay `expo-updates`); siguen abiertas la exclusión de los datos de las copias de seguridad del sistema y los tiles propios; la clave del rate limit es un SHA-256 de la IP truncado a 32 caracteres hex (`src/middleware/rate-limit.ts`), sin secret ni fecha: más simple que el HMAC diario propuesto en la sección 5.*
+
+## 9. Ficha de App Privacy (App Store)
+
+**Respuesta en App Store Connect:** *«No, no recopilamos datos de esta app»* (*Data Not Collected*). URL de la política: la página `/privacidad` del sitio ([`10-deploy.md`](10-deploy.md) §10).
+
+**Definición de Apple.** «Recopilar» (*collect*) es enviar datos fuera del dispositivo de modo que el desarrollador o sus socios puedan consultarlos más allá de lo necesario para atender el pedido en el momento. Los datos que se procesan solo en el teléfono no cuentan. Justificación, punto por punto:
+
+| # | Lo que podría contar como dato | Por qué no es «recopilar» | Dónde se verifica |
+|---|---|---|---|
+| 1 | **Ubicación** | No sale del teléfono. Se pide "mientras se usa", queda solo en memoria y las paradas cercanas se calculan contra el índice estático local. No viaja en pedidos al proxy ni en los de tiles | Sección 3; `app.config.ts`; `features/ubicacion/useUbicacion.ts` |
+| 2 | **Favoritos, alias y ajustes** | Quedan en MMKV, dentro del sandbox de la app. No se envían a ningún servidor | Sección 2 |
+| 3 | **Caché de consultas y estático** | Información pública guardada localmente. No contiene datos de la persona | Sección 2 |
+| 4 | **Cuentas e identificadores** | No hay cuentas, login, perfil, IDFA ni identificadores propios | `package.json`; sección 1 |
+| 5 | **Analytics, publicidad, crash reporting** | Ningún SDK de estos tipos. Los cuelgues y comentarios de TestFlight los recibe Apple por la cuenta de cada tester, no la app | `package.json` |
+| 6 | **IP en el proxy** | El Worker la usa solo para responder y limitar el ritmo: contadores del binding nativo en memoria de cada ubicación, con un hash truncado de la IP, sin persistirla. No guarda ni consulta historiales. `invocation_logs = false` y el código no loguea requests | Secciones 5 y 6; `wrangler.jsonc`; `src/middleware/rate-limit.ts` |
+| 7 | **Tiles del mapa (OpenFreeMap)** | El teléfono los pide directo a `tiles.openfreemap.org`. Ese servicio ve la IP y la zona que se mira, no la ubicación, cookies ni identificadores; MapLibre no tiene telemetría. No lo consultamos nosotros ni ningún socio nuestro | Sección 4 |
+| 8 | **Fuentes de datos (GCBA y la API comunitaria de trenes)** | Ven solo los pedidos del proxy con sus credenciales o sin ellas; nunca al teléfono | Sección 4 |
+
+Este documento no es asesoramiento legal. Si el cuestionario de Apple te lleva a una pregunta que no se cubre acá (por ejemplo, por los tiles de un tercero), no contestes por intuición: anotala y revisá esta tabla.
+
+**Qué revisar si algún día se agrega algo que sí recopile.** Antes de publicar el build que lo trae:
+
+1. Cambiar la respuesta en App Privacy (tipos de datos, finalidad, si se vinculan a la persona, si se usan para rastrear) y, si hace falta, la declaración de privacidad del paquete (`ios.privacyManifests`).
+2. Actualizar la página `/privacidad` del sitio, el texto de "Acerca de" (sección 7) y este documento.
+3. Casos que lo disparan: analytics o crash reporting; cuentas o sincronización de favoritos; notificaciones push; EAS Update; mandar la ubicación al proxy (por ejemplo, para buscar paradas del lado del servidor); loguear requests en el Worker; tiles propios (cambia la fila 7); widgets o extensiones.
+4. Anotar el cambio en `bitacora.md`.
