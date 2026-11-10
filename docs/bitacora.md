@@ -444,7 +444,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
 
-## Fase 7 — Publicación en iOS (TestFlight → App Store) · **ola B cerrada: proxy en producción**
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B y A cerradas: proxy y sitio en producción, app en 1.0.0 lista para el primer build de tienda**
 
 Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
 
@@ -470,3 +470,33 @@ Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por a
   - Sin dominio, la Cache API no tiene efecto ([`10-deploy.md`](10-deploy.md) §4): cada pedido de la app llega al GCBA. Alcanza para pocos testers; sigue siendo gate antes de abrir en App Store.
   - No se desplegó `preview`: los perfiles `preview` y `production` de EAS van a apuntar al Worker de producción.
   - Queda a la vista del usuario, en el dashboard, confirmar que los invocation logs están apagados (la config desplegada tiene `invocation_logs: false`).
+
+### Ola A — Código y docs (Run Orca `run_ee1a3144a8fb`, 2026-11-10)
+
+Tres workers en paralelo, cada uno en su worktree; specs en el scratchpad de la sesión (`specs7/`). Reparto distinto del plan: el sitio y Acerca de fueron a high-dev (no a mid-dev) para correr los tres a la vez, y `eas.json` quedó con mid-dev porque sus tests lo leen.
+
+| Encargo | Worker | Qué quedó | Merge |
+| --- | --- | --- | --- |
+| F7-LOW-A | low-dev | [`12-publicacion.md`](12-publicacion.md) (guía de App Store Connect, build, TestFlight, borradores de ficha medidos, notas al revisor, capturas, gate de dominio, freno de emergencia); `10-deploy.md` (§4 transición al dominio, §5 perfiles de EAS con `EXPO_PUBLIC_API_URL`, §10 sitio); `05-privacidad.md` (§8 revisada y §9 ficha de App Privacy); Fase 7 en `00-plan.md`; `versiones.md` (campos de `eas.json` y `assets` de wrangler verificados con Context7); acciones de CI en v7/v6/v7 | ff a `9289458` |
+| F7-MID-A | mid-dev | `eas.json`: `EXPO_PUBLIC_API_URL` en `preview` y `production`, perfil `preview-simulator` (hereda `env` por `extends`), `submit.production.ios.appleTeamId`, `cli >= 27.2.0`; `assertReleaseApiUrl` en `app.config.ts` (un perfil release sin URL `https://` falla al leer la config); `getApiBaseUrl` lanza fuera de desarrollo si falta la URL; versión 1.0.0 (app y proxy) y `supportsTablet: false`; tests nuevos `config.test.ts` y `eas-config.test.ts` | merge de `e58bde4` |
+| F7-HIGH-A | high-dev | `site/` (Worker solo de assets `transportate-site`: inicio, privacidad, soporte, 404, CSS, `_headers` con CSP estricta; sin JavaScript, cookies ni recursos externos; colores de Obelisco en claro y oscuro); Acerca de con la placa «Información» («Política de privacidad», «Soporte y contacto») entre «Diseño» y «Software» | merge de `e2aeb9c` |
+
+**Verificación del coordinador sobre `main`:** `typecheck`, `lint` y `format:check` en verde; proxy 130/130; app **822/822** (74 suites). `eas-cli config --profile production` resuelve `version 1.0.0`, `supportsTablet false` y la URL del Worker; con `EAS_BUILD_PROFILE=production` y la variable vacía, `expo config` falla con el mensaje de la guardia.
+
+**Despliegues:**
+
+- **Sitio:** `https://transportate-site.nhsiciliano.workers.dev` (versión `40b91661-a6a3-43d4-b8c3-2b520efcba9f`). `/`, `/privacidad`, `/soporte` y los assets responden 200; `/privacidad.html` redirige (307) a `/privacidad`; rutas inexistentes, `/_headers` y `/wrangler.jsonc` dan 404; llegan la CSP, `Referrer-Policy: no-referrer`, `nosniff` y `X-Frame-Options: DENY`; **sin `Set-Cookie`**. Visto en el navegador en oscuro.
+- **Proxy:** redesplegado (versión `b7182ac0-e638-4ad9-878c-f319d58b6946`); `/v1/health` informa `1.0.0` y los secrets siguen cargados (subtes y colectivos en 200).
+
+**Ajustes del coordinador (d4f324d):** la política decía que la app «funciona sin conexión» y pasó a «te muestra lo último que supo»; el comentario de `wrangler.jsonc` sobre `workers_dev` quedó alineado con la transición al dominio.
+
+**Decisiones y observaciones:**
+
+- F4-ajustes-3 (contacto en Acerca de) queda cerrada: el contacto vive en la página de soporte del sitio, no en la app. El mail figura solo en `site/public/privacidad.html` y `soporte.html` (decisión del usuario).
+- high-dev dejó escrita una alternativa: «Política de privacidad» como fila debajo de los bullets de «Privacidad». No se implementó.
+- La guardia de `app.config.ts` depende de `EAS_BUILD_PROFILE`, que existe en el builder de EAS pero no al evaluar la config en local; si faltara, queda la segunda barrera (`getApiBaseUrl` lanza al arrancar un build release sin URL).
+- La política pública afirma cosas que no se pueden respaldar leyendo el repo y remite a las políticas de terceros: el trato de la IP por parte de Cloudflare, lo que Apple comparte de diagnósticos y TestFlight, y lo que retiene OpenFreeMap. También dice que las copias de seguridad del iPhone pueden incluir los datos locales (no están excluidos en el código).
+- «Limpiar datos guardados» no borra las líneas recientes de colectivos; la política solo promete que se borran al desinstalar.
+- Jest no termina solo al correr `FavoritosScreen.test.tsx` aislada («did not exit one second after the test run»): ya pasaba antes de esta ola. Con la máquina cargada por los tres workers, esa suite falló 4 tests por tiempo en una corrida; repetida sin carga, 822/822.
+- `ascAppId` no está en `eas.json`: se agrega cuando exista la app en App Store Connect (ola C).
+- No se hizo smoke de Acerca de en el simulador: el dev build instalado es 0.1.0 y el cambio es una placa con el mismo `Row` de «Enlaces», cubierta por tests. Se ve en el primer build de TestFlight.
