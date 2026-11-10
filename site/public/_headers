@@ -1,0 +1,8 @@
+# Cabeceras de seguridad para todo el sitio (Workers static assets aplica este archivo y no lo
+# sirve). El sitio no tiene JavaScript ni recursos externos: la CSP solo deja estilos e imágenes
+# propios.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

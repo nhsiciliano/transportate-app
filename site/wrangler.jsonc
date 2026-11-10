@@ -1,0 +1,14 @@
+// Sitio público de Transportate (inicio, privacidad, soporte): Worker solo de static assets, sin
+// código (`main`), sin bindings y sin observabilidad. Este archivo no se publica: queda fuera de
+// `public/`. Ver `site/README.md`.
+{
+  "$schema": "../apps/proxy/node_modules/wrangler/config-schema.json",
+  "name": "transportate-site",
+  "compatibility_date": "2026-10-28",
+  "assets": {
+    "directory": "./public",
+    // Con el `html_handling` por defecto (`auto-trailing-slash`), `/privacidad` sirve
+    // `privacidad.html`; una ruta inexistente responde 404 con `404.html`.
+    "not_found_handling": "404-page",
+  },
+}
