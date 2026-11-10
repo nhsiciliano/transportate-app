@@ -84,6 +84,8 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 
 ## 4. Dominio propio (necesario para que funcione el caché en producción)
 
+> **Estado (2026-11-10):** `production` vive hoy en `*.workers.dev` (`https://transportate-proxy-production.nhsiciliano.workers.dev`), sin dominio propio. Sirve para TestFlight con pocos testers; el dominio es **gate antes de abrir en App Store** ([`12-publicacion.md`](12-publicacion.md) §8).
+
 **Por qué:** la Cache API (`caches.default`) **no tiene efecto en `*.workers.dev`**, ni en previews ni en el editor del dashboard. En esos casos, `cache.put` no guarda nada y `cache.match` siempre falla. Fuente: [R2 + Cache API](https://developers.cloudflare.com/r2/examples/cache-api/). Sin dominio propio:
 - cada request de `/v1/static/*` lee R2 (operación clase B);
 - la capa A del proxy (caché por colo de los feeds, `docs/04-escalabilidad.md` §2) **no protege al upstream**. Cada request de la app termina en una request a la API GCBA, salvo el coalescing dentro del isolate.
@@ -91,13 +93,24 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 **Cómo:** el dominio tiene que estar como zona activa en la cuenta de Cloudflare (DNS en Cloudflare). Después, en `apps/proxy/wrangler.jsonc`, dentro de `env.production`:
 
 ```jsonc
-"workers_dev": false,
-"routes": [{ "pattern": "api.transportate.example", "custom_domain": true }]
+"workers_dev": true,   // se mantiene durante la transición
+"routes": [{ "pattern": "api.<dominio>", "custom_domain": true }]
 ```
 
 - Con `custom_domain: true`, wrangler crea el registro DNS y el certificado al desplegar. La otra opción es una **ruta** sobre una zona existente: `{ "pattern": "example.com/api/*", "zone_name": "example.com" }`.
 - `routes` **no se hereda**: va dentro de cada entorno.
 - El token de CI necesita además el permiso de zona **Workers Routes: Edit** (§9).
+
+**Procedimiento de transición (con la app ya publicada en `workers.dev`).** Los builds que ya están en manos de testers o usuarios llevan la URL de `workers.dev` embebida: no se pueden redirigir, así que el Worker responde en las dos URLs hasta que se retiren.
+
+1. **Dominio activo.** El dominio como zona de Cloudflare, con DNS en Cloudflare.
+2. **Agregar la ruta, sin sacar `workers_dev`.** En `env.production`, `routes: [{ "pattern": "api.<dominio>", "custom_domain": true }]` y `workers_dev: true` (los builds viejos siguen llegando).
+3. **Redeploy:** `pnpm --filter transportate-proxy run deploy --env production`. Verificar con `curl https://api.<dominio>/v1/health`, y que la Cache API ya hace efecto (esperable: pedidos repetidos dentro del TTL devuelven el mismo `X-Transportate-Generated-At`; confirmarlo con `curl -D -`).
+4. **URL nueva en la app.** `build.<perfil>.env.EXPO_PUBLIC_API_URL` de `apps/mobile/eas.json` en `preview`, `preview-simulator` y `production` (§5).
+5. **Build nuevo → TestFlight → release.** Probar contra el dominio ([`12-publicacion.md`](12-publicacion.md) §4) y recién entonces liberar la versión.
+6. **Sitio de privacidad y soporte.** Pasa al dominio ([`§10`](#10-sitio-estático-transportate-site)); las URLs de Acerca de, de la ficha y de App Privacy cambian con ese build.
+7. **Retirar `workers.dev`.** Cuando el build viejo deje de usarse (revisar el tráfico del dashboard y el estado de las versiones en App Store Connect), `workers_dev: false` y redeploy.
+8. **Anotarlo en `bitacora.md`.**
 
 **Impacto en costos:**
 - El dominio en sí no cuesta nada en Cloudflare más allá del registro del nombre.
@@ -109,7 +122,7 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 | Entorno | Cómo se corre | Worker | Bucket `STATIC` | `RATE_LIMITER` | `vars.ENVIRONMENT` | Secrets |
 |---|---|---|---|---|---|---|
 | `dev` (local) | `pnpm --filter transportate-proxy dev` → `http://localhost:8787` | — (workerd local) | R2 simulado local (vacío al empezar) | simulado | `dev` | `apps/proxy/.dev.vars` (copiado de `.dev.vars.example`; gitignored) |
-| `preview` | `pnpm --filter transportate-proxy run deploy --env preview` o el workflow (§9) | `transportate-proxy-preview` (`*.workers.dev`) | `transportate-static-preview` | namespace `1002` | `preview` | `wrangler secret put … --env preview` |
+| `preview` | `pnpm --filter transportate-proxy run deploy --env preview` o el workflow (§9). Hoy no está desplegado: los perfiles `preview` de EAS apuntan a `production` | `transportate-proxy-preview` (`*.workers.dev`) | `transportate-static-preview` | namespace `1002` | `preview` | `wrangler secret put … --env preview` |
 | `production` | `pnpm --filter transportate-proxy run deploy --env production` o el workflow | `transportate-proxy-production` | `transportate-static` | namespace `1003` | `production` | `wrangler secret put … --env production` |
 
 - En `wrangler.jsonc`, los **bindings y las vars no se heredan** de la raíz: por eso `env.preview` y `env.production` repiten `ratelimits`, `r2_buckets` y `vars`. Si agregás un binding, va en la raíz **y** en cada entorno. Después corré `pnpm --filter transportate-proxy types`.
@@ -124,7 +137,17 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 
   Para apagar trenes en un entorno sin tocar el código: cambiar `TRENES_ENABLED` en ese entorno de `wrangler.jsonc` y redesplegar. En local se prueba con `pnpm exec wrangler dev --var TRENES_ENABLED:false`.
 - `/v1/health` devuelve `environment`, así se ve contra qué entorno está hablando la app.
-- **App:** la URL base del proxy se inyecta en build con una variable pública de Expo (por ejemplo `EXPO_PUBLIC_API_BASE_URL`), con un valor por perfil de EAS (`development` → `http://<IP-de-tu-máquina>:8787`, `preview` → Worker preview, `production` → dominio propio). Se define en la Fase 3 (tarea 3.9) y se documenta en `07-app.md`. La URL base no es un secreto.
+- **App:** la URL base del proxy se inyecta en build con la variable pública de Expo **`EXPO_PUBLIC_API_URL`** (la URL base no es un secreto). De dónde sale depende del perfil de EAS (`apps/mobile/eas.json`):
+
+  | Perfil | Para qué | De dónde sale `EXPO_PUBLIC_API_URL` |
+  |---|---|---|
+  | `development` | Dev client en dispositivo | `apps/mobile/.env` local, con la IP de la LAN (`http://<IP-de-tu-máquina>:8787`) |
+  | `development-simulator` | Dev client en simulador | `.env` local |
+  | `preview` | Build interno de prueba | `env.EXPO_PUBLIC_API_URL` en `eas.json`: URL `https://` del Worker de **producción** (no se despliega `preview`) |
+  | `preview-simulator` | Release para simulador, sin dev menu (capturas) | Igual que `preview` |
+  | `production` | TestFlight y App Store | Igual que `preview`; `autoIncrement` del número de build |
+
+  Los perfiles `preview`, `preview-simulator` y `production` **fallan al leer `app.config.ts`** si no tienen una URL `https://`. EAS evalúa `app.config.ts` con las `env` del perfil elegido y las setea también en el builder (`EAS_BUILD_PROFILE` solo existe en el builder, no al evaluar localmente). Guía operativa: [`12-publicacion.md`](12-publicacion.md).
 
 ## 6. Observabilidad sin datos personales
 
@@ -218,3 +241,23 @@ Opcionalmente se pueden crear los *environments* de GitHub `preview` y `producti
 Restringí *Account Resources* a tu cuenta y, si se puede, *Client IP Address Filtering* no aplica a runners de GitHub (IPs variables). Poné una fecha de expiración y rotá el token como un secret más.
 
 Los secrets del Worker (`GCBA_*`) **no** pasan por GitHub. Se cargan una vez con `wrangler secret put` (§2) y persisten entre despliegues.
+
+## 10. Sitio estático (`transportate-site`)
+
+Páginas públicas de **privacidad** y **soporte** que App Store Connect exige como URLs (la app las enlaza desde Acerca de). Es un Worker de solo assets (sin `main`) en la misma cuenta de Cloudflare.
+
+| Qué | Dónde |
+|---|---|
+| Config del Worker | `site/wrangler.jsonc` (nombre `transportate-site`; `assets` con `directory` apuntando a `public/`) |
+| Archivos públicos | `site/public/` |
+| URLs | `https://transportate-site.nhsiciliano.workers.dev/`, `/privacidad` y `/soporte` |
+
+Deploy (desde la raíz del repo; usa el wrangler fijado en `apps/proxy`):
+
+```sh
+pnpm --filter transportate-proxy exec wrangler deploy -c ../../site/wrangler.jsonc
+```
+
+- Es un Worker aparte del proxy: no comparte secrets, R2 ni rate limit, y se despliega a mano (no está en el workflow de §9).
+- El mail de contacto vive **solo** en la página de soporte del sitio; no va en la app ni en estos docs.
+- Con dominio propio, el sitio pasa al dominio (§4, paso 6).
