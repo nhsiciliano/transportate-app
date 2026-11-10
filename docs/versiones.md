@@ -137,7 +137,7 @@ Carga: `import { useFonts } from '@expo-google-fonts/nunito/useFonts'` (también
 | Herramienta | Versión a fijar | Última en npm | Fuente | Notas de compatibilidad |
 |---|---|---|---|---|
 | **`@material-symbols/svg-400`** | **0.48.2** | 0.48.2 | npm, `cdn.jsdelivr.net` (HTTP 200 de cada ícono; ver `08-design-system.md`) | Reconfirmada hoy. Licencia **Apache-2.0** (campo `license` del `package.json` publicado y archivo `LICENSE`). Los SVG son de 48 px con `viewBox="0 -960 960 960"`. |
-| **`eas-cli`** | **27.2.0** | 27.2.0 | npm (`engines`: node `^20.18.3 \|\| >=22.0.0`) | **Solo versión: no se consultó Context7.** No va como dependencia del monorepo; correr con `npx eas-cli@27.2.0` o instalarla global. Publicada el 2026-10-29. |
+| **`eas-cli`** | **27.2.0** | 27.2.0 | npm (`engines`: node `^20.18.3 \|\| >=22.0.0`) | Versión en npm el 2026-11-02; **`eas.json` verificado con Context7 el 2026-11-10** (ver «Verificadas para la Fase 7»). No va como dependencia del monorepo; correr con `npx eas-cli@27.2.0` desde `apps/mobile`. Publicada el 2026-10-29. |
 | `@maplibre/maplibre-react-native` | *(Fase 4, no fijar)* 11.5.1 | 11.5.1 | npm | `peerDependencies`: `expo >=54`, `react >=19.1`, `@types/react >=19.1`, `react-native >=0.80`, `@types/geojson ^7946`. Cumple con SDK 58 / RN 0.88. Plugin de config en `app.json` (ver tabla de la Fase 1). |
 | `expo-location` | *(Fase 4, no fijar)* 58.0.20 | 58.0.20 | `bundledNativeModules.json` (`~58.0.20`), npm | Permiso "mientras se usa" (S32). Se instala con `npx expo install` en la Fase 4. |
 
@@ -292,6 +292,39 @@ El usuario corrió `npx expo install --fix` el 2026-11-04 (11:15, hora local) y 
 
 Sin cambios: `expo-dev-client` 58.0.18, `expo-font` 58.0.11, `react-native` 0.88.1, `react-native-screens` 4.30.1 (siguen siendo lo que pide el SDK 58.0.23).
 
+## Verificadas para la Fase 7 (publicación en iOS) — 2026-11-10
+
+Tarea 7.8. Consultas a Context7 el 2026-11-10; la versión de cada herramienta no cambia (`eas-cli` 27.2.0, wrangler 4.156.1).
+
+### `eas.json` y EAS Build/Submit (Context7 `/websites/expo_dev`)
+
+| Campo | Resultado | Fuente (docs.expo.dev) |
+|---|---|---|
+| `build.<perfil>.env` | ✔ Variables por perfil. **Se usan para evaluar `app.config.js` localmente** al correr `eas build` y se setean también en el builder | `build/eas-json`, `build/automate-submissions` |
+| `build.<perfil>.extends` | ✔ Un perfil hereda de otro (ejemplo: `ios-simulator` extiende `development`; `preview` extiende `production` y pisa `env`) | `build/eas-json`, `tutorial/eas/ios-development-build-for-simulators` |
+| `build.<perfil>.ios.simulator` | ✔ `true` genera un build para el simulador de iOS | `build-reference/simulators` |
+| `build.<perfil>.autoIncrement` | ✔ Documentado bajo el perfil `production`, junto con `cli.appVersionSource: "remote"` (guarda `ios.buildNumber` y `android.versionCode` en los servidores de Expo) | `build-reference/app-versions` |
+| `cli.appVersionSource` | ✔ `"remote"` | `build-reference/app-versions` |
+| `submit.<perfil>.ios.appleTeamId`, `.ascAppId` | ✔ Aparecen en el ejemplo de `submit.production.ios` (con `appleId`) | `eas/json`, `submit/ios` |
+| `submit.<perfil>.ios.ascApiKeyPath`, `.ascApiKeyIssuerId`, `.ascApiKeyId` | ✔ Nombres exactos, como alternativa a la API Key guardada en EAS ("bring your own credentials") | `submit/ios` |
+| `EAS_BUILD_PROFILE` | ✔ Nombre del perfil, **solo en el builder**: la doc dice que estas variables del sistema "no están disponibles al evaluar `app.config.js` localmente" | `eas/environment-variables/usage` |
+
+Notas y límites de la verificación:
+
+- Context7 devuelve la documentación **vigente** de docs.expo.dev, no la de `eas-cli@27.2.0` en particular: la biblioteca `/expo/eas-cli` solo indexa v24.8.0 y v21.4.0. Lo que coincide con lo que dice el spec de la Fase 7 está confirmado; **no se verificó** contra la ayuda de la propia 27.2.0 (`npx eas-cli@27.2.0 build --help`).
+- Consecuencia para las guardias de `app.config.ts`: como `EAS_BUILD_PROFILE` no existe al evaluar la config en tu máquina, las guardias deben leer `process.env.EXPO_PUBLIC_API_URL` (que sí llega desde `build.<perfil>.env`) y no inferir el perfil por esa variable.
+- `autoIncrement` está documentado solo bajo `production`; en otros perfiles no se verificó.
+- Context7 no muestra un esquema completo de `submit`; los campos de arriba son los que aparecen en ejemplos y en el texto de `submit/ios`.
+
+### Workers con static assets (wrangler 4.156.1; Context7 `/cloudflare/cloudflare-docs`)
+
+Para `transportate-site` (`site/wrangler.jsonc`, [`10-deploy.md`](10-deploy.md) §10):
+
+- Un Worker **solo de assets** no lleva `main`: alcanza con `name`, `compatibility_date` y `assets: { "directory": "…" }`. Sin Worker, un pedido que no coincide con un archivo recibe **404**.
+- `assets.directory`: carpeta de archivos estáticos. `assets.html_handling`: `"auto-trailing-slash"` (default), `"force-trailing-slash"`, `"drop-trailing-slash"` o `"none"`; con el default, `/privacidad` sirve `privacidad.html` o `privacidad/index.html` sin redirección explícita. `assets.not_found_handling`: `"none"` (default), `"404-page"` (sirve el `404.html` más cercano con 404) o `"single-page-application"`.
+- Otros campos documentados que no usamos: `binding`, `base_path`, `run_worker_first`.
+- Límite de la verificación: la documentación consultada no está fijada a wrangler 4.156.1; no se corrió `wrangler deploy --dry-run` sobre `site/` porque la carpeta aún no existe (la escribe otro worker).
+
 ## Pendiente de fijar
 
 Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al inicio de cada fase):
@@ -300,7 +333,7 @@ Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al ini
 |---|---|---|
 | 2 | `autocannon` | prueba de carga local (2.12) |
 | 2 | Cómo testear Cache API y rate limit con `@cloudflare/vitest-plugin`; configuración compartida de ESLint/Prettier/TS en el monorepo | probar en `apps/proxy` |
-| 3 | `eas-cli` | consultar Context7 (solo se verificó la versión en npm) |
+| 3 | `eas-cli` | **Cerrado el 2026-11-10:** 27.2.0; campos de `eas.json` verificados con Context7 `/websites/expo_dev` (ver «Verificadas para la Fase 7») |
 | 3 | `react-native-nitro-modules` con `react-native-mmkv` en RN 0.88 | confirmar en el primer dev build (decisión 6); hasta ahora solo en Jest y `expo export` |
 | 4 | `@maplibre/maplibre-react-native` + `react-native-nitro-modules`/MMKV en el dev build con MapLibre | el coordinador lanzó un segundo dev build en EAS (`cabc9c80`) con las dependencias nativas nuevas (ver bitácora); falta confirmar su comportamiento en el iPhone con `docs/11-prueba-manual.md` |
 | 5 | EAS Build / Update | si se usa OTA, declararlo en `05-privacidad.md` |
