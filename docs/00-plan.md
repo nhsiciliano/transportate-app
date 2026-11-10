@@ -194,6 +194,25 @@ Tab «Trenes» espejo de Subtes, sin mapa: tablero de las 6 líneas de SOFSE con
 | 6.7 | Capturas + *finish review* contra el brief | 🟡 |
 | 6.8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (posterior) | 🟢 |
 
+### Fase 7 — Publicación en iOS (TestFlight → App Store)
+
+**Objetivo:** llevar Transportate a producción en iOS: primero TestFlight, después App Store, solo iPhone y solo Argentina. Decisiones del usuario del 2026-11-10 (sin dominio propio por ahora, sitio de privacidad y soporte como Worker de assets, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte) y guía operativa en [`12-publicacion.md`](12-publicacion.md). Fuera de alcance: Android / Google Play, dominio propio (solo se documenta la transición), EAS Update, CI de EAS y video de App Preview.
+
+| # | Tarea | Dificultad |
+|---|---|---|
+| 7.1 | Proxy a producción en `workers.dev`: Worker `transportate-proxy-production`, secrets cargados, verificación con `curl` (ola B, hecha el 2026-11-10) | 🟢 ✔ |
+| 7.2 | URL del proxy por perfil de EAS (`env.EXPO_PUBLIC_API_URL` en `eas.json`), guardias en `app.config.ts` que hacen fallar el build sin URL `https://`, versión 1.0.0 y `supportsTablet: false`; perfil `preview-simulator` | 🟡 |
+| 7.3 | Acerca de con versión y build, enlaces a «Política de privacidad» y «Soporte y contacto»; sitio estático `transportate-site` (`site/`) con `/privacidad` y `/soporte` | 🟡 |
+| 7.4 | App Store Connect: app, ficha base, categoría, edad, App Privacy, API Key, precio, disponibilidad y grupo de TestFlight | 🟡 usuario |
+| 7.5 | Build de producción con EAS y `eas submit` a TestFlight | 🟡 usuario |
+| 7.6 | Prueba en TestFlight con datos reales ([`12-publicacion.md`](12-publicacion.md) §4) | 🟢 usuario |
+| 7.7 | Ficha de App Store, capturas 6,9″ y envío a revisión; gate de dominio antes de abrir en App Store | 🟡 |
+| 7.8 | Docs al día (`10-deploy`, `05-privacidad`, `12-publicacion`, `versiones`), CI alineado y cierre en la bitácora | 🟢 |
+
+**Verificación:** `eas config --profile production` muestra 1.0.0, `supportsTablet: false` y una URL `https://`; el build de TestFlight muestra datos reales en las 4 tabs (la URL quedó embebida) y «Versión 1.0.0 (build N)» en Acerca de; las páginas de privacidad y soporte responden en el sitio; App Privacy dice «No recopilamos datos» con la justificación de [`05-privacidad.md`](05-privacidad.md) §9; `pnpm lint`, `pnpm typecheck` y `pnpm test` en verde antes de buildear.
+
+**Frenar** al terminar TestFlight (7.6): el usuario valida el build antes de enviar a revisión. Antes de abrir en App Store (7.7), **decisión explícita sobre el dominio**: o hay dominio propio y la transición de [`10-deploy.md`](10-deploy.md) §4, o el usuario acepta por escrito el riesgo de la Cache API inerte en `workers.dev` (se anota en la bitácora).
+
 ## Verificación
 
 - **Fase 1:** cada endpoint del doc tiene respuesta real registrada (status, tamaño, timestamp) o está marcado como suspendido/no verificado; cada token cita archivo origen; contraste del dark mode verificado; `PRODUCT.md` y briefs de `shape` confirmados por el usuario.
@@ -201,6 +220,7 @@ Tab «Trenes» espejo de Subtes, sin mapa: tablero de las 6 líneas de SOFSE con
 - **Fase 3:** `pnpm typecheck` y `pnpm lint` sin errores ni `any`; tests de componentes y de `FavoritosRepository` verdes; app corre en dev client iOS/Android con tema claro/oscuro y fuentes correctas.
 - **Fase 4:** recorrido manual de cada feature contra el Worker desplegado; estados de carga/vacío/error/stale visibles forzando fallos del proxy.
 - **Fase 5:** build EAS de ambas plataformas; VoiceOver/TalkBack recorren las pantallas principales; modo avión muestra favoritos y último dato marcado; `audit` nativo de Impeccable con todas las dimensiones ≥ 3.
+- **Fase 7:** ver la verificación al final de la sección de la Fase 7 (build de TestFlight con datos reales, ficha de App Privacy y decisión sobre el dominio).
 
 ## Riesgos principales
 
@@ -209,3 +229,4 @@ Tab «Trenes» espejo de Subtes, sin mapa: tablero de las 6 líneas de SOFSE con
 3. 🟢 Límite Free de 100k req/día: suficiente para cientos de usuarios; pasar a Paid es cambio de plan, no de código.
 4. 🟡 GTFS estático de 209 MB: el preprocesado offline debe ser reproducible y versionado.
 5. 🟡 MapLibre y MMKV exigen dev client y New Architecture: no hay Expo Go en ningún momento. Tiles de producción dependen de un proveedor externo (OpenFreeMap) hasta self-hostear PMTiles en R2.
+6. 🔴 Publicar sin dominio propio: en `*.workers.dev` la Cache API no tiene efecto, así que cada pedido de cada usuario llega al GCBA y solo protegen el rate limit (60 pedidos cada 60 s) y el coalescing por isolate. Mitigación: TestFlight con pocos testers; el dominio es gate antes de App Store (o aceptación explícita del riesgo) y la transición está documentada en `10-deploy.md` §4 y `12-publicacion.md` §8.
