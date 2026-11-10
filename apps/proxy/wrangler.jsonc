@@ -77,8 +77,9 @@
       },
     },
     // Worker `transportate-proxy-production`. Hasta tener dominio propio queda en
-    // *.workers.dev; al asignarlo, agregar `routes` con `custom_domain: true` y pasar
-    // `workers_dev` a false (la Cache API solo funciona con dominio o ruta propia).
+    // *.workers.dev (la Cache API solo funciona con dominio o ruta propia). Al asignarlo:
+    // agregar `routes` con `custom_domain: true` y dejar `workers_dev` en true hasta que
+    // ningún build publicado apunte a workers.dev; recién ahí pasa a false (docs/10-deploy.md §4).
     "production": {
       "workers_dev": true,
       "ratelimits": [
