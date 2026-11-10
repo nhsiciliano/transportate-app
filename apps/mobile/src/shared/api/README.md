@@ -19,7 +19,7 @@ if (estado.isLoadingError) return <ErrorState {...estado.error.userMessage()} on
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `client.ts`             | `createApiClient({ baseUrl, fetch?, now?, timeoutMs?, etagCacheSize? })`: un método por ruta, validación Zod, timeout, ETag/304     |
 | `errors.ts`             | `ApiError` (unión por `kind`), `retryable`, `userMessage()`. Timeout y 5xx: «El servicio de la Ciudad no responde…», salvo en `/v1/trenes/*`, que dice «El servicio de trenes no responde…»                                                                         |
-| `config.ts`             | `getApiBaseUrl()`: `EXPO_PUBLIC_API_URL` sin barra final; si falta, error en consola (solo en desarrollo) y `http://localhost:8787` |
+| `config.ts`             | `getApiBaseUrl(value?, dev = __DEV__)`: `EXPO_PUBLIC_API_URL` sin barra final; si falta, en desarrollo error en consola (una vez) y `http://localhost:8787`, y fuera de desarrollo **lanza** (nunca localhost en un release; la URL sale de `eas.json`) |
 | `ApiClientProvider.tsx` | El cliente por contexto (`useApiClient()`); sin provider, el de la app                                                              |
 | `keys.ts`               | Query keys tipadas y `invalidateSubtes` / `invalidateTrenes` / `invalidateColectivos` / `invalidateRealtime`                                             |
 | `hooks.ts`              | Un hook por recurso, con la frescura lista para `FreshnessLabel`                                                                    |

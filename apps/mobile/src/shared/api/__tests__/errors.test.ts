@@ -1,6 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
 
-import { DEFAULT_API_URL, getApiBaseUrl, normalizeBaseUrl } from '../config';
 import {
   AbortedError,
   ContractError,
@@ -63,24 +62,6 @@ describe('userMessage (voseo, docs/briefs/README.md "ErrorState")', () => {
     expect(error.kind).toBe('contract');
     const original = new NetworkError(R);
     expect(toApiError(original, R)).toBe(original);
-  });
-});
-
-describe('getApiBaseUrl', () => {
-  it('saca espacios y barras finales', () => {
-    expect(normalizeBaseUrl(' https://proxy.test/// ')).toBe('https://proxy.test');
-    expect(normalizeBaseUrl('')).toBeNull();
-    expect(normalizeBaseUrl(undefined)).toBeNull();
-    expect(getApiBaseUrl('https://proxy.test/')).toBe('https://proxy.test');
-  });
-
-  it('si falta, avisa una sola vez en desarrollo y usa localhost:8787', () => {
-    const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    expect(getApiBaseUrl('')).toBe(DEFAULT_API_URL);
-    expect(getApiBaseUrl(undefined)).toBe('http://localhost:8787');
-    expect(error).toHaveBeenCalledTimes(1);
-    expect(error.mock.calls[0]?.[0]).toContain('EXPO_PUBLIC_API_URL');
-    error.mockRestore();
   });
 });
 

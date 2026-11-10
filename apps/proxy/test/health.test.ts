@@ -7,7 +7,7 @@ describe('GET /v1/health', () => {
     const res = await exports.default.fetch('https://proxy.test/v1/health');
     expect(res.status).toBe(200);
     const body = HealthV1.parse(await res.json());
-    expect(body).toEqual({ ok: true, version: '0.1.0', environment: 'dev' });
+    expect(body).toEqual({ ok: true, version: '1.0.0', environment: 'dev' });
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
 
