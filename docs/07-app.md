@@ -197,6 +197,8 @@ Cliente tipado del proxy y TanStack Query, hechos en la tarea 3.9. El detalle es
 | --------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `EXPO_PUBLIC_API_URL` | `http://localhost:8787`              | URL base del proxy (`wrangler dev`). En un dispositivo, usá la IP de la red local; en el emulador de Android, `10.0.2.2` |
 
+En los builds de EAS de tienda (`preview`, `preview-simulator`, `production`) la URL sale de `env.EXPO_PUBLIC_API_URL` en `eas.json`, no del `.env` ([`10-deploy.md`](10-deploy.md) §5).
+
 Las variables `EXPO_PUBLIC_*` quedan embebidas en el bundle. Nunca van secretos.
 
 ## 11. Correr y testear
