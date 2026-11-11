@@ -444,7 +444,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
 
-## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B y A cerradas: proxy y sitio en producción, app en 1.0.0 lista para el primer build de tienda**
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B y A cerradas; ola C en curso: app creada en App Store Connect y ficha base cargada**
 
 Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
 
@@ -500,3 +500,19 @@ Tres workers en paralelo, cada uno en su worktree; specs en el scratchpad de la 
 - Jest no termina solo al correr `FavoritosScreen.test.tsx` aislada («did not exit one second after the test run»): ya pasaba antes de esta ola. Con la máquina cargada por los tres workers, esa suite falló 4 tests por tiempo en una corrida; repetida sin carga, 822/822.
 - `ascAppId` no está en `eas.json`: se agrega cuando exista la app en App Store Connect (ola C).
 - No se hizo smoke de Acerca de en el simulador: el dev build instalado es 0.1.0 y el cambio es una placa con el mismo `Row` de «Enlaces», cubierta por tests. Se ve en el primer build de TestFlight.
+
+### Ola C — App Store Connect (usuario + coordinador en el navegador, 2026-11-10)
+
+El usuario creó la app en App Store Connect (nombre «Transportate», es-MX, bundle `app.transportate.mobile`, SKU `transportate-ios-001`, **Apple ID `6833240838`**) y pidió que el coordinador completara los datos desde su navegador con la sesión ya abierta.
+
+| Dónde | Qué quedó guardado |
+|---|---|
+| Versión 1.0.0 | Texto promocional, descripción, palabras clave y URL de soporte de [`12-publicacion.md`](12-publicacion.md) §5; versión `1.0.0` (venía `1.0`); notas al revisor en inglés y español (§6); sin login; **publicación manual** |
+| Información de la app | Subtítulo «Subte, colectivos y trenes»; Navegación / Viajes; derechos de contenido: usa contenido de terceros con derechos; clasificación **4+** (cuestionario de 7 pasos, todo «No» / «Ninguna») |
+| Privacidad | URL de la política; respuesta «No se recopilan datos» guardada, **sin publicar** |
+| Precio y disponibilidad | Gratis (USD 0,00 en 175 países); disponible **solo en Argentina**, sin alta automática en países nuevos |
+| Repo | `submit.production.ios.ascAppId` en `apps/mobile/eas.json` |
+
+Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a 27-oct-2027). El aviso del Reglamento de Servicios Digitales (UE) no aplica mientras la app se ofrezca solo en Argentina.
+
+**Queda para el usuario:** publicar la respuesta de App Privacy; datos de contacto para la revisión (nombre, teléfono, mail) y copyright; API Key de App Store Connect (rol App Manager); decidir si la app se ofrece en Mac con Apple silicon (viene tildado por defecto). Capturas y build: olas D y F.

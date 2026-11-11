@@ -15,7 +15,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 |---|---|---|---|
 | **B** | Proxy a producción en `workers.dev` | Coordinador | ✔ 2026-11-10 (`transportate-proxy-production`, secrets cargados, verificado con `curl`) |
 | **A** | Código y docs: URL por perfil de EAS, guardias de build, versión 1.0.0, solo iPhone, Acerca de (privacidad y soporte), sitio estático, estos documentos | Agentes | ✔ 2026-11-10 (en `main`; sitio `transportate-site` desplegado; proxy redesplegado en 1.0.0) |
-| **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos | Pendiente |
+| **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos, con el coordinador en el navegador | En curso (2026-11-10): app creada (Apple ID `6833240838`, ya en `eas.json`), ficha de la 1.0.0, categorías, 4+, precio y disponibilidad cargados. Falta: publicar App Privacy, datos de contacto para revisión, copyright, API Key |
 | **D** | Build de producción y submit (§3) | Vos, con apoyo | Pendiente |
 | **E** | Prueba en TestFlight (§4) | Vos y testers | Pendiente |
 | **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | Pendiente |
