@@ -550,5 +550,11 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - Cambios pedidos por el usuario directo a `senior-dev`: subtítulo del cartel («en tiempo real y sin cuenta ni inicios de sesión») y botón de tema claro/oscuro con claro por defecto (la elección se guarda en `localStorage`). El usuario decidió **no** tocar la política de privacidad por eso. La descripción para buscadores se alineó con el subtítulo (commit `d59118c`).
 - La landing **todavía no está desplegada** en el dominio: faltan las capturas reales y el visto bueno del usuario.
 
-**Sigue:** redeploy del proxy con el arreglo de headers; capturas reales (ficha y landing); despliegue del sitio en el dominio; build nuevo contra `api.transportate.ar`; URLs de la ficha y de App Privacy; y la ola F (datos de contacto del revisor, copyright y envío a revisión).
+### Capturas reales (coordinador + usuario, 2026-11-11)
+
+- El usuario redesplegó el proxy con el arreglo de headers: el manifiesto responde `max-age=300` en cada pedido.
+- Build `preview-simulator` (`8546c879`) contra `https://api.transportate.ar`, instalado en un simulador nuevo «Transportate capturas» (iPhone 18 Pro Max). El simulador que ya existía falló en su migración inicial y quedó apagado.
+- Diez capturas de 1320×2868 (Inicio, subte, colectivos, trenes y Favoritos, en claro y oscuro) en `design/store/ios/6.9/` (sin canal alfa) y en `site/src/assets/capturas/` (reemplazan los marcadores de la landing). El usuario marcó los favoritos a mano desde Device Hub. Procedimiento y tropiezos, en [`12-publicacion.md`](12-publicacion.md) §7.
+
+**Sigue:** visto bueno del usuario a la landing y despliegue del sitio en el dominio; build nuevo contra `api.transportate.ar`; URLs de la ficha y de App Privacy; y la ola F (datos de contacto del revisor, copyright y envío a revisión).
 

@@ -125,7 +125,7 @@ Es `run deploy` y no `deploy`: `pnpm deploy` es un comando propio de pnpm. Ver [
 
 ## Reemplazar las capturas
 
-Las capturas viven en `src/assets/capturas/` con estos nombres exactos, en 1320×2868 (simulador iPhone 18 Pro Max): `inicio`, `subte`, `colectivos`, `trenes` y `favoritos`, cada una en `-claro.png` y `-oscuro.png`. Hoy son **marcadores** («Captura pendiente»). Para cambiarlas, pisá el archivo con el mismo nombre y volvé a construir: `Captura.astro` genera AVIF y WebP en 300, 450, 660 y 990 px para cada tema, en dos `<picture>` (`.captura--claro` y `.captura--oscuro`); el CSS muestra el del tema activo. La oscura siempre carga diferida, así que en claro no se descarga. La clara de Inicio (cartel) carga con prioridad alta; el resto, diferida. El marco del teléfono es CSS (`.telefono`): no hace falta recortar las capturas.
+Las capturas viven en `src/assets/capturas/` con estos nombres exactos, en 1320×2868 (simulador iPhone 18 Pro Max): `inicio`, `subte`, `colectivos`, `trenes` y `favoritos`, cada una en `-claro.png` y `-oscuro.png`. Desde el 2026-11-11 son capturas reales del build `preview-simulator` (las mismas de la ficha, `design/store/ios/6.9/`; procedimiento en [`docs/12-publicacion.md`](../docs/12-publicacion.md) §7). Para cambiarlas, pisá el archivo con el mismo nombre y volvé a construir: `Captura.astro` genera AVIF y WebP en 300, 450, 660 y 990 px para cada tema, en dos `<picture>` (`.captura--claro` y `.captura--oscuro`); el CSS muestra el del tema activo. La oscura siempre carga diferida, así que en claro no se descarga. La clara de Inicio (cartel) carga con prioridad alta; el resto, diferida. El marco del teléfono es CSS (`.telefono`): no hace falta recortar las capturas.
 
 ## Licencias
 

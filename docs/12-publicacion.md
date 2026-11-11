@@ -225,6 +225,14 @@ The subway arrival forecast may come unchanged from the source; when that happen
 - **Datos en pantalla:** reales y del momento. Evitá capturas con un servicio caído o con «Dato de hace…» salvo que esa sea la pantalla.
 - **Destino en el repo:** `design/store/ios/6.9/` (nombres tipo `01-inicio-claro.png`). Las capturas son derivadas de la app, no hay nada que atribuir más que la propia app.
 
+**Hechas el 2026-11-11** (build `preview-simulator` `8546c879`, contra `https://api.transportate.ar`): Inicio, Línea D de subte, línea 152 de colectivos en el mapa, estación Once de trenes y Favoritos, cada una en claro y oscuro (10 archivos, `01-inicio-claro.png` … `05-favoritos-oscuro.png`). La landing usa las mismas en `site/src/assets/capturas/`. Datos reales de ese momento: Inicio muestra «Línea A interrumpida», y colectivos en claro, el aviso «Dato de hace 1 min». Lo que se aprendió:
+
+- **Simulador:** uno propio, «Transportate capturas» (iPhone 18 Pro Max, iOS 27.0). El primer arranque tarda varios minutos (migración de datos) y `simctl bootstatus` termina en «Data Migration Failed» aunque después funcione; **no lo apagues en el medio**.
+- **Sin esquinas ni isla:** `xcrun simctl io <udid> screenshot --mask=ignored archivo.png` da el rectángulo completo de 1320×2868.
+- **Sin canal alfa:** `simctl` escribe PNG con alfa y App Store Connect los rechaza. Las copias de `design/store/ios/6.9/` se reescribieron opacas en sRGB (CoreGraphics, `CGImageAlphaInfo.noneSkipLast`). Comprobalo con `sips -g hasAlpha`.
+- **Favoritos:** `simctl` no toca la pantalla. Los favoritos se marcan a mano en el simulador, abierto desde **Device Hub** de Xcode 27 (`/Applications/Xcode.app/Contents/Applications/DeviceHub.app`; ya no hay `Simulator.app`).
+- **Dato fresco:** con la pantalla quieta, el simulador mostró el dato envejeciendo («hace 2 min»). Navegar a otra pantalla y volver por deep link lo refresca; la captura se saca unos 10 s después. No se verificó si en el simulador el refresco automático queda en pausa; en el iPhone (ola E) los datos se actualizan.
+
 ## 8. Gate de dominio y transición
 
 > **Estado (2026-11-11): gate resuelto.** El dominio es `transportate.ar`; el proxy responde en `https://api.transportate.ar` y `eas.json` ya apunta ahí (pasos 1 a 4 de abajo). Falta el build nuevo, el sitio en el dominio, las URLs de la ficha y de App Privacy, y retirar `workers.dev`. Lo que sigue se conserva como registro de la decisión; la medición de ese día mostró que la Cache API también guardaba en `workers.dev` ([`10-deploy.md`](10-deploy.md) §4).
