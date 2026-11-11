@@ -444,7 +444,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
 
-## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C y D cerradas; ola E en curso: build 1.0.0 (3) instalado desde TestFlight con datos reales**
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C, D y E cerradas: build 1.0.0 (3) probado en TestFlight; falta decidir el dominio antes de la ola F**
 
 Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
 
@@ -526,11 +526,12 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - Build `b0949995-1204-447e-9f69-75864835f187`: perfil `production`, distribución de tienda, **1.0.0 (3)**, commit `8316408`; terminó en unos 6 minutos y medio.
 - El envío automático lo dejó en TestFlight («Cargas de compilaciones» → 1.0.0 (3), «Procesando» a las 21:33). EAS creó el grupo interno «Team (Expo)».
 
-### Ola E — Prueba en TestFlight (usuario, desde el 2026-11-11)
+### Ola E — Prueba en TestFlight (usuario, 2026-11-11)
 
 - El build 1.0.0 (3) terminó de procesarse y el usuario lo instaló desde la app TestFlight.
 - **Datos del día en las 4 tabs**: confirma que la URL del proxy de producción quedó embebida en el build de tienda.
-- Falta el resto de la tabla de [`12-publicacion.md`](12-publicacion.md) §4: versión y enlaces en Acerca de, modo avión, ubicación, mapa, oscuro y texto grande, VoiceOver, arranque en frío.
+- El usuario pasó después el resto de la tabla de [`12-publicacion.md`](12-publicacion.md) §4 (versión y enlaces en Acerca de, modo avión, ubicación, mapa, oscuro y texto grande, VoiceOver, arranque en frío): **todo funciona**. Ola E cerrada el 2026-11-11, con un solo tester interno; no se sumaron testers externos.
+- Mismo día: `main` se subió a `origin` y se eliminaron los worktrees de los workers (`Low-Dev`, `Mid-Dev`, `High-Dev`, `Dev-Images`) y sus ramas, ya integradas; queda solo `main`.
 
-**Sigue:** cerrar la ola E y decidir el gate de dominio (§8) antes de la ola F.
+**Sigue:** decidir el gate de dominio (§8) y, con eso, la ola F (capturas, datos de contacto del revisor, copyright y envío a revisión).
 
