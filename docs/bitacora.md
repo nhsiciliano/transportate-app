@@ -533,5 +533,22 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - El usuario pasó después el resto de la tabla de [`12-publicacion.md`](12-publicacion.md) §4 (versión y enlaces en Acerca de, modo avión, ubicación, mapa, oscuro y texto grande, VoiceOver, arranque en frío): **todo funciona**. Ola E cerrada el 2026-11-11, con un solo tester interno; no se sumaron testers externos.
 - Mismo día: `main` se subió a `origin` y se eliminaron los worktrees de los workers (`Low-Dev`, `Mid-Dev`, `High-Dev`, `Dev-Images`) y sus ramas, ya integradas; queda solo `main`.
 
-**Sigue:** decidir el gate de dominio (§8) y, con eso, la ola F (capturas, datos de contacto del revisor, copyright y envío a revisión).
+### Dominio propio `transportate.ar` (usuario + coordinador, 2026-11-11)
+
+- El usuario registró `transportate.ar` en nic.ar y lo delegó a Cloudflare (la zona ya existía en la cuenta). La delegación se publicó ese mismo día.
+- Repo (commit `a32e4fd`): ruta `api.transportate.ar` con `custom_domain` en `env.production` del proxy (se mantiene `workers_dev: true` por el build 1.0.0 (3)), ruta `transportate.ar` en el Worker del sitio, `EXPO_PUBLIC_API_URL` de `eas.json` y `SITIO_URL` de Acerca de.
+- El usuario desplegó el proxy: responde en `https://api.transportate.ar` (salud, subtes, trenes y manifiesto en 200).
+- **Medición de la caché:** `/v1/static/manifest` volvió con `CF-Cache-Status: HIT` y `Age` creciente en el dominio **y también en `workers.dev`**, y la entrada venció a los 300 s en los dos. La premisa del gate («la Cache API no tiene efecto en `workers.dev`») no se cumplió ese día; quedó anotado en [`10-deploy.md`](10-deploy.md) §4.
+- **Falla encontrada y corregida (commit `55d175d`):** en el dominio, el manifiesto salía hacia el cliente con `Cache-Control: max-age=14400` en lugar de 300. Causa: la ruta estática reenviaba los headers de `cache.match`, y el *Browser Cache TTL* de la zona (4 horas por defecto) los reescribe. Ahora arma sus propios headers; test nuevo en `apps/proxy/test/static.test.ts`. **Necesita un redeploy del proxy.**
+- El criterio de verificación que tenía §4 («mismo `X-Transportate-Generated-At` dentro del TTL») estaba mal: ese header es la hora de cada respuesta. Corregido.
+
+### Landing de `transportate.ar` con Astro (2026-11-11)
+
+- Pedido del usuario: landing concisa con animaciones de scroll, view transitions, acordeón con `<details>` y tarjetas con `@starting-style`, y accesos a las tiendas aunque la app no esté publicada.
+- Nuevo modelo de delegación, sin worktrees: el código lo hace la sesión `senior-dev` y las imágenes, la sesión `Codex ready`, las dos en el checkout principal; el coordinador escribe los specs, revisa y commitea.
+- `senior-dev` (LANDING-1): `site/` pasó a ser el paquete `transportate-site` con Astro 7.4.8, estático y sin terceros, con CSP sin nada en línea; `/privacidad` y `/soporte` conservan URL y texto (lo comprueba `site/scripts/verificar-dist.mjs`). Codex (LANDING-IMG-1): imagen Open Graph en `design/brand/social/`.
+- Cambios pedidos por el usuario directo a `senior-dev`: subtítulo del cartel («en tiempo real y sin cuenta ni inicios de sesión») y botón de tema claro/oscuro con claro por defecto (la elección se guarda en `localStorage`). El usuario decidió **no** tocar la política de privacidad por eso. La descripción para buscadores se alineó con el subtítulo (commit `d59118c`).
+- La landing **todavía no está desplegada** en el dominio: faltan las capturas reales y el visto bueno del usuario.
+
+**Sigue:** redeploy del proxy con el arreglo de headers; capturas reales (ficha y landing); despliegue del sitio en el dominio; build nuevo contra `api.transportate.ar`; URLs de la ficha y de App Privacy; y la ola F (datos de contacto del revisor, copyright y envío a revisión).
 
