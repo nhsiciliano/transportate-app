@@ -1,8 +1,9 @@
-# Solo apps/* y packages/*. Las carpetas de tools/* tienen su propio package.json
-# (npm) y quedan fuera del workspace a propósito.
+# apps/*, packages/* y site (el sitio público, con Astro). Las carpetas de tools/* tienen su
+# propio package.json (npm) y quedan fuera del workspace a propósito.
 packages:
   - apps/*
   - packages/*
+  - site
 allowBuilds:
   esbuild: true
   workerd: true

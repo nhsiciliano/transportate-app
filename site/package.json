@@ -1,0 +1,25 @@
+{
+  "name": "transportate-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio público de Transportate (transportate.ar): landing, privacidad y soporte, estático con Astro.",
+  "type": "module",
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev --port 4321",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview --port 4321",
+    "typecheck": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "lint": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "test": "ASTRO_TELEMETRY_DISABLED=1 astro build && node scripts/verificar-dist.mjs",
+    "deploy": "ASTRO_TELEMETRY_DISABLED=1 astro build && pnpm --filter transportate-proxy exec wrangler deploy -c ../../site/wrangler.jsonc"
+  },
+  "dependencies": {
+    "@fontsource/fira-sans": "5.3.0",
+    "astro": "7.4.8",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "typescript": "6.0.3"
+  }
+}

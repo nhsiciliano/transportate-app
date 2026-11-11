@@ -1,5 +1,6 @@
 # Generados / dependencias
 node_modules/
+.astro/
 dist/
 .wrangler/
 pnpm-lock.yaml
