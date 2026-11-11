@@ -762,8 +762,10 @@
     column-gap: 32px;
   }
 
+  /* Apiladas y alineadas a la izquierda, las dos con el mismo borde (la insignia y la placa). */
   .cierre .tiendas {
     flex-direction: column;
+    align-items: flex-start;
   }
 }
 
@@ -818,6 +820,12 @@
       animation-range: entry 0% entry 70%;
     }
 
+    /* En el cierre, solo fundido: si el texto subiera desde abajo pasaría por el espacio libre de
+       la insignia de App Store, que no puede tener nada encima. */
+    .cierre .revelar {
+      animation-name: fundido;
+    }
+
     /* El teléfono del cartel sube un poco mientras el cartel se va. */
     .cartel__telefono .telefono {
       animation-name: deriva;
@@ -826,6 +834,15 @@
       animation-timeline: view();
       animation-range: exit 0% exit 100%;
     }
+  }
+}
+
+@keyframes fundido {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

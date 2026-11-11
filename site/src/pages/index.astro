@@ -360,10 +360,12 @@ const sizesModo = '(min-width: 52rem) 296px, 236px';
     </div>
   </section>
 
-  <section class="cierre revelar" aria-labelledby="titulo-cierre">
+  <!-- La entrada por scroll va en el pictograma y el texto, no en la banda: los accesos a las
+       tiendas (y la insignia de Apple, que no se puede animar) quedan quietos. -->
+  <section class="cierre" aria-labelledby="titulo-cierre">
     <div class="cierre__fila contenedor">
-      <Pictograma nombre="descargar" tamano="grande" />
-      <div class="cierre__texto">
+      <Pictograma nombre="descargar" tamano="grande" class="revelar" />
+      <div class="cierre__texto revelar">
         <h2 id="titulo-cierre">Primero en iPhone, después en Android</h2>
         <p>Cuando esté publicada, la vas a encontrar acá.</p>
       </div>

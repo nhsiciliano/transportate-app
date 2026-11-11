@@ -423,22 +423,35 @@ a:hover {
 
 /* ------------------------------------------------ botones de las tiendas */
 
+/* Dos accesos del mismo alto (52 px): la insignia oficial de App Store cuando la app está
+   publicada, y placas propias «Tienda · estado» mientras tanto. Las placas son blancas sobre la
+   banda navy en los dos temas, con el nombre de la tienda y una pastilla de estado como las de
+   la app; no imitan las insignias (negras, con borde gris y dos líneas de texto). */
 .tiendas {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Con la insignia, 20 px: su espacio libre (13 px) más el anillo de foco del enlace (3 px, para
+   que entre en el margen de 16 px del teléfono) y aire. */
+.tiendas:has(.insignia) {
+  gap: 20px;
 }
 
 .tienda {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-block-size: 60px;
-  min-inline-size: 15.5rem;
+  justify-content: space-between;
+  gap: 16px;
+  min-block-size: 52px;
+  /* Mismo ancho para las dos placas, así quedan parejas cuando se apilan (teléfono y cierre). */
+  min-inline-size: min(18.5rem, 100%);
   margin: 0;
   border: var(--contorno) solid #ffffff;
   border-radius: var(--radio);
-  padding: 8px 20px 8px 8px;
+  padding: 6px 6px 6px 18px;
   background: #ffffff;
   color: #08202f;
   text-align: start;
@@ -447,26 +460,108 @@ a:hover {
 }
 
 .tienda:hover {
+  border-color: #d6e4f6;
   background: #edf4ff;
-  border-color: #edf4ff;
 }
 
 .tienda:focus-visible {
   outline-color: var(--foco-sobre-banda);
 }
 
-.tienda__texto {
-  display: grid;
-  line-height: 1.2;
-}
-
-.tienda__previo {
-  font-size: 0.875rem;
-}
-
 .tienda__nombre {
   font-size: 1.1875rem;
   font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Pastilla de estado: «Próximamente» (reloj, azul sobre celeste: 6,4:1) o «Descargala» (blanco
+   sobre azul: 7,0:1). */
+.tienda__estado {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 36px;
+  border-radius: 4px;
+  padding: 8px 10px 8px 8px;
+  background: #edf4ff;
+  color: #035c80;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tienda:hover .tienda__estado {
+  background: #ffffff;
+}
+
+.tienda__estado--activo,
+.tienda:hover .tienda__estado--activo {
+  padding: 8px 8px 8px 10px;
+  background: #035c80;
+  color: #ffffff;
+}
+
+/* Insignia oficial de App Store (reglas de Apple: developer.apple.com/app-store/marketing/
+   guidelines). Se muestra tal cual: sin recolorear, sin filtros, sin radio ni recorte, sin sombra,
+   en su proporción y sin nada encima. Nunca se anima: no lleva `.revelar`, no tiene transiciones
+   ni transformaciones en :hover, y queda fuera de las view transitions (nombre propio sin
+   animación, abajo). Alto 52 px (mínimo de Apple: 40). El enlace la rodea con el espacio libre
+   que pide Apple, un cuarto del alto (13 px) en los cuatro lados; el margen negativo hace que
+   ese espacio no corra la insignia, y el foco se dibuja por fuera de él. */
+.insignia {
+  display: inline-block;
+  flex: none;
+  margin: -13px;
+  border-radius: var(--radio);
+  padding: 13px;
+}
+
+.insignia img {
+  display: block;
+  inline-size: auto;
+  max-inline-size: none;
+  block-size: 52px;
+  aspect-ratio: 119.66407 / 40;
+}
+
+.insignia:focus-visible {
+  outline-width: 3px;
+  outline-color: var(--foco-sobre-banda);
+  outline-offset: 0;
+}
+
+.insignia--inicio {
+  view-transition-name: insignia-inicio;
+}
+
+.insignia--cierre {
+  view-transition-name: insignia-cierre;
+}
+
+::view-transition-group(insignia-inicio),
+::view-transition-group(insignia-cierre),
+::view-transition-new(insignia-inicio),
+::view-transition-new(insignia-cierre) {
+  animation: none;
+}
+
+::view-transition-old(insignia-inicio),
+::view-transition-old(insignia-cierre) {
+  display: none;
+}
+
+/* Crédito de Apple en el pie: solo existe cuando se muestra la insignia. */
+.pie__credito {
+  max-inline-size: var(--lectura);
+  color: var(--texto-sec);
+  font-size: 0.875rem;
+}
+
+@media (min-width: 48rem) {
+  .pie__credito {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Aviso «Próximamente»: popover declarativo, abajo en la pantalla. */

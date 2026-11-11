@@ -6,20 +6,35 @@
 //   línea);
 // - algún HTML o CSS carga un recurso de otro origen (los enlaces <a> externos sí se permiten);
 // - aparece una dirección de mail fuera de privacidad.html y soporte.html;
-// - el texto visible de privacidad, soporte o 404 difiere del guardado en scripts/fixtures/.
+// - el texto visible de privacidad, soporte o 404 difiere del guardado en scripts/fixtures/;
+// - la insignia oficial de App Store aparece fuera de un enlace a https://apps.apple.com/, o sin
+//   el crédito de Apple en la misma página, o el crédito aparece sin la insignia;
+// - algún SVG tiene `style=` o <style> (la CSP también viaja con el SVG y no los admite).
+//
+// Uso: `node scripts/verificar-dist.mjs [carpeta]`. Sin carpeta revisa dist/ y, si está en orden,
+// corre además scripts/prueba-negativa.mjs (siembra una falla de cada tipo en una copia y
+// comprueba que esta verificación las detecta).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PATRON_MAIL, textoPrincipal } from './texto.mjs';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
-const dist = join(aqui, '..', 'dist');
+const dist = process.argv[2] ? resolve(process.argv[2]) : join(aqui, '..', 'dist');
 const fixtures = join(aqui, 'fixtures');
 
 const PAGINAS = ['index.html', 'privacidad.html', 'soporte.html', '404.html'];
 const CON_MAIL = new Set(['privacidad.html', 'soporte.html']);
 const CON_FIXTURE = ['privacidad.html', 'soporte.html', '404.html'];
+
+// Insignia de Apple (src/assets/tiendas/app-store-es-mx.svg, con hash en dist/_astro/) y el
+// crédito que Apple exige donde se muestra.
+const INSIGNIA = /<img\b[^>]*\bsrc="[^"]*app-store-es-mx[^"]*"[^>]*>/gi;
+const INSIGNIA_EN_ENLACE =
+  /<a\b[^>]*\bhref="https:\/\/apps\.apple\.com\/[^"]*"[^>]*>\s*<img\b[^>]*\bsrc="[^"]*app-store-es-mx[^"]*"[^>]*>\s*<\/a>/gi;
+const CREDITO_APPLE =
+  'Apple y el logotipo de Apple son marcas comerciales de Apple Inc., registradas en EE. UU. y en otros países y regiones. App Store es una marca de servicio de Apple Inc.';
 
 const errores = [];
 const fallo = (archivo, mensaje) => errores.push(`${archivo}: ${mensaje}`);
@@ -67,6 +82,15 @@ function revisarHtml(nombre, html) {
   }
   if (/<base\b/i.test(html)) fallo(nombre, '<base> no permitido');
 
+  const insignias = html.match(INSIGNIA)?.length ?? 0;
+  const enEnlace = html.match(INSIGNIA_EN_ENLACE)?.length ?? 0;
+  const conCredito = html.replace(/\s+/g, ' ').includes(CREDITO_APPLE);
+  if (insignias > enEnlace) {
+    fallo(nombre, 'insignia de App Store fuera de un enlace a https://apps.apple.com/');
+  }
+  if (insignias > 0 && !conCredito) fallo(nombre, 'insignia de App Store sin el crédito de Apple');
+  if (insignias === 0 && conCredito) fallo(nombre, 'crédito de Apple sin la insignia de App Store');
+
   if (!CON_MAIL.has(nombre) && PATRON_MAIL.test(html)) {
     fallo(nombre, 'tiene una dirección de mail (solo puede estar en privacidad y soporte)');
   }
@@ -80,6 +104,12 @@ function revisarCss(nombre, css) {
   for (const [, url] of css.matchAll(/@import\s+(?:url\()?\s*['"]?([^'");\s]+)/gi)) {
     if (esExterna(url)) fallo(nombre, `@import de otro origen: ${url}`);
   }
+}
+
+function revisarSvg(nombre, contenido) {
+  const svg = contenido.replace(/<!--[\s\S]*?-->/g, ''); // los comentarios no cuentan
+  if (/<style\b/i.test(svg)) fallo(nombre, '<style> en un SVG (la CSP no lo admite)');
+  if (/\sstyle\s*=/i.test(svg)) fallo(nombre, 'atributo style= en un SVG (la CSP no lo admite)');
 }
 
 function diferencia(esperado, actual) {
@@ -112,6 +142,7 @@ for (const ruta of archivos(dist)) {
   const nombre = relative(dist, ruta);
   if (nombre.endsWith('.html')) revisarHtml(nombre, readFileSync(ruta, 'utf8'));
   else if (nombre.endsWith('.css')) revisarCss(nombre, readFileSync(ruta, 'utf8'));
+  else if (nombre.endsWith('.svg')) revisarSvg(nombre, readFileSync(ruta, 'utf8'));
 }
 
 for (const pagina of CON_FIXTURE) {
@@ -138,5 +169,7 @@ if (errores.length > 0) {
 }
 
 console.log(
-  `verificar-dist: dist/ en orden (${PAGINAS.length} páginas, sin nada en línea ni de otro origen, mail solo en privacidad y soporte, textos iguales a los fixtures).`,
+  `verificar-dist: dist/ en orden (${PAGINAS.length} páginas, sin nada en línea ni de otro origen, mail solo en privacidad y soporte, textos iguales a los fixtures, insignia de App Store en regla).`,
 );
+
+if (!process.argv[2]) await import('./prueba-negativa.mjs');

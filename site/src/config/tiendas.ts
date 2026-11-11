@@ -1,6 +1,8 @@
-// Enlaces a las tiendas. Con `null`, el botón dice «Próximamente en …» y abre un aviso; con una
-// URL, el mismo componente (`BotonTienda.astro`) se vuelve un enlace a la ficha. Ver
-// site/README.md, «Activar los enlaces de las tiendas».
+// Enlaces a las tiendas. Con `null`, `BotonTienda.astro` muestra la placa «Próximamente» y su
+// aviso. Con la URL de la ficha: en App Store, la insignia oficial de Apple (y su crédito en el
+// pie); en Google Play, un enlace propio «Descargala». Cargá `appStore` solo cuando la app esté
+// aprobada y disponible: la licencia de Apple cubre la insignia solo para apps publicadas. Ver
+// site/README.md, «Accesos a las tiendas».
 export interface Tiendas {
   appStore: string | null;
   googlePlay: string | null;

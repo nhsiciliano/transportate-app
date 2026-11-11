@@ -1,5 +1,11 @@
 ---
+import { tiendas } from '../config/tiendas';
 import Marca from './Marca.astro';
+
+// El crédito de Apple va donde se muestra su insignia: en la landing (la única página con
+// accesos a las tiendas) y con la app publicada.
+const landing = Astro.url.pathname === '/' || Astro.url.pathname === '/index.html';
+const conInsignia = landing && tiendas.appStore !== null;
 ---
 
 <footer class="pie">
@@ -20,5 +26,11 @@ import Marca from './Marca.astro';
       Transportate es una app independiente. No es una app oficial del Gobierno de la Ciudad de
       Buenos Aires ni de Trenes Argentinos.
     </p>
+    {conInsignia && (
+      <p class="pie__credito">
+        Apple y el logotipo de Apple son marcas comerciales de Apple Inc., registradas en EE. UU. y
+        en otros países y regiones. App Store es una marca de servicio de Apple Inc.
+      </p>
+    )}
   </div>
 </footer>

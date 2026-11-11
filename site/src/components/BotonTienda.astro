@@ -1,7 +1,13 @@
 ---
-// Acceso a una tienda. Con URL en `config/tiendas.ts` es un enlace a la ficha; con `null`, un
-// botón «Próximamente en …» que abre un aviso (popover declarativo, sin JavaScript). Sin
-// insignias oficiales de Apple ni de Google: placa propia del sitio.
+// Acceso a una tienda.
+//
+// - App Store con URL en `config/tiendas.ts`: la insignia oficial de Apple, sin tocar (copia de
+//   design/brand/tiendas/app-store-es-mx.svg), como único contenido de un enlace a la ficha. Las
+//   reglas de Apple que cumple están en `.insignia` (global.css) y en site/README.md.
+// - Google Play con URL: enlace propio «Google Play · Descargala» (sin insignia de Google).
+// - Sin URL (`null`): placa propia «App Store · Próximamente» que abre un aviso (popover
+//   declarativo, sin JavaScript). No imita la forma de las insignias oficiales ni usa logos.
+import insignia from '../assets/tiendas/app-store-es-mx.svg';
 import { tiendas } from '../config/tiendas';
 import Icono from './Icono.astro';
 import Pictograma from './Pictograma.astro';
@@ -26,24 +32,36 @@ const datos = {
 }[tienda];
 
 const url = tiendas[tienda];
+// Alto de la insignia en pantalla (Apple pide 40 px como mínimo); el ancho sale de su proporción.
+const ALTO_INSIGNIA = 52;
+const anchoInsignia = Math.round((ALTO_INSIGNIA * insignia.width) / insignia.height);
 const idAviso = `aviso-${tienda}-${lugar}`;
 ---
 
-{url ? (
+{tienda === 'appStore' && url ? (
+  <a class:list={['insignia', `insignia--${lugar}`]} href={url}>
+    <img
+      src={insignia.src}
+      width={anchoInsignia}
+      height={ALTO_INSIGNIA}
+      alt="Descárgalo en el App Store"
+    />
+  </a>
+) : url ? (
   <a class="tienda" href={url}>
-    <Pictograma nombre="descargar" tamano="chico" />
-    <span class="tienda__texto">
-      <span class="tienda__previo">Descargala en</span>
-      <span class="tienda__nombre">{datos.nombre}</span>
+    <span class="tienda__nombre">{datos.nombre}</span>
+    <span class="tienda__estado tienda__estado--activo">
+      <span>Descargala</span>
+      <Icono nombre="adelante" tamano={20} />
     </span>
   </a>
 ) : (
   <>
     <button class="tienda" type="button" popovertarget={idAviso}>
-      <Pictograma nombre="descargar" tamano="chico" />
-      <span class="tienda__texto">
-        <span class="tienda__previo">Próximamente en</span>
-        <span class="tienda__nombre">{datos.nombre}</span>
+      <span class="tienda__nombre">{datos.nombre}</span>
+      <span class="tienda__estado">
+        <Icono nombre="frescura" tamano={20} />
+        <span>Próximamente</span>
       </span>
     </button>
     <div class="aviso" id={idAviso} popover role="dialog" aria-labelledby={`${idAviso}-titulo`}>
