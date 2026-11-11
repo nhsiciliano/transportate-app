@@ -1,7 +1,7 @@
 // Lectura del paquete estático (generado por tools/gtfs) desde el bucket R2 `STATIC`,
 // con la Cache API del colo delante para no leer R2 en cada request.
-// Ojo: la Cache API no tiene efecto en `*.workers.dev` ni en previews; en producción
-// hace falta una ruta/dominio propio.
+// Ojo: en previews y en el editor del dashboard la Cache API no tiene efecto. Los headers que ve
+// el cliente son siempre los propios (`ownHeaders`), no los que devuelve `cache.match`.
 import { ManifestV1 } from '@transportate/contracts';
 import { ApiError } from '../adapters/types';
 import { hashHex } from '../lib/hash';
@@ -35,18 +35,36 @@ function cacheKey(url: string): Request {
 }
 
 /**
+ * Headers propios de una entrada guardada. Lo que devuelve `cache.match` no se reenvía tal cual:
+ * trae `CF-Cache-Status` y `Age`, y en un dominio propio la zona puede reescribirle el
+ * `Cache-Control` (Browser Cache TTL: el manifiesto salía con `max-age=14400` en vez de 300).
+ */
+function ownHeaders(hit: Headers, cacheControl: string): Headers {
+  const headers = new Headers({ 'Cache-Control': cacheControl });
+  for (const name of ['Content-Type', 'ETag']) {
+    const value = hit.get(name);
+    if (value) headers.set(name, value);
+  }
+  return headers;
+}
+
+/**
  * Devuelve el cuerpo y headers desde `caches.default` o, si no está, desde `load()`;
- * en el segundo caso guarda en caché en segundo plano.
+ * en el segundo caso guarda en caché en segundo plano. `cacheControl` es el que ve el cliente,
+ * venga el dato de la caché o de R2.
  */
 async function cachedOrLoad(
   url: string,
   ctx: ExecutionContext | undefined,
+  cacheControl: string,
   load: () => Promise<CachedBody>,
 ): Promise<CachedBody> {
   const cache = caches.default;
   const key = cacheKey(url);
   const hit = await cache.match(key);
-  if (hit) return { body: await hit.arrayBuffer(), headers: new Headers(hit.headers) };
+  if (hit) {
+    return { body: await hit.arrayBuffer(), headers: ownHeaders(hit.headers, cacheControl) };
+  }
 
   const loaded = await load();
   const toCache = new Response(loaded.body.slice(0), { headers: loaded.headers });
@@ -60,7 +78,7 @@ export function loadManifest(
   url: string,
   ctx: ExecutionContext | undefined,
 ): Promise<CachedBody> {
-  return cachedOrLoad(url, ctx, async () => {
+  return cachedOrLoad(url, ctx, MANIFEST_CACHE_CONTROL, async () => {
     const obj = await bucket.get(MANIFEST_KEY);
     if (!obj) throw new ApiError('not_found', 'Todavía no hay paquete estático publicado', 404);
     let parsed: unknown;
@@ -91,7 +109,7 @@ export function loadFile(
   url: string,
   ctx: ExecutionContext | undefined,
 ): Promise<CachedBody> {
-  return cachedOrLoad(url, ctx, async () => {
+  return cachedOrLoad(url, ctx, FILE_CACHE_CONTROL, async () => {
     const obj = await bucket.get(key);
     if (!obj) throw new ApiError('not_found', 'Archivo estático inexistente', 404);
     const headers = new Headers({

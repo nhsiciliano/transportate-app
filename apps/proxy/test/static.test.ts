@@ -67,6 +67,21 @@ describe('GET /v1/static/manifest', () => {
     const res = await app.request(`${base}/v1/static/manifest`, {}, testEnv());
     expect(ManifestV1.parse(await res.json()).version).toBe('v20261101a');
   });
+
+  // En un dominio propio, la zona puede reescribir el `Cache-Control` de lo que devuelve
+  // `cache.match` (Browser Cache TTL: 300 s pasaban a 14400) y le suma `CF-Cache-Status` y `Age`.
+  it('desde la Cache API responde con los mismos headers que en el primer pedido', async () => {
+    await env.STATIC.put('latest/manifest.json', JSON.stringify(manifest));
+    const base = host();
+    const primero = await app.request(`${base}/v1/static/manifest`, {}, testEnv());
+    const cacheado = await app.request(`${base}/v1/static/manifest`, {}, testEnv());
+    expect(cacheado.status).toBe(200);
+    expect(cacheado.headers.get('Cache-Control')).toBe('public, max-age=300');
+    expect(cacheado.headers.get('ETag')).toBe(primero.headers.get('ETag'));
+    expect(cacheado.headers.get('Content-Type')).toBe('application/json; charset=utf-8');
+    expect(cacheado.headers.get('CF-Cache-Status')).toBeNull();
+    expect(cacheado.headers.get('Age')).toBeNull();
+  });
 });
 
 describe('GET /v1/static/:version/:archivo', () => {
