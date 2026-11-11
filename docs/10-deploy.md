@@ -254,7 +254,7 @@ Sitio público de Transportate: la **landing** (`/`) y las páginas de **privaci
 |---|---|
 | Código | `site/src/` (páginas Astro, componentes, estilos, el único script) y `site/public/` (`_headers`, íconos, `og.png`, `robots.txt`, `sitemap.xml`) |
 | Config del Worker | `site/wrangler.jsonc` (nombre `transportate-site`; `assets.directory` apunta a **`dist/`**, la salida de `astro build`) |
-| URLs | `https://transportate.ar/`, `/privacidad` y `/soporte` (dominio propio, en activación); `https://transportate-site.nhsiciliano.workers.dev` sigue viva durante la transición |
+| URLs | `https://transportate.ar/`, `/privacidad` y `/soporte` (dominio propio, desplegado el 2026-11-11); `https://transportate-site.nhsiciliano.workers.dev` sigue viva durante la transición |
 
 **El build va antes del deploy:** `dist/` no se versiona y wrangler publica lo que haya ahí. Desde la raíz del repo:
 

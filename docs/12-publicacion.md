@@ -27,7 +27,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 |---|---|
 | Dominio propio | **`transportate.ar`** (desde el 2026-11-11; registrado en nic.ar, DNS en Cloudflare). El build 1.0.0 (3) de TestFlight salió antes, contra `*.workers.dev`; los builds siguientes usan `https://api.transportate.ar` (§8) |
 | Proxy | Worker `transportate-proxy-production`: `https://api.transportate.ar` (2026-11-11) y, mientras viva el build 1.0.0 (3), también `https://transportate-proxy-production.nhsiciliano.workers.dev` (2026-11-10) |
-| Sitio de privacidad y soporte | Worker con static assets `transportate-site` en la misma cuenta (carpeta `site/`): `https://transportate-site.nhsiciliano.workers.dev/`, `/privacidad`, `/soporte`. Desde el 2026-11-11 el sitio es un proyecto Astro con landing y su destino es `https://transportate.ar` (**todavía sin desplegar en el dominio**). Se despliega con `pnpm --filter transportate-site run deploy` ([`10-deploy.md`](10-deploy.md) §10) |
+| Sitio de privacidad y soporte | Worker con static assets `transportate-site` en la misma cuenta (carpeta `site/`): `https://transportate-site.nhsiciliano.workers.dev/`, `/privacidad`, `/soporte`. Desde el 2026-11-11 el sitio es un proyecto Astro con landing y está desplegado en `https://transportate.ar` (`/`, `/privacidad`, `/soporte`). Se despliega con `pnpm --filter transportate-site run deploy` ([`10-deploy.md`](10-deploy.md) §10) |
 | Dispositivos | Solo iPhone (`supportsTablet: false`) |
 | Versión | `1.0.0`; número de build remoto en EAS (`appVersionSource: remote` y `autoIncrement`) |
 | App Privacy | «No recopilamos datos» (justificación en [`05-privacidad.md`](05-privacidad.md) §9) |
@@ -235,7 +235,7 @@ The subway arrival forecast may come unchanged from the source; when that happen
 
 ## 8. Gate de dominio y transición
 
-> **Estado (2026-11-11): gate resuelto.** El dominio es `transportate.ar`; el proxy responde en `https://api.transportate.ar` y `eas.json` ya apunta ahí (pasos 1 a 4 de abajo). Falta el build nuevo, el sitio en el dominio, las URLs de la ficha y de App Privacy, y retirar `workers.dev`. Lo que sigue se conserva como registro de la decisión; la medición de ese día mostró que la Cache API también guardaba en `workers.dev` ([`10-deploy.md`](10-deploy.md) §4).
+> **Estado (2026-11-11): gate resuelto.** El dominio es `transportate.ar`; el proxy responde en `https://api.transportate.ar` y `eas.json` ya apunta ahí (pasos 1 a 4 de abajo). El sitio también está en el dominio. Falta el build nuevo, las URLs de la ficha y de App Privacy, y retirar `workers.dev`. Lo que sigue se conserva como registro de la decisión; la medición de ese día mostró que la Cache API también guardaba en `workers.dev` ([`10-deploy.md`](10-deploy.md) §4).
 
 ### Qué implica abrir en App Store sin dominio
 

@@ -556,5 +556,11 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - Build `preview-simulator` (`8546c879`) contra `https://api.transportate.ar`, instalado en un simulador nuevo «Transportate capturas» (iPhone 18 Pro Max). El simulador que ya existía falló en su migración inicial y quedó apagado.
 - Diez capturas de 1320×2868 (Inicio, subte, colectivos, trenes y Favoritos, en claro y oscuro) en `design/store/ios/6.9/` (sin canal alfa) y en `site/src/assets/capturas/` (reemplazan los marcadores de la landing). El usuario marcó los favoritos a mano desde Device Hub. Procedimiento y tropiezos, en [`12-publicacion.md`](12-publicacion.md) §7.
 
-**Sigue:** visto bueno del usuario a la landing y despliegue del sitio en el dominio; build nuevo contra `api.transportate.ar`; URLs de la ficha y de App Privacy; y la ola F (datos de contacto del revisor, copyright y envío a revisión).
+### Accesos a las tiendas y despliegue de la landing (2026-11-11)
+
+- El usuario pidió los logos oficiales de las tiendas. Revisadas las normas de marca (Apple licencia la insignia solo para apps disponibles y prohíbe el logo suelto; Google reserva la suya para contenido publicado), eligió: insignia oficial de App Store **al publicar**, y mientras tanto placas «Próximamente» pulidas. Google Play sigue en «Próximamente» hasta que exista la app Android.
+- Insignia original de Apple (es-MX), sin tocar, en `design/brand/tiendas/`. `senior-dev` (LANDING-2, commits `72a77c4` y `03a2987`): con URL en `site/src/config/tiendas.ts` el botón pasa a ser la insignia, con el crédito de Apple en el pie; `verificar-dist.mjs` lo vigila. El día de la publicación hay que cambiar además el texto del cierre y la pregunta «¿Cuándo la puedo descargar?».
+- El usuario dio el visto bueno y desplegó el sitio: `https://transportate.ar/`, `/privacidad` y `/soporte` responden 200 con la CSP estricta, `/_astro/*` inmutable y 404 propio. En el sitio la zona no reescribe el `Cache-Control`.
+
+**Sigue:** build nuevo contra `api.transportate.ar`; URLs de la ficha y de App Privacy; y la ola F (datos de contacto del revisor, copyright y envío a revisión).
 

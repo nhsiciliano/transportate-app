@@ -2,7 +2,7 @@
 
 La landing de Transportate y las páginas que App Store pide como URLs públicas, hechas con **Astro 7** como sitio estático (sin adaptador) y servidas por un Worker de Cloudflare de solo assets. Paquete del workspace: `transportate-site` (privado).
 
-URL de producción: **`https://transportate.ar`** (dominio en activación; `https://transportate-site.nhsiciliano.workers.dev` sigue viva durante la transición, porque la enlaza el build 1.0.0 (3) de TestFlight).
+URL de producción: **`https://transportate.ar`** (desplegada el 2026-11-11; `https://transportate-site.nhsiciliano.workers.dev` sigue viva durante la transición, porque la enlaza el build 1.0.0 (3) de TestFlight).
 
 | Ruta | Página | Qué es |
 |---|---|---|
