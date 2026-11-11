@@ -325,6 +325,27 @@ Para `transportate-site` (`site/wrangler.jsonc`, [`10-deploy.md`](10-deploy.md) 
 - Otros campos documentados que no usamos: `binding`, `base_path`, `run_worker_first`.
 - Límite de la verificación: la documentación consultada no está fijada a wrangler 4.156.1; no se corrió `wrangler deploy --dry-run` sobre `site/` porque la carpeta aún no existe (la escribe otro worker).
 
+## Sitio con Astro (LANDING-1) — 2026-11-11
+
+Versiones fijadas (exactas) en `site/package.json` y en el `package.json` raíz. "Última en npm" sale de `npm view` el 2026-11-11.
+
+| Herramienta | Versión fijada | Última en npm | Fuente | Notas |
+|---|---|---|---|---|
+| **Astro** | **7.4.8** | 7.4.10 | Context7 `/withastro/docs` (guía de migración a v7, referencia de configuración, `astro:assets`, scripts del cliente), npm | **No es la última a propósito:** la política de antigüedad mínima de paquetes de pnpm rechaza la 7.4.10 y la 7.4.9 (publicadas el 2026-11-10) y sus dependencias nuevas (`@astrojs/runtime` 0.1.0, `@astrojs/vite-plugin-astro` 0.1.x, `@astrojs/internal-helpers` 0.13.2, `@astrojs/markdown-satteri` 0.4.8). Sin excepciones en `minimumReleaseAgeExclude` (pnpm las agregó solo en el primer `install` y se sacaron a mano). La 7.4.8 trae Vite 8.3.7 y `@astrojs/compiler-rs` 0.5.3. Requiere Node ≥ 22.23.4 (el repo usa 24). |
+| **`@astrojs/check`** | **0.9.12** | 0.9.12 | npm | `astro check` en `typecheck` y `lint`; peer `typescript ^5 \|\| ^6` (usa el 6.0.3 del repo). |
+| **`prettier-plugin-astro`** | **1.1.2** | 1.1.2 | npm | En la raíz, con override `*.astro` → `parser: astro`. **Ignora `htmlWhitespaceSensitivity`** (probado con `css` y `strict`): mueve el salto de línea entre `</a>` y la puntuación que sigue y eso agrega un espacio visible. Las atribuciones de la landing van como cadenas con `set:html` por eso. |
+| **`@fontsource/fira-sans`** | **5.3.0** | 5.3.0 | npm | SIL OFL 1.1. Se usan solo los `woff2` latinos 400/600/700 desde un `@font-face` propio (`site/src/styles/fuentes.css`). |
+| **sharp** | **0.35.5** | 0.35.5 | npm | Servicio de imágenes de `astro:assets` (AVIF/WebP). Trae binarios precompilados (`@img/sharp-*`): **no necesitó** entrada en `allowBuilds` (`pnpm ignored-builds` no lo lista). |
+
+Datos de Astro 7 verificados en la documentación y en el build:
+
+- `compressHTML` vale `'jsx'` por defecto y come el espacio entre un texto y un enlace; el sitio usa `compressHTML: true` (compresión que respeta los espacios significativos de HTML).
+- Los `<script>` procesados se insertan en línea si son chicos; con `vite.build.assetsInlineLimit: 0` salen siempre como archivo (`/_astro/*.js`). Lo mismo para CSS con `build.inlineStylesheets: 'never'`.
+- `build.format: 'file'` genera `privacidad.html` (no `privacidad/index.html`), así `/privacidad` no redirige en Workers static assets.
+- `<Picture />` no acepta otra imagen por `media`: el claro/oscuro de las capturas se arma con `getImage()` y un `<picture>` propio.
+- **El minificador de CSS (Lightning CSS, Vite 8) junta `animation` + `animation-timeline` en un solo shorthand** (`animation: linear both nombre scroll(root)`), que Chrome descarta entero. Las scroll-driven animations del sitio se escriben con longhands (`animation-name`, `animation-timing-function`, `animation-fill-mode`, `animation-timeline`), que el minificador deja como están.
+- La telemetría de Astro se apaga en cada script del paquete (`ASTRO_TELEMETRY_DISABLED=1`).
+
 ## Pendiente de fijar
 
 Todavía **sin versión fijada** ni consulta a Context7 (el resto se hace al inicio de cada fase):

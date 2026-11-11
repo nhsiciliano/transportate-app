@@ -244,20 +244,23 @@ Los secrets del Worker (`GCBA_*`) **no** pasan por GitHub. Se cargan una vez con
 
 ## 10. Sitio estático (`transportate-site`)
 
-Páginas públicas de **privacidad** y **soporte** que App Store Connect exige como URLs (la app las enlaza desde Acerca de). Es un Worker de solo assets (sin `main`) en la misma cuenta de Cloudflare.
+Sitio público de Transportate: la **landing** (`/`) y las páginas de **privacidad** y **soporte** que App Store Connect exige como URLs (la app las enlaza desde Acerca de), más un 404. Se construye con **Astro** (sitio estático, sin adaptador; paquete `transportate-site` del workspace) y se sirve con un Worker de solo assets (sin `main`) en la misma cuenta de Cloudflare. Detalle en [`site/README.md`](../site/README.md).
 
 | Qué | Dónde |
 |---|---|
-| Config del Worker | `site/wrangler.jsonc` (nombre `transportate-site`; `assets` con `directory` apuntando a `public/`) |
-| Archivos públicos | `site/public/` |
-| URLs | `https://transportate-site.nhsiciliano.workers.dev/`, `/privacidad` y `/soporte` |
+| Código | `site/src/` (páginas Astro, componentes, estilos, el único script) y `site/public/` (`_headers`, íconos, `og.png`, `robots.txt`, `sitemap.xml`) |
+| Config del Worker | `site/wrangler.jsonc` (nombre `transportate-site`; `assets.directory` apunta a **`dist/`**, la salida de `astro build`) |
+| URLs | `https://transportate.ar/`, `/privacidad` y `/soporte` (dominio propio, en activación); `https://transportate-site.nhsiciliano.workers.dev` sigue viva durante la transición |
 
-Deploy (desde la raíz del repo; usa el wrangler fijado en `apps/proxy`):
+**El build va antes del deploy:** `dist/` no se versiona y wrangler publica lo que haya ahí. Desde la raíz del repo:
 
 ```sh
-pnpm --filter transportate-proxy exec wrangler deploy -c ../../site/wrangler.jsonc
+pnpm --filter transportate-site test        # astro build + verificación de dist/
+pnpm --filter transportate-site run deploy  # astro build + wrangler deploy (usa el wrangler de apps/proxy)
 ```
 
-- Es un Worker aparte del proxy: no comparte secrets, R2 ni rate limit, y se despliega a mano (no está en el workflow de §9).
-- El mail de contacto vive **solo** en la página de soporte del sitio; no va en la app ni en estos docs.
-- Con dominio propio, el sitio pasa al dominio (§4, paso 6).
+`run deploy` es necesario: `pnpm deploy` a secas es un comando propio de pnpm (copia un paquete), no el script. El script equivale a `astro build` seguido de `pnpm --filter transportate-proxy exec wrangler deploy -c ../../site/wrangler.jsonc`. Para validar sin publicar, después del build: `pnpm --filter transportate-proxy exec wrangler deploy --dry-run -c ../../site/wrangler.jsonc`.
+
+- Es un Worker aparte del proxy: no comparte secrets, R2 ni rate limit, y se despliega a mano (no está en el workflow de §9). CI sí construye y verifica el sitio (`pnpm test` recursivo).
+- El mail de contacto vive **solo** en las páginas de privacidad y soporte del sitio; no va en la app ni en estos docs. `pnpm test` falla si aparece en otra página.
+- Dominio propio: ver §4, paso 6. `routes` y `workers_dev` de `site/wrangler.jsonc` no cambian con Astro.

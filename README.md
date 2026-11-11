@@ -9,7 +9,7 @@ App móvil (iOS y Android, Expo) con **colectivos, subte y trenes del área metr
 | Carpeta | Qué hay |
 |---|---|
 | [`apps/mobile/`](apps/mobile/README.md) | App iOS/Android con Expo SDK 58 y Expo Router: features por carpeta en `src/features/` (inicio, colectivos, subtes, trenes, favoritos, ajustes) y UI compartida en `src/shared/`. |
-| [`site/`](site/README.md) | Sitio público estático (inicio, política de privacidad, soporte): Worker de Cloudflare solo de assets, `https://transportate-site.nhsiciliano.workers.dev`. |
+| [`site/`](site/README.md) | Sitio público con Astro (estático): landing, política de privacidad y soporte, `https://transportate.ar`. Worker de Cloudflare solo de assets que publica `site/dist/`. |
 | [`apps/proxy/`](apps/proxy/README.md) | Worker de Cloudflare con Hono 4: rutas `/v1/*` (subtes, colectivos, trenes, estáticos), adaptadores por fuente, caché, rate limit, R2. |
 | `packages/contracts/` | Esquemas Zod 4 del JSON v1 (incluidos trenes y el paquete estático) y tipos compartidos entre proxy y app. |
 | [`tools/`](tools/README.md) | Herramientas de investigación y preprocesado (paquetes npm sueltos, fuera del workspace pnpm): `gtfs` (paquete estático), `sofse-probe` (volcados de la fuente de trenes), `contraste`, etc. |
