@@ -1,5 +1,8 @@
 ---
-// Captura de una pantalla de la app, en claro y oscuro según `prefers-color-scheme`.
+// Captura de una pantalla de la app, en claro y oscuro. El tema lo elige la persona con el botón
+// de la cabecera (`data-tema` en <html>), no `prefers-color-scheme`, así que no sirve un <source
+// media>: van dos <picture> y el CSS (landing.css) muestra el del tema activo. La oscura siempre
+// carga diferida, así que en claro no se descarga.
 //
 // `<Picture />` de astro:assets no acepta otra imagen por `media`, así que el <picture> se arma
 // acá con `getImage()` (el mismo procesamiento): AVIF y WebP en cuatro anchos para cada tema, y
@@ -47,37 +50,39 @@ async function srcset(src: ImageMetadata, format: 'avif' | 'webp') {
   return imagen.srcSet.attribute;
 }
 
-const [oscuroAvif, oscuroWebp, claroAvif, claroWebp, respaldo] = await Promise.all([
-  srcset(oscuro, 'avif'),
-  srcset(oscuro, 'webp'),
-  srcset(claro, 'avif'),
-  srcset(claro, 'webp'),
-  getImage({ src: claro, width: 660, format: 'png' }),
-]);
+const [oscuroAvif, oscuroWebp, claroAvif, claroWebp, respaldoClaro, respaldoOscuro] =
+  await Promise.all([
+    srcset(oscuro, 'avif'),
+    srcset(oscuro, 'webp'),
+    srcset(claro, 'avif'),
+    srcset(claro, 'webp'),
+    getImage({ src: claro, width: 660, format: 'png' }),
+    getImage({ src: oscuro, width: 660, format: 'png' }),
+  ]);
 ---
 
-<picture class="captura">
-  <source
-    media="(prefers-color-scheme: dark)"
-    type="image/avif"
-    srcset={oscuroAvif}
-    sizes={sizes}
-  />
-  <source
-    media="(prefers-color-scheme: dark)"
-    type="image/webp"
-    srcset={oscuroWebp}
-    sizes={sizes}
-  />
+<picture class="captura captura--claro">
   <source type="image/avif" srcset={claroAvif} sizes={sizes} />
   <source type="image/webp" srcset={claroWebp} sizes={sizes} />
   <img
-    src={respaldo.src}
+    src={respaldoClaro.src}
     width={claro.width}
     height={claro.height}
     alt={alt}
     decoding="async"
     loading={prioridad ? 'eager' : 'lazy'}
     fetchpriority={prioridad ? 'high' : 'auto'}
+  />
+</picture>
+<picture class="captura captura--oscuro">
+  <source type="image/avif" srcset={oscuroAvif} sizes={sizes} />
+  <source type="image/webp" srcset={oscuroWebp} sizes={sizes} />
+  <img
+    src={respaldoOscuro.src}
+    width={oscuro.width}
+    height={oscuro.height}
+    alt={alt}
+    decoding="async"
+    loading="lazy"
   />
 </picture>

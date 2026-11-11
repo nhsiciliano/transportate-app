@@ -5,10 +5,12 @@
 import ArrowDownward from '../icons/arrow_downward.svg';
 import ArrowForward from '../icons/arrow_forward.svg';
 import Close from '../icons/close.svg';
+import DarkMode from '../icons/dark_mode.svg';
 import DirectionsBus from '../icons/directions_bus.svg';
 import Help from '../icons/help.svg';
 import Info from '../icons/info.svg';
 import KeyboardArrowDown from '../icons/keyboard_arrow_down.svg';
+import LightMode from '../icons/light_mode.svg';
 import MobileArrowDown from '../icons/mobile_arrow_down.svg';
 import PrivacyTip from '../icons/privacy_tip.svg';
 import Schedule from '../icons/schedule.svg';
@@ -32,6 +34,8 @@ const iconos = {
   subte: Subway,
   tren: Train,
   sinConexion: WifiOff,
+  temaOscuro: DarkMode,
+  temaClaro: LightMode,
 } as const;
 
 export type NombreIcono = keyof typeof iconos;

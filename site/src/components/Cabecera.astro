@@ -1,4 +1,5 @@
 ---
+import Icono from './Icono.astro';
 import Marca from './Marca.astro';
 
 export type Pagina = 'inicio' | 'privacidad' | 'soporte';
@@ -36,5 +37,18 @@ const enlaces = [
         ))}
       </ul>
     </nav>
+    <!-- Sin JavaScript no hay botón: el sitio queda en claro. src/scripts/tema.ts lo muestra. -->
+    <button
+      class="tema"
+      type="button"
+      aria-pressed="false"
+      aria-label="Tema oscuro"
+      title="Tema oscuro"
+      data-tema-boton
+      hidden
+    >
+      <Icono nombre="temaOscuro" class="tema__luna" />
+      <Icono nombre="temaClaro" class="tema__sol" />
+    </button>
   </div>
 </header>

@@ -49,7 +49,7 @@
   justify-self: center;
   inline-size: min(256px, 72vw);
   aspect-ratio: 1320 / 1900;
-  /* Sin esto, el mínimo automático de \`aspect-ratio\` deja crecer la caja hasta el teléfono entero. */
+  /* Sin esto, el mínimo automático de `aspect-ratio` deja crecer la caja hasta el teléfono entero. */
   min-block-size: 0;
   overflow: clip;
 }
@@ -237,6 +237,17 @@
 
 .captura img {
   object-fit: cover;
+}
+
+/* Las dos versiones de cada captura están en el HTML y se ve la del tema elegido. La oscura carga
+   diferida (`loading="lazy"` y `display: none`), así que en claro no se pide. */
+.captura--oscuro,
+:root[data-tema='oscuro'] .captura--claro {
+  display: none;
+}
+
+:root[data-tema='oscuro'] .captura--oscuro {
+  display: block;
 }
 
 /* --------------------------------------------------------------- secciones */

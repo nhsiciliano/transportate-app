@@ -1,7 +1,8 @@
 /* Sitio de Transportate: «Señalética de terminal» llevada a la web.
    Tokens de apps/mobile/src/shared/theme/tokens.ts (Obelisco v2 + paleta oscura derivada): manda
-   el código de la app. Radio 6, contornos de 2 px, sin sombras. Claro y oscuro por
-   `prefers-color-scheme`. Todo el movimiento vive dentro de `prefers-reduced-motion:
+   el código de la app. Radio 6, contornos de 2 px, sin sombras. Claro por defecto; oscuro con
+   `data-tema="oscuro"` en <html>, que pone el botón de tema de la cabecera (src/scripts/tema.ts y
+   public/tema.js), sin mirar `prefers-color-scheme`. Todo el movimiento vive dentro de `prefers-reduced-motion:
    no-preference` y es mejora progresiva: el estado base es el contenido visible y quieto.
 
    Contrastes (WCAG 2.x), claro / oscuro:
@@ -13,7 +14,7 @@
    - foco #003832 sobre blanco 13,0:1; foco #73e6d5 sobre navy 9,1:1 y sobre #000b18 13,1:1 */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --fondo: #ffffff;
   --fondo-elevado: #edf4ff;
@@ -46,19 +47,19 @@
   --salida: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #000b18;
-    --fondo-elevado: #121f2c;
-    --placa: #1b2836;
-    --placa-borde: #253240;
-    --texto: #edf4ff;
-    --texto-sec: #c7d4e6;
-    --enlace: #82bfe8;
-    --borde: #253240;
-    --foco: #73e6d5;
-    --marco: #253240;
-  }
+:root[data-tema='oscuro'] {
+  color-scheme: dark;
+
+  --fondo: #000b18;
+  --fondo-elevado: #121f2c;
+  --placa: #1b2836;
+  --placa-borde: #253240;
+  --texto: #edf4ff;
+  --texto-sec: #c7d4e6;
+  --enlace: #82bfe8;
+  --borde: #253240;
+  --foco: #73e6d5;
+  --marco: #253240;
 }
 
 /* ------------------------------------------------------------------ base */
@@ -239,9 +240,59 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   column-gap: 24px;
   padding-block: 8px;
+}
+
+.cabecera .marca {
+  margin-inline-end: auto;
+}
+
+/* En el teléfono: marca y botón de tema arriba, los enlaces abajo. Desde 56 rem, todo en una fila. */
+.cabecera__fila nav {
+  order: 2;
+  flex-basis: 100%;
+}
+
+.tema {
+  order: 1;
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  margin: 0;
+  border: var(--contorno) solid var(--placa-borde);
+  border-radius: var(--radio);
+  padding: 0;
+  background: var(--placa);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.tema[hidden] {
+  display: none;
+}
+
+.tema:hover {
+  border-color: var(--enlace);
+}
+
+/* El ícono muestra el tema al que se pasa: luna en claro, sol en oscuro. */
+.tema__sol,
+:root[data-tema='oscuro'] .tema__luna {
+  display: none;
+}
+
+:root[data-tema='oscuro'] .tema__sol {
+  display: block;
+}
+
+@media (min-width: 56rem) {
+  .cabecera__fila nav {
+    order: 0;
+    flex-basis: auto;
+  }
 }
 
 .cabecera__enlaces {
@@ -471,10 +522,8 @@ a:hover {
   background: var(--fondo-elevado);
 }
 
-@media (prefers-color-scheme: dark) {
-  .aviso {
-    border-color: var(--enlace);
-  }
+:root[data-tema='oscuro'] .aviso {
+  border-color: var(--enlace);
 }
 
 @media (prefers-reduced-motion: no-preference) {

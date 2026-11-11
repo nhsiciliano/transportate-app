@@ -17,7 +17,8 @@ URL de producción: **`https://transportate.ar`** (dominio en activación; `http
 
 - **Sin terceros:** ninguna fuente, script, imagen, hoja de estilo ni analítica de otro origen, y sin cookies. Es coherente con «No recopilamos datos» de la ficha de App Privacy.
 - **CSP estricta, sin `unsafe-inline`** (`public/_headers`): el HTML generado no puede tener `<style>`, `<script>` en línea ni atributos `style=""`. Por eso `build.inlineStylesheets: 'never'` y `vite.build.assetsInlineLimit: 0`, sin `<ClientRouter />` ni directivas `transition:*`.
-- **Un solo JavaScript:** `src/scripts/modos.ts`, el selector de modos de la landing, servido como archivo externo. Sin JavaScript, los cuatro paneles se ven uno debajo del otro.
+- **JavaScript mínimo, siempre en archivos externos:** `src/scripts/modos.ts` (selector de modos de la landing), `src/scripts/tema.ts` (botón de tema de la cabecera) y `public/tema.js` (aplica el tema guardado en el `<head>`, antes de pintar). Sin JavaScript, los cuatro paneles se ven uno debajo del otro, el botón de tema no aparece y el sitio queda en claro.
+- **Tema:** claro por defecto, aunque el sistema esté en oscuro. El botón de la cabecera pone `data-tema="oscuro"` en `<html>` y guarda solo la palabra `oscuro` en `localStorage` (clave `transportate-tema`) de ese navegador; volver a claro borra la clave. No es una cookie y no sale del navegador.
 - **El mail de contacto** aparece solo en `privacidad.astro` y `soporte.astro` (decisión del usuario). No lo escribas en otro archivo.
 - **Movimiento:** todo lo animado está dentro de `@media (prefers-reduced-motion: no-preference)` y es mejora progresiva; el estado base es el contenido visible y quieto.
 - **Copy:** español rioplatense con voseo. Sin usuarios, métricas, testimonios ni comparaciones inventadas; no se presenta como app oficial; sin logos del GCBA ni de Trenes Argentinos; sin insignias oficiales de las tiendas.
@@ -32,6 +33,7 @@ site/
 ├── public/                 # se copia tal cual a dist/
 │   ├── _headers            # CSP, nosniff, referrer, frame; caché inmutable en /_astro/*
 │   ├── favicon.png, icono.png, og.png (1200×630, de design/brand/social/)
+│   ├── tema.js             # aplica el tema guardado antes de pintar (bloqueante, en el <head>)
 │   └── robots.txt, sitemap.xml (escritos a mano, tres URLs)
 ├── src/
 │   ├── pages/              # index, privacidad, soporte, 404
@@ -39,6 +41,7 @@ site/
 │   ├── components/         # Cabecera, Pie, Marca, Icono, Pictograma, BotonTienda, Telefono, Captura
 │   ├── config/tiendas.ts   # enlaces a App Store y Google Play (o null)
 │   ├── scripts/modos.ts    # selector de modos (pestañas + view transition)
+│   ├── scripts/tema.ts     # botón de tema claro/oscuro de la cabecera
 │   ├── styles/             # fuentes.css, global.css (tokens y base), landing.css
 │   ├── icons/              # pictogramas Material Symbols (SVG)
 │   └── assets/             # marca.svg y capturas/ (las procesa astro:assets)
@@ -48,7 +51,7 @@ site/
     └── fixtures/           # texto de privacidad, soporte y 404 del sitio anterior
 ```
 
-Diseño: extiende a la web la dirección de la app, «Señalética de terminal», con los tokens de `apps/mobile/src/shared/theme/tokens.ts` (paleta Obelisco v2 y su derivada oscura; claro y oscuro por `prefers-color-scheme`, sin selector). Radio 6, contornos de 2 px, sin sombras; bandas de señal azul y navy con el pictograma en un cuadrado oscuro. El contrato de dirección está en `.impeccable/surfaces/site-src-pages-index-astro.md`.
+Diseño: extiende a la web la dirección de la app, «Señalética de terminal», con los tokens de `apps/mobile/src/shared/theme/tokens.ts` (paleta Obelisco v2 y su derivada oscura; claro por defecto y oscuro con el botón de la cabecera, sin seguir `prefers-color-scheme`). Radio 6, contornos de 2 px, sin sombras; bandas de señal azul y navy con el pictograma en un cuadrado oscuro. El contrato de dirección está en `.impeccable/surfaces/site-src-pages-index-astro.md`.
 
 Las cuatro técnicas del pedido, y dónde están:
 
@@ -122,7 +125,7 @@ Es `run deploy` y no `deploy`: `pnpm deploy` es un comando propio de pnpm. Ver [
 
 ## Reemplazar las capturas
 
-Las capturas viven en `src/assets/capturas/` con estos nombres exactos, en 1320×2868 (simulador iPhone 18 Pro Max): `inicio`, `subte`, `colectivos`, `trenes` y `favoritos`, cada una en `-claro.png` y `-oscuro.png`. Hoy son **marcadores** («Captura pendiente»). Para cambiarlas, pisá el archivo con el mismo nombre y volvé a construir: `Captura.astro` genera AVIF y WebP en 300, 450, 660 y 990 px para cada tema y elige el oscuro con `<source media="(prefers-color-scheme: dark)">`. La de Inicio (cartel) carga con prioridad alta; el resto, diferida. El marco del teléfono es CSS (`.telefono`): no hace falta recortar las capturas.
+Las capturas viven en `src/assets/capturas/` con estos nombres exactos, en 1320×2868 (simulador iPhone 18 Pro Max): `inicio`, `subte`, `colectivos`, `trenes` y `favoritos`, cada una en `-claro.png` y `-oscuro.png`. Hoy son **marcadores** («Captura pendiente»). Para cambiarlas, pisá el archivo con el mismo nombre y volvé a construir: `Captura.astro` genera AVIF y WebP en 300, 450, 660 y 990 px para cada tema, en dos `<picture>` (`.captura--claro` y `.captura--oscuro`); el CSS muestra el del tema activo. La oscura siempre carga diferida, así que en claro no se descarga. La clara de Inicio (cartel) carga con prioridad alta; el resto, diferida. El marco del teléfono es CSS (`.telefono`): no hace falta recortar las capturas.
 
 ## Licencias
 

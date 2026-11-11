@@ -1,6 +1,6 @@
 # Cabeceras de seguridad para todo el sitio (Workers static assets aplica este archivo y no lo
-# sirve). Sin recursos de otros orígenes y sin nada en línea: estilos, imágenes, fuentes y el
-# único script (el selector de modos de la landing) salen de este mismo sitio.
+# sirve). Sin recursos de otros orígenes y sin nada en línea: estilos, imágenes, fuentes y los
+# scripts (selector de modos y tema claro/oscuro) salen de este mismo sitio.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
