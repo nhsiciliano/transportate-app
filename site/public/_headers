@@ -1,8 +1,12 @@
 # Cabeceras de seguridad para todo el sitio (Workers static assets aplica este archivo y no lo
-# sirve). El sitio no tiene JavaScript ni recursos externos: la CSP solo deja estilos e imágenes
-# propios.
+# sirve). Sin recursos de otros orígenes y sin nada en línea: estilos, imágenes, fuentes y el
+# único script (el selector de modos de la landing) salen de este mismo sitio.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; style-src 'self'; img-src 'self'; font-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+# Archivos del build de Astro: el nombre lleva el hash del contenido, así que no cambian nunca.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

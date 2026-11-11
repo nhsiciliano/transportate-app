@@ -1,0 +1,21 @@
+Soporte y contacto
+Respuestas cortas a lo que más se pregunta. Si no encontrás lo que buscás, escribinos (está al final).
+¿Es una app oficial?
+No. Transportate es una app independiente. No es del Gobierno de la Ciudad de Buenos Aires ni de Trenes Argentinos.
+¿De dónde salen los datos? ¿Por qué a veces están demorados o faltan?
+Colectivos y subte vienen de los datos abiertos del Gobierno de la Ciudad; los trenes, de Trenes Argentinos a través de una API comunitaria no oficial. Si una fuente se demora o no responde, la app te muestra lo último que sabe y te dice hace cuánto se actualizó («Actualizado hace…»). Cuando no hay datos, dice «Sin información» en lugar de inventar un estado.
+¿Qué significa «No hay próximos trenes informados»?
+Que la fuente de trenes no informa próximos trenes para esa estación en ese momento: puede ser de noche, fuera de servicio o una falta del dato. No quiere decir necesariamente que no pase ningún tren; revisá las alertas de la línea.
+¿Por qué no hay cortes de tránsito?
+Porque hoy no hay una fuente pública de cortes que funcione bien. Puede sumarse más adelante.
+¿La app necesita mi ubicación?
+No. Es opcional: sirve para ver las paradas cercanas (y, si la diste, para poner primero en Inicio el favorito que tenés más cerca). Sin permiso, buscás la parada o la línea a mano. Tu ubicación nunca sale del teléfono; más detalle en la política de privacidad.
+¿Por qué no aparecen el Belgrano Norte y el Urquiza?
+Porque la fuente de trenes que usamos no los incluye: los operan empresas privadas, fuera de Trenes Argentinos.
+¿Cómo borro mis favoritos?
+De a uno: en Favoritos, tocá «Editar» y después «Quitar». Todos juntos: en Ajustes (el engranaje de Inicio), «Borrar todos los favoritos»; justo después tenés «Deshacer» por si te equivocaste. Si desinstalás la app, también se borran.
+Contacto
+Escribinos a [mail de contacto]. Para ayudarte más rápido, contanos:
+la versión de la app (está en Ajustes → Acerca de Transportate);
+en qué pantalla estabas (por ejemplo, la parada o la estación);
+qué esperabas ver y qué viste.

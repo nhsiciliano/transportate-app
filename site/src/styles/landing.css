@@ -1,0 +1,836 @@
+/* Landing: cartel, selector de modos, señales, preguntas, cierre y datos.
+   Tokens en global.css. Movimiento solo dentro de `prefers-reduced-motion: no-preference`. */
+
+.oculto {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------- cartel */
+
+.cartel {
+  background: var(--banda-navy);
+  color: var(--sobre-banda);
+}
+
+.cartel__cuerpo {
+  display: grid;
+  gap: 40px;
+  padding-block-start: clamp(28px, 5vw, 56px);
+}
+
+.cartel__pictogramas {
+  display: flex;
+  gap: 8px;
+  margin-block-end: clamp(16px, 2.5vw, 28px);
+}
+
+.cartel h1 {
+  max-inline-size: 15ch;
+  font-size: clamp(2.375rem, 1.3rem + 3.9vw, 4.375rem);
+  line-height: 1.02;
+}
+
+.cartel__apoyo {
+  max-inline-size: 40ch;
+  margin-block: 16px 28px;
+  color: var(--sobre-banda-sec);
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
+  line-height: 1.4;
+}
+
+/* El teléfono asoma desde el borde inferior del cartel: se ve la parte de arriba de Inicio y el
+   resto queda cortado por la franja de líneas. */
+.cartel__telefono {
+  justify-self: center;
+  inline-size: min(256px, 72vw);
+  aspect-ratio: 1320 / 1900;
+  /* Sin esto, el mínimo automático de \`aspect-ratio\` deja crecer la caja hasta el teléfono entero. */
+  min-block-size: 0;
+  overflow: clip;
+}
+
+@media (min-width: 40rem) {
+  .cartel__telefono {
+    inline-size: 296px;
+  }
+}
+
+@media (min-width: 64rem) {
+  .cartel__cuerpo {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 64px;
+  }
+
+  .cartel__texto {
+    padding-block-end: 56px;
+  }
+
+  .cartel__telefono {
+    inline-size: 316px;
+    aspect-ratio: 1320 / 1960;
+  }
+}
+
+/* Franja al pie del cartel: las líneas que cubre la app, como en un cartel de andén. */
+.franja {
+  background: var(--pictograma);
+  color: var(--sobre-banda);
+}
+
+.franja__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  padding-block: 16px;
+}
+
+.franja__grupo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.franja__rotulo {
+  font-weight: 600;
+}
+
+.franja__lineas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.linea,
+.tren {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: 32px;
+  block-size: 32px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.linea {
+  border-radius: 50%;
+}
+
+.tren {
+  border-radius: var(--radio);
+  padding-inline: 6px;
+}
+
+.linea--a {
+  background: #a5c8ff;
+  color: #000000;
+}
+.linea--b {
+  background: #ff0000;
+  color: #000000;
+}
+.linea--c {
+  background: #0000ff;
+  color: #ffffff;
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+.linea--d {
+  background: #00ac67;
+  color: #000000;
+}
+.linea--e {
+  background: #8300bb;
+  color: #ffffff;
+}
+.linea--h {
+  background: #fff300;
+  color: #000000;
+}
+.linea--p {
+  background: #ffbd33;
+  color: #000000;
+}
+
+.tren--roca {
+  background: #f07d2b;
+  color: #000000;
+}
+.tren--sarmiento {
+  background: #b8237a;
+  color: #ffffff;
+}
+.tren--mitre {
+  background: #42b874;
+  color: #000000;
+}
+/* San Martín y Belgrano Sur no llegan a 3:1 contra la franja oscura: llevan borde
+   (docs/02c-colores-trenes.md §3). */
+.tren--san-martin {
+  background: #6438c4;
+  color: #ffffff;
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+.tren--belgrano-sur {
+  background: #5c4858;
+  color: #ffffff;
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+.tren--costa {
+  background: #a020b8;
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------- teléfono */
+
+.telefono {
+  position: relative;
+  inline-size: 100%;
+  border: 10px solid var(--marco);
+  border-radius: 46px;
+  background: var(--marco);
+}
+
+.cartel .telefono {
+  border-color: var(--pictograma);
+  background: var(--pictograma);
+}
+
+.telefono__pantalla {
+  overflow: hidden;
+  border-radius: 36px;
+  aspect-ratio: 1320 / 2868;
+  background: var(--fondo-elevado);
+}
+
+/* Isla dinámica. */
+.telefono::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-start: 50%;
+  inline-size: 30%;
+  block-size: 24px;
+  border-radius: 12px;
+  background: var(--marco);
+  translate: -50% 0;
+}
+
+.cartel .telefono::after {
+  background: var(--pictograma);
+}
+
+.captura,
+.captura img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.captura img {
+  object-fit: cover;
+}
+
+/* --------------------------------------------------------------- secciones */
+
+.seccion {
+  padding-block-start: clamp(64px, 10vw, 128px);
+}
+
+.seccion__encabezado {
+  max-inline-size: var(--lectura);
+  margin-block-end: clamp(24px, 4vw, 40px);
+}
+
+.seccion__encabezado h2 {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+}
+
+.seccion__encabezado p {
+  margin-block-start: 12px;
+  color: var(--texto-sec);
+  font-size: 1.1875rem;
+}
+
+/* ---------------------------------------------------------------- modos */
+
+.modos__pestanas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-block-end: 24px;
+}
+
+.modos__pestanas[hidden] {
+  display: none;
+}
+
+@media (min-width: 48rem) {
+  .modos__pestanas {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.pestana {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 60px;
+  margin: 0;
+  border: var(--contorno) solid var(--placa-borde);
+  border-radius: var(--radio);
+  padding: 8px 12px 8px 8px;
+  background: var(--placa);
+  color: var(--texto);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pestana:hover {
+  border-color: var(--enlace);
+}
+
+.pestana[aria-selected='true'] {
+  border-color: var(--banda-azul);
+  background: var(--banda-azul);
+  color: var(--sobre-banda);
+}
+
+.pestana[aria-selected='true']:focus-visible {
+  outline-color: var(--foco);
+}
+
+.pestana__flecha {
+  margin-inline-start: auto;
+  visibility: hidden;
+}
+
+.pestana[aria-selected='true'] .pestana__flecha {
+  visibility: visible;
+}
+
+.modos__paneles {
+  display: grid;
+  gap: clamp(48px, 8vw, 80px);
+}
+
+.panel {
+  display: grid;
+  gap: 32px;
+  border-radius: var(--radio);
+  background: var(--fondo-elevado);
+  padding: clamp(20px, 4vw, 48px);
+}
+
+.panel:focus-visible {
+  outline-offset: 4px;
+}
+
+.panel__modo {
+  display: block;
+  margin-block-end: 6px;
+  color: var(--enlace);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.panel__titulo {
+  display: block;
+  font-size: clamp(1.625rem, 1.3rem + 1.4vw, 2.375rem);
+  font-weight: 700;
+}
+
+.placas {
+  display: grid;
+  gap: 8px;
+  margin-block-start: 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.placa {
+  border: var(--contorno) solid var(--placa-borde);
+  border-radius: var(--radio);
+  padding: 16px 20px;
+  background: var(--placa);
+}
+
+.placa h4 {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.placa p {
+  margin-block-start: 4px;
+  color: var(--texto-sec);
+}
+
+.panel__telefono {
+  justify-self: center;
+  inline-size: min(256px, 70vw);
+}
+
+@media (min-width: 52rem) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: clamp(40px, 6vw, 96px);
+  }
+
+  .panel__telefono {
+    inline-size: 316px;
+  }
+}
+
+/* Con JavaScript, el panel visible y la pantalla del teléfono tienen nombre propio para la view
+   transition del cambio de panel. Sin JavaScript no hay nombres (los cuatro paneles están a la
+   vista y los nombres se repetirían). */
+.modos[data-mejorado] .panel {
+  view-transition-name: panel-modo;
+}
+
+.modos[data-mejorado] .panel .telefono__pantalla {
+  view-transition-name: pantalla-modo;
+}
+
+.modos[data-mejorado] .panel[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(panel-modo),
+  ::view-transition-group(pantalla-modo) {
+    animation-duration: 0.36s;
+    animation-timing-function: var(--salida);
+  }
+
+  ::view-transition-old(panel-modo) {
+    animation: 0.14s ease-in both vt-salir;
+  }
+
+  ::view-transition-new(panel-modo) {
+    animation: 0.36s var(--salida) both modo-entrar;
+  }
+
+  ::view-transition-old(pantalla-modo) {
+    animation: 0.2s ease-in both vt-salir;
+  }
+
+  ::view-transition-new(pantalla-modo) {
+    animation: 0.36s var(--salida) both modo-pantalla;
+  }
+
+  /* Las placas del panel aparecen escalonadas al mostrarse (de `display: none` a visibles). */
+  .modos[data-mejorado] .placa--modo {
+    transition:
+      opacity 0.32s var(--salida),
+      translate 0.42s var(--salida);
+  }
+
+  .modos[data-mejorado] .placa--modo:nth-child(2) {
+    transition-delay: 70ms;
+  }
+
+  .modos[data-mejorado] .placa--modo:nth-child(3) {
+    transition-delay: 140ms;
+  }
+
+  @starting-style {
+    .modos[data-mejorado] .placa--modo {
+      opacity: 0;
+      translate: 0 14px;
+    }
+  }
+}
+
+@keyframes modo-entrar {
+  from {
+    opacity: 0;
+    translate: 0 20px;
+  }
+}
+
+@keyframes modo-pantalla {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+/* -------------------------------------------------------------- señales */
+
+.principios__grilla {
+  display: grid;
+  gap: 12px;
+}
+
+.senal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  border-radius: var(--radio);
+  padding: clamp(20px, 3.5vw, 40px);
+}
+
+.senal h3 {
+  font-size: 1.25rem;
+}
+
+.senal__cuerpo > * + * {
+  margin-block-start: 12px;
+}
+
+.senal--azul {
+  background: var(--banda-azul);
+  color: var(--sobre-banda);
+}
+
+.senal--navy {
+  background: var(--banda-navy);
+  color: var(--sobre-banda);
+}
+
+.senal--azul h3,
+.senal--navy h3,
+.senal--azul p,
+.senal--navy p {
+  color: var(--sobre-banda-sec);
+}
+
+.senal--azul .senal__mensaje,
+.senal--navy .senal__mensaje {
+  color: var(--sobre-banda);
+}
+
+.senal--placa {
+  border: var(--contorno) solid var(--placa-borde);
+  background: var(--placa);
+}
+
+.senal__mensaje {
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.senal__monumental {
+  display: block;
+  font-size: clamp(4.5rem, 3rem + 7vw, 8rem);
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+
+.senal__mensaje--cita {
+  max-inline-size: 18ch;
+  font-size: clamp(1.625rem, 1.2rem + 1.6vw, 2.25rem);
+}
+
+.senal__lista {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.senal__lista li {
+  border-block-start: var(--contorno) solid var(--placa-borde);
+  padding-block-start: 10px;
+}
+
+@media (max-width: 30rem) {
+  .senal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 56rem) {
+  .principios__grilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .senal--azul {
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .senal--azul .senal__cuerpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    column-gap: 48px;
+    align-items: end;
+  }
+
+  .senal--azul h3 {
+    grid-column: 1 / -1;
+  }
+
+  .senal--azul .senal__mensaje {
+    margin-block-start: 12px;
+  }
+
+  .senal--azul .senal__cuerpo > p:last-child {
+    margin-block-start: 0;
+    max-inline-size: 30ch;
+    font-size: 1.1875rem;
+  }
+}
+
+/* ------------------------------------------------------------ preguntas */
+
+.preguntas__fila {
+  display: grid;
+  gap: 8px;
+}
+
+@media (min-width: 60rem) {
+  .preguntas__fila {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    column-gap: 64px;
+    align-items: start;
+  }
+
+  .preguntas .seccion__encabezado {
+    position: sticky;
+    top: 96px;
+  }
+}
+
+.acordeon {
+  display: grid;
+  gap: 8px;
+}
+
+.acordeon details {
+  border: var(--contorno) solid var(--placa-borde);
+  border-radius: var(--radio);
+  background: var(--placa);
+}
+
+.acordeon details[open] {
+  border-color: var(--enlace);
+}
+
+.acordeon summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-block-size: 60px;
+  border-radius: 4px;
+  padding: 12px 12px 12px 20px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  list-style: none;
+  cursor: pointer;
+}
+
+.acordeon summary::-webkit-details-marker {
+  display: none;
+}
+
+.acordeon summary:hover {
+  background: var(--fondo-elevado);
+}
+
+.acordeon__icono {
+  flex: none;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--radio);
+  background: var(--pictograma);
+  color: #ffffff;
+  padding: 4px;
+}
+
+.acordeon details[open] .acordeon__icono {
+  rotate: 180deg;
+}
+
+.acordeon__respuesta {
+  padding: 0 20px 20px;
+  color: var(--texto-sec);
+}
+
+.acordeon__respuesta p {
+  max-inline-size: 62ch;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  .acordeon__icono {
+    transition: rotate 0.3s var(--salida);
+  }
+
+  @supports selector(::details-content) {
+    .acordeon details::details-content {
+      block-size: 0;
+      overflow-y: clip;
+      transition:
+        block-size 0.36s var(--salida),
+        content-visibility 0.36s allow-discrete;
+    }
+
+    .acordeon details[open]::details-content {
+      block-size: auto;
+    }
+  }
+}
+
+.enlace-senal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-block-size: 60px;
+  margin-block-start: 8px;
+  border-radius: var(--radio);
+  padding: 12px 16px 12px 20px;
+  background: var(--banda-navy);
+  color: var(--sobre-banda);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.enlace-senal:hover {
+  background: var(--banda-azul);
+}
+
+.enlace-senal:focus-visible {
+  outline-color: var(--foco);
+}
+
+/* --------------------------------------------------------------- cierre */
+
+.cierre {
+  margin-block-start: clamp(64px, 10vw, 128px);
+  background: var(--banda-navy);
+  color: var(--sobre-banda);
+}
+
+.cierre__fila {
+  display: grid;
+  gap: 24px;
+  padding-block: clamp(40px, 7vw, 88px);
+}
+
+.cierre h2 {
+  max-inline-size: 16ch;
+  font-size: clamp(2rem, 1.3rem + 2.8vw, 3.5rem);
+}
+
+.cierre p {
+  margin-block-start: 12px;
+  color: var(--sobre-banda-sec);
+  font-size: 1.1875rem;
+}
+
+@media (min-width: 64rem) {
+  .cierre__fila {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 32px;
+  }
+
+  .cierre .tiendas {
+    flex-direction: column;
+  }
+}
+
+/* ---------------------------------------------------------------- datos */
+
+.datos__fila {
+  display: grid;
+  gap: 20px;
+}
+
+.datos h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.datos__texto {
+  max-inline-size: var(--lectura);
+}
+
+.datos ul {
+  display: grid;
+  gap: 10px;
+  padding-inline-start: 1.25em;
+}
+
+.datos li::marker {
+  color: var(--enlace);
+}
+
+.datos__aviso {
+  margin-block-start: 20px;
+  color: var(--texto-sec);
+}
+
+@media (min-width: 60rem) {
+  .datos__fila {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    column-gap: 64px;
+  }
+}
+
+/* ---------------------------------------------- scroll-driven animations */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Entrada de secciones y señales al aparecer en pantalla. */
+    .revelar {
+      animation-name: revelar;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+
+    /* El teléfono del cartel sube un poco mientras el cartel se va. */
+    .cartel__telefono .telefono {
+      animation-name: deriva;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+  }
+}
+
+@keyframes revelar {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes deriva {
+  to {
+    translate: 0 -10%;
+  }
+}

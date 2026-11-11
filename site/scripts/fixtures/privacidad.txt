@@ -1,0 +1,31 @@
+Política de privacidad
+Vigente desde el 10 de noviembre de 2026.
+Transportate muestra información pública de transporte. Para eso no necesita saber quién sos, así que no te lo pregunta. Esta página cuenta qué pasa con tus datos cuando usás la app y este sitio.
+Lo corto
+No hay cuentas: no te registrás ni iniciás sesión.
+No usamos analíticas, publicidad, rastreo ni un servicio propio de reporte de fallos.
+Tu ubicación se usa solo en tu teléfono y nunca se envía ni se guarda.
+Tus favoritos y ajustes quedan en tu teléfono.
+Tu ubicación
+La app te pide permiso de ubicación solo «mientras se usa» la app, nunca en segundo plano, y recién cuando tocás algo que la necesita (por ejemplo, «Paradas cercanas»). Si no se lo das, la app funciona igual y podés buscar a mano.
+Con el permiso, la posición se usa en el teléfono para ordenar las paradas cercanas, para poner primero el favorito que tenés más cerca en Inicio y para mostrarte en el mapa. La cuenta se hace contra un índice de paradas que la app ya descargó: tu posición no viaja en ningún pedido a nuestro servidor ni a nadie más, y no se guarda.
+Podés cambiar el permiso cuando quieras en Ajustes de la app (Privacidad → Ubicación) o en los Ajustes del iPhone.
+Lo que queda en tu teléfono
+Tus favoritos (líneas, paradas, estaciones y ramales), el nombre que les pongas y su orden.
+Las últimas líneas de colectivo que abriste.
+Tus ajustes: tema e intervalo de actualización.
+Una copia de los últimos datos de transporte y el índice de paradas y estaciones, para que la app arranque rápido y, si te quedás sin conexión, te muestre lo último que supo.
+Nada de esto se envía a un servidor. Para pedir el dato de una línea o una parada, la app manda solo su identificador público (por ejemplo, la línea 60); no manda quién sos, dónde estás ni qué favoritos tenés.
+Para borrarlo: en la app, Ajustes → «Borrar todos los favoritos» (con opción de deshacer) y Ajustes → «Limpiar datos guardados» para la copia de datos de transporte. También podés quitar favoritos de a uno desde Favoritos → Editar. Si desinstalás la app, se borra todo. Si tenés activadas las copias de seguridad del iPhone, el sistema puede incluir estos datos en ellas, como con cualquier app.
+Quién más interviene y qué ve
+Cloudflare aloja nuestro servidor intermedio (el que consulta las fuentes de datos por la app) y este sitio. Como cualquier servidor, recibe la dirección IP de tu conexión para poder responder. Nuestro servidor la usa solo para aplicar un límite de pedidos por minuto, con contadores en memoria a los que les llega un resumen irreversible (hash) de la IP, no la IP, y sin guardarla. Nuestros registros son muestreados y anotan qué dato público se pidió, la respuesta y la demora: no incluyen la IP, el dispositivo ni la dirección pedida. Cloudflare procesa el tráfico según su política de privacidad.
+OpenFreeMap sirve el mapa: la app le pide los tiles directamente, así que ve tu IP y la zona del mapa que estás mirando (no tu ubicación). Lo rige su política de privacidad.
+Las fuentes de datos (el Gobierno de la Ciudad y la API comunitaria de trenes) reciben los pedidos de nuestro servidor, no de tu teléfono: no ven tu IP.
+Apple distribuye la app (App Store y TestFlight). Si en tu iPhone aceptaste compartir estadísticas y diagnósticos con desarrolladores, Apple puede mostrarnos datos agregados de uso y reportes de fallos. Si probás la app en TestFlight y nos mandás un comentario o una captura, nos llega lo que elegiste incluir. Eso lo gobierna la política de privacidad de Apple y lo controlás desde los Ajustes del iPhone.
+Este sitio no usa cookies, JavaScript, fuentes ni imágenes de terceros.
+Menores
+La app no está pensada para recolectar datos de menores porque no recolecta datos personales de nadie.
+Cambios
+Si cambia algo de lo que dice esta política, actualizamos esta página y la fecha de arriba.
+Contacto
+Si tenés una pregunta sobre privacidad, escribinos a [mail de contacto].

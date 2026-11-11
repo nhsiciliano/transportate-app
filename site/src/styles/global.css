@@ -1,0 +1,614 @@
+/* Sitio de Transportate: «Señalética de terminal» llevada a la web.
+   Tokens de apps/mobile/src/shared/theme/tokens.ts (Obelisco v2 + paleta oscura derivada): manda
+   el código de la app. Radio 6, contornos de 2 px, sin sombras. Claro y oscuro por
+   `prefers-color-scheme`. Todo el movimiento vive dentro de `prefers-reduced-motion:
+   no-preference` y es mejora progresiva: el estado base es el contenido visible y quieto.
+
+   Contrastes (WCAG 2.x), claro / oscuro:
+   - texto #08202f / #edf4ff sobre fondo #ffffff / #000b18: 16,7:1 / 18,4:1
+   - secundario #4a5766 / #c7d4e6 sobre fondo: 7,4:1 / 13,6:1
+   - enlace #035c80 / #82bfe8 sobre fondo: 7,0:1 / 10,1:1
+   - blanco sobre banda navy #1d3343: 12,9:1; #c7d4e6 sobre navy: 9,3:1
+   - blanco sobre banda azul #035c80: 7,0:1; #d6e4f6 sobre azul: 5,6:1
+   - foco #003832 sobre blanco 13,0:1; foco #73e6d5 sobre navy 9,1:1 y sobre #000b18 13,1:1 */
+
+:root {
+  color-scheme: light dark;
+
+  --fondo: #ffffff;
+  --fondo-elevado: #edf4ff;
+  --placa: #ffffff;
+  --placa-borde: #d6e4f6;
+  --texto: #08202f;
+  --texto-sec: #4a5766;
+  --enlace: #035c80;
+  --borde: #d6e4f6;
+  --foco: #003832;
+
+  /* Bandas de señal: iguales en claro y oscuro, como en la app. */
+  --banda-azul: #035c80;
+  --banda-navy: #1d3343;
+  --sobre-banda: #ffffff;
+  --sobre-banda-sec: #d6e4f6;
+  --foco-sobre-banda: #73e6d5;
+  --pictograma: #08202f;
+  --amarillo: #ffcd02;
+
+  --marco: #08202f;
+
+  --radio: 6px;
+  --contorno: 2px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --ancho: 76rem;
+  --lectura: 40rem;
+
+  --fuente: 'Fira Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --salida: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #000b18;
+    --fondo-elevado: #121f2c;
+    --placa: #1b2836;
+    --placa-borde: #253240;
+    --texto: #edf4ff;
+    --texto-sec: #c7d4e6;
+    --enlace: #82bfe8;
+    --borde: #253240;
+    --foco: #73e6d5;
+    --marco: #253240;
+  }
+}
+
+/* ------------------------------------------------------------------ base */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: 6rem;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--fuente);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  font-kerning: normal;
+  overflow-x: clip;
+  /* El pie queda al fondo aunque la página sea corta (404). */
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+}
+
+main {
+  flex: 1;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+h1,
+h2 {
+  font-weight: 700;
+}
+
+h3 {
+  font-weight: 600;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--enlace);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 4px solid var(--foco);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--amarillo);
+  color: #08202f;
+}
+
+.contenedor {
+  width: 100%;
+  max-width: var(--ancho);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.saltar {
+  position: absolute;
+  left: var(--gutter);
+  top: -100px;
+  z-index: 20;
+  padding: 10px 16px;
+  border-radius: var(--radio);
+  background: var(--banda-navy);
+  color: var(--sobre-banda);
+  font-weight: 600;
+}
+
+.saltar:focus {
+  top: 8px;
+  outline-color: var(--foco-sobre-banda);
+}
+
+/* --------------------------------------------------------- pictogramas */
+
+.pictograma {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  border-radius: var(--radio);
+  background: var(--pictograma);
+  color: #ffffff;
+}
+
+.pictograma--chico {
+  inline-size: 40px;
+  block-size: 40px;
+}
+
+.pictograma--normal {
+  inline-size: 48px;
+  block-size: 48px;
+}
+
+.pictograma--grande {
+  inline-size: 64px;
+  block-size: 64px;
+}
+
+/* -------------------------------------------------------------- marca */
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 44px;
+  color: var(--texto);
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.marca__cuadro {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: var(--radio);
+  background: var(--banda-navy);
+}
+
+/* ------------------------------------------------------------ cabecera */
+
+.cabecera {
+  border-block-end: var(--contorno) solid var(--borde);
+  background: var(--fondo);
+  view-transition-name: cabecera;
+}
+
+.cabecera__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 24px;
+  padding-block: 8px;
+}
+
+.cabecera__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.cabecera__enlaces a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  border-block-end: 4px solid transparent;
+  padding-block-start: 4px;
+  color: var(--texto);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cabecera__enlaces a:hover {
+  border-block-end-color: var(--borde);
+}
+
+.cabecera__enlaces a[aria-current='page'] {
+  border-block-end-color: var(--enlace);
+}
+
+@media (min-width: 48rem) {
+  .cabecera {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .cabecera__enlaces {
+    column-gap: 28px;
+  }
+
+  .cabecera__enlaces a {
+    font-size: 1rem;
+  }
+}
+
+/* Banda de avance: el recorrido amarillo de la marca. Solo existe donde hay scroll-driven
+   animations y movimiento permitido; si no, no se muestra. */
+.avance {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .avance {
+      display: block;
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 30;
+      block-size: 4px;
+      background: var(--amarillo);
+      transform-origin: 0 50%;
+      /* Sin recorrido de scroll (página corta) la línea de tiempo queda inactiva: vacía. */
+      scale: 0 1;
+      animation-name: avance;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@keyframes avance {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+
+/* ----------------------------------------------------------------- pie */
+
+.pie {
+  margin-block-start: clamp(48px, 8vw, 96px);
+  border-block-start: var(--contorno) solid var(--borde);
+  background: var(--fondo-elevado);
+}
+
+.pie__fila {
+  display: grid;
+  gap: 16px;
+  padding-block: 32px 40px;
+}
+
+.pie__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 24px;
+  padding: 0;
+  list-style: none;
+}
+
+.pie__enlaces a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-weight: 600;
+}
+
+.pie__aviso {
+  max-inline-size: var(--lectura);
+  color: var(--texto-sec);
+  font-size: 0.9375rem;
+}
+
+@media (min-width: 48rem) {
+  .pie__fila {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 48px;
+  }
+
+  .pie__aviso {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ------------------------------------------------ botones de las tiendas */
+
+.tiendas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tienda {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 60px;
+  min-inline-size: 15.5rem;
+  margin: 0;
+  border: var(--contorno) solid #ffffff;
+  border-radius: var(--radio);
+  padding: 8px 20px 8px 8px;
+  background: #ffffff;
+  color: #08202f;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tienda:hover {
+  background: #edf4ff;
+  border-color: #edf4ff;
+}
+
+.tienda:focus-visible {
+  outline-color: var(--foco-sobre-banda);
+}
+
+.tienda__texto {
+  display: grid;
+  line-height: 1.2;
+}
+
+.tienda__previo {
+  font-size: 0.875rem;
+}
+
+.tienda__nombre {
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+/* Aviso «Próximamente»: popover declarativo, abajo en la pantalla. */
+.aviso {
+  position: fixed;
+  inset: auto var(--gutter) var(--gutter);
+  inline-size: auto;
+  max-inline-size: 30rem;
+  margin: 0 auto;
+  border: var(--contorno) solid var(--banda-navy);
+  border-radius: var(--radio);
+  padding: 12px 8px 12px 12px;
+  background: var(--placa);
+  color: var(--texto);
+}
+
+.aviso:popover-open {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.aviso::backdrop {
+  background: transparent;
+}
+
+.aviso__texto {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  padding-block: 2px;
+}
+
+.aviso__titulo {
+  font-weight: 700;
+}
+
+.aviso__cerrar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  margin: -4px 0 0;
+  border: 0;
+  border-radius: var(--radio);
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.aviso__cerrar:hover {
+  background: var(--fondo-elevado);
+}
+
+@media (prefers-color-scheme: dark) {
+  .aviso {
+    border-color: var(--enlace);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .aviso {
+    transition:
+      opacity 0.2s var(--salida),
+      translate 0.3s var(--salida),
+      display 0.3s allow-discrete,
+      overlay 0.3s allow-discrete;
+    opacity: 0;
+    translate: 0 16px;
+  }
+
+  .aviso:popover-open {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  @starting-style {
+    .aviso:popover-open {
+      opacity: 0;
+      translate: 0 16px;
+    }
+  }
+}
+
+/* ------------------------------------------- páginas de lectura (cartel) */
+
+.cartel-pagina {
+  background: var(--banda-navy);
+  color: var(--sobre-banda);
+}
+
+.cartel-pagina__fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-block: clamp(32px, 6vw, 64px);
+}
+
+.cartel-pagina h1 {
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+}
+
+.cartel-pagina p {
+  margin-block-start: 8px;
+  color: var(--sobre-banda-sec);
+}
+
+.cartel-pagina a {
+  color: var(--sobre-banda);
+}
+
+.cartel-pagina a:focus-visible {
+  outline-color: var(--foco-sobre-banda);
+}
+
+/* La columna de lectura arranca en el mismo borde que el título del cartel. */
+.lectura {
+  padding-block-start: clamp(24px, 4vw, 40px);
+}
+
+.lectura > * {
+  max-inline-size: var(--lectura);
+}
+
+.lectura > * + * {
+  margin-block-start: 1em;
+}
+
+.lectura h2 {
+  margin-block-start: 2.25em;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.lectura h2 + * {
+  margin-block-start: 0.6em;
+}
+
+.lectura ul {
+  padding-inline-start: 1.25em;
+}
+
+.lectura li + li {
+  margin-block-start: 0.5em;
+}
+
+.lectura li::marker {
+  color: var(--enlace);
+}
+
+.secundario {
+  color: var(--texto-sec);
+}
+
+/* ------------------------------------------- view transitions entre páginas */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root) {
+    animation: 0.16s ease-in both vt-salir;
+  }
+
+  ::view-transition-new(root) {
+    animation: 0.32s var(--salida) both vt-entrar;
+  }
+
+  /* La cabecera queda quieta mientras cambia el contenido. */
+  ::view-transition-group(cabecera) {
+    animation: none;
+  }
+
+  ::view-transition-old(cabecera) {
+    display: none;
+  }
+
+  ::view-transition-new(cabecera) {
+    animation: none;
+  }
+}
+
+@keyframes vt-salir {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-entrar {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}

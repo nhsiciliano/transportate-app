@@ -1,0 +1,18 @@
+---
+import Pictograma from '../components/Pictograma.astro';
+import Base from '../layouts/Base.astro';
+---
+
+<Base titulo="Página no encontrada · Transportate" descripcion="La página que buscás no existe.">
+  <div class="cartel-pagina">
+    <div class="cartel-pagina__fila contenedor">
+      <Pictograma nombre="info" tamano="grande" />
+      <div>
+        <h1>No encontramos esta página</h1>
+        <p>
+          <a href="/">Volver al inicio</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</Base>

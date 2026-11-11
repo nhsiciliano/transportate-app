@@ -1,0 +1,17 @@
+<!-- Copia de design/brand/mark.svg (isotipo «Subte conectado») con los colores como atributos
+     `fill` en lugar de un <style>, para poder insertarlo en el HTML sin estilos en línea. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g>
+    <polygon fill="#ffffff" points="340,664 388,664 340,772 292,772" />
+    <polygon fill="#ffffff" points="556,664 604,664 652,772 604,772" />
+    <rect fill="#ffffff" x="252" y="208" width="440" height="488" rx="124" />
+    <path fill="#1d3343" d="M 340 304 H 604 Q 628 304 632 328 L 648 440 Q 650 460 630 464 L 472 500 L 314 464 Q 294 460 296 440 L 312 328 Q 316 304 340 304 Z" />
+    <circle fill="#1d3343" cx="344" cy="578" r="26" />
+    <circle fill="#1d3343" cx="600" cy="578" r="26" />
+  </g>
+  <g>
+    <path fill="#ffcd02" d="M 780 324 H 820 V 680 C 820 776 746 848 652 848 H 240 V 808 H 652 C 724 808 780 752 780 680 Z" />
+    <circle fill="#ffcd02" cx="800" cy="288" r="36" />
+    <circle fill="#ffcd02" cx="240" cy="828" r="20" />
+  </g>
+</svg>

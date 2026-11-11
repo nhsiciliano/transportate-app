@@ -1,0 +1,19 @@
+---
+// Marca: isotipo «Subte conectado» en su cuadrado navy + el nombre en texto (no hay wordmark).
+import Isotipo from '../assets/marca.svg';
+
+interface Props {
+  /** Enlace a la página de inicio; `false` para el pie. */
+  enlace?: boolean;
+}
+
+const { enlace = true } = Astro.props;
+const Elemento = enlace ? 'a' : 'span';
+---
+
+<Elemento class="marca" {...(enlace ? { href: '/' } : {})}>
+  <span class="marca__cuadro">
+    <Isotipo width={32} height={32} aria-hidden="true" />
+  </span>
+  <span class="marca__nombre">Transportate</span>
+</Elemento>

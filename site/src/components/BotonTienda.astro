@@ -1,0 +1,68 @@
+---
+// Acceso a una tienda. Con URL en `config/tiendas.ts` es un enlace a la ficha; con `null`, un
+// botón «Próximamente en …» que abre un aviso (popover declarativo, sin JavaScript). Sin
+// insignias oficiales de Apple ni de Google: placa propia del sitio.
+import { tiendas } from '../config/tiendas';
+import Icono from './Icono.astro';
+import Pictograma from './Pictograma.astro';
+
+interface Props {
+  tienda: 'appStore' | 'googlePlay';
+  /** Distingue los avisos cuando los botones aparecen más de una vez en la página. */
+  lugar: string;
+}
+
+const { tienda, lugar } = Astro.props;
+
+const datos = {
+  appStore: {
+    nombre: 'App Store',
+    aviso: 'Estamos terminando las pruebas para publicarla en App Store.',
+  },
+  googlePlay: {
+    nombre: 'Google Play',
+    aviso: 'La versión para Android todavía no tiene fecha.',
+  },
+}[tienda];
+
+const url = tiendas[tienda];
+const idAviso = `aviso-${tienda}-${lugar}`;
+---
+
+{url ? (
+  <a class="tienda" href={url}>
+    <Pictograma nombre="descargar" tamano="chico" />
+    <span class="tienda__texto">
+      <span class="tienda__previo">Descargala en</span>
+      <span class="tienda__nombre">{datos.nombre}</span>
+    </span>
+  </a>
+) : (
+  <>
+    <button class="tienda" type="button" popovertarget={idAviso}>
+      <Pictograma nombre="descargar" tamano="chico" />
+      <span class="tienda__texto">
+        <span class="tienda__previo">Próximamente en</span>
+        <span class="tienda__nombre">{datos.nombre}</span>
+      </span>
+    </button>
+    <div class="aviso" id={idAviso} popover role="dialog" aria-labelledby={`${idAviso}-titulo`}>
+      <Pictograma nombre="frescura" tamano="chico" />
+      <div class="aviso__texto">
+        <p class="aviso__titulo" id={`${idAviso}-titulo`}>
+          Próximamente en {datos.nombre}
+        </p>
+        <p>{datos.aviso}</p>
+      </div>
+      <button
+        class="aviso__cerrar"
+        type="button"
+        popovertarget={idAviso}
+        popovertargetaction="hide"
+        aria-label="Cerrar aviso"
+      >
+        <Icono nombre="cerrar" />
+      </button>
+    </div>
+  </>
+)}

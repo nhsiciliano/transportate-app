@@ -1,0 +1,83 @@
+---
+// Captura de una pantalla de la app, en claro y oscuro según `prefers-color-scheme`.
+//
+// `<Picture />` de astro:assets no acepta otra imagen por `media`, así que el <picture> se arma
+// acá con `getImage()` (el mismo procesamiento): AVIF y WebP en cuatro anchos para cada tema, y
+// un PNG de respaldo. Los anchos cubren el teléfono más grande de la página (≈ 330 px de
+// pantalla) hasta 3x.
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+
+import colectivosClaro from '../assets/capturas/colectivos-claro.png';
+import colectivosOscuro from '../assets/capturas/colectivos-oscuro.png';
+import favoritosClaro from '../assets/capturas/favoritos-claro.png';
+import favoritosOscuro from '../assets/capturas/favoritos-oscuro.png';
+import inicioClaro from '../assets/capturas/inicio-claro.png';
+import inicioOscuro from '../assets/capturas/inicio-oscuro.png';
+import subteClaro from '../assets/capturas/subte-claro.png';
+import subteOscuro from '../assets/capturas/subte-oscuro.png';
+import trenesClaro from '../assets/capturas/trenes-claro.png';
+import trenesOscuro from '../assets/capturas/trenes-oscuro.png';
+
+const capturas = {
+  inicio: { claro: inicioClaro, oscuro: inicioOscuro },
+  subte: { claro: subteClaro, oscuro: subteOscuro },
+  colectivos: { claro: colectivosClaro, oscuro: colectivosOscuro },
+  trenes: { claro: trenesClaro, oscuro: trenesOscuro },
+  favoritos: { claro: favoritosClaro, oscuro: favoritosOscuro },
+} satisfies Record<string, { claro: ImageMetadata; oscuro: ImageMetadata }>;
+
+export type Pantalla = keyof typeof capturas;
+
+interface Props {
+  pantalla: Pantalla;
+  alt: string;
+  /** `sizes` del <picture>: el ancho real de la pantalla del teléfono en cada layout. */
+  sizes: string;
+  /** La del primer pantallazo: carga ya y con prioridad alta. */
+  prioridad?: boolean;
+}
+
+const { pantalla, alt, sizes, prioridad = false } = Astro.props;
+const { claro, oscuro } = capturas[pantalla];
+const anchos = [300, 450, 660, 990];
+
+async function srcset(src: ImageMetadata, format: 'avif' | 'webp') {
+  const imagen = await getImage({ src, widths: anchos, format });
+  return imagen.srcSet.attribute;
+}
+
+const [oscuroAvif, oscuroWebp, claroAvif, claroWebp, respaldo] = await Promise.all([
+  srcset(oscuro, 'avif'),
+  srcset(oscuro, 'webp'),
+  srcset(claro, 'avif'),
+  srcset(claro, 'webp'),
+  getImage({ src: claro, width: 660, format: 'png' }),
+]);
+---
+
+<picture class="captura">
+  <source
+    media="(prefers-color-scheme: dark)"
+    type="image/avif"
+    srcset={oscuroAvif}
+    sizes={sizes}
+  />
+  <source
+    media="(prefers-color-scheme: dark)"
+    type="image/webp"
+    srcset={oscuroWebp}
+    sizes={sizes}
+  />
+  <source type="image/avif" srcset={claroAvif} sizes={sizes} />
+  <source type="image/webp" srcset={claroWebp} sizes={sizes} />
+  <img
+    src={respaldo.src}
+    width={claro.width}
+    height={claro.height}
+    alt={alt}
+    decoding="async"
+    loading={prioridad ? 'eager' : 'lazy'}
+    fetchpriority={prioridad ? 'high' : 'auto'}
+  />
+</picture>

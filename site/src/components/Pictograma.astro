@@ -1,0 +1,18 @@
+---
+// Pictograma en un cuadrado oscuro, como en las bandas de señal de la app.
+import Icono, { type NombreIcono } from './Icono.astro';
+
+interface Props {
+  nombre: NombreIcono;
+  /** `chico` 40 px (botones, pestañas), `normal` 48 px, `grande` 64 px (carteles). */
+  tamano?: 'chico' | 'normal' | 'grande';
+  class?: string;
+}
+
+const { nombre, tamano = 'normal', class: clase } = Astro.props;
+const icono = { chico: 24, normal: 28, grande: 40 }[tamano];
+---
+
+<span class:list={['pictograma', `pictograma--${tamano}`, clase]}>
+  <Icono nombre={nombre} tamano={icono} />
+</span>

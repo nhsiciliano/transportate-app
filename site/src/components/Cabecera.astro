@@ -1,0 +1,40 @@
+---
+import Marca from './Marca.astro';
+
+export type Pagina = 'inicio' | 'privacidad' | 'soporte';
+
+interface Props {
+  actual?: Pagina | undefined;
+}
+
+const { actual } = Astro.props;
+// Desde otra página, las secciones de la landing llevan a `/#…`.
+const base = actual === 'inicio' ? '' : '/';
+const enlaces = [
+  { href: `${base}#modos`, texto: 'Cómo funciona' },
+  { href: `${base}#preguntas`, texto: 'Preguntas' },
+  { href: '/privacidad', texto: 'Privacidad', pagina: 'privacidad' },
+  { href: '/soporte', texto: 'Soporte', pagina: 'soporte' },
+];
+---
+
+<div class="avance" aria-hidden="true"></div>
+<header class="cabecera">
+  <div class="cabecera__fila contenedor">
+    <Marca />
+    <nav aria-label="Secciones">
+      <ul class="cabecera__enlaces">
+        {enlaces.map((enlace) => (
+          <li>
+            <a
+              href={enlace.href}
+              aria-current={enlace.pagina && enlace.pagina === actual ? 'page' : undefined}
+            >
+              {enlace.texto}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>

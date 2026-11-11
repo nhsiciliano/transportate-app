@@ -1,0 +1,26 @@
+/* Fira Sans (SIL Open Font License 1.1), autoalojada desde @fontsource/fira-sans: solo el
+   subconjunto latino y los tres pesos que usa la app. Sin itálicas. El build copia los archivos a
+   /_astro/ con hash. */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('@fontsource/fira-sans/files/fira-sans-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('@fontsource/fira-sans/files/fira-sans-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('@fontsource/fira-sans/files/fira-sans-latin-700-normal.woff2') format('woff2');
+}

@@ -1,0 +1,20 @@
+---
+// Teléfono dibujado en CSS (marco, isla, sin sombra) con una captura adentro.
+import Captura, { type Pantalla } from './Captura.astro';
+
+interface Props {
+  pantalla: Pantalla;
+  alt: string;
+  sizes: string;
+  prioridad?: boolean;
+  class?: string;
+}
+
+const { pantalla, alt, sizes, prioridad = false, class: clase } = Astro.props;
+---
+
+<div class:list={['telefono', clase]}>
+  <div class="telefono__pantalla">
+    <Captura pantalla={pantalla} alt={alt} sizes={sizes} prioridad={prioridad} />
+  </div>
+</div>

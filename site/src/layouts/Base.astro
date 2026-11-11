@@ -1,0 +1,61 @@
+---
+// Layout común: metadatos, cabecera, pie y estilos globales. Sin estilos ni scripts en línea
+// (la CSP de public/_headers no los admite).
+import '../styles/fuentes.css';
+import '../styles/global.css';
+import Cabecera, { type Pagina } from '../components/Cabecera.astro';
+import Pie from '../components/Pie.astro';
+
+interface Props {
+  titulo: string;
+  descripcion: string;
+  /** Ruta canónica (`/`, `/privacidad`…); sin ella la página no se indexa (404). */
+  ruta?: string;
+  actual?: Pagina;
+}
+
+const { titulo, descripcion, ruta, actual } = Astro.props;
+const sitio = Astro.site ?? new URL('https://transportate.ar');
+const canonica = ruta ? new URL(ruta, sitio).href : null;
+const imagen = new URL('/og.png', sitio).href;
+---
+
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo}</title>
+    <meta name="description" content={descripcion} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000b18" media="(prefers-color-scheme: dark)" />
+    {canonica ? <link rel="canonical" href={canonica} /> : <meta name="robots" content="noindex" />}
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icono.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Transportate" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    {canonica && <meta property="og:url" content={canonica} />}
+    <meta property="og:image" content={imagen} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Transportate: subte, colectivos y trenes de Buenos Aires"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="saltar" href="#contenido">
+      Ir al contenido
+    </a>
+    <Cabecera actual={actual} />
+    <main id="contenido">
+      <slot />
+    </main>
+    <Pie />
+  </body>
+</html>

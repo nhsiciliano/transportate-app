@@ -1,0 +1,56 @@
+---
+// Pictogramas de Material Symbols Rounded, relleno (FILL 1), de `@material-symbols/svg-400`
+// 0.48.2 (Apache-2.0), los mismos que usa la app. Se insertan como <svg> en el HTML (sin pedido
+// extra) y toman el color del texto. Siempre decorativos: el texto de al lado lleva el sentido.
+import ArrowDownward from '../icons/arrow_downward.svg';
+import ArrowForward from '../icons/arrow_forward.svg';
+import Close from '../icons/close.svg';
+import DirectionsBus from '../icons/directions_bus.svg';
+import Help from '../icons/help.svg';
+import Info from '../icons/info.svg';
+import KeyboardArrowDown from '../icons/keyboard_arrow_down.svg';
+import MobileArrowDown from '../icons/mobile_arrow_down.svg';
+import PrivacyTip from '../icons/privacy_tip.svg';
+import Schedule from '../icons/schedule.svg';
+import Star from '../icons/star.svg';
+import Subway from '../icons/subway.svg';
+import Train from '../icons/train.svg';
+import WifiOff from '../icons/wifi_off.svg';
+
+const iconos = {
+  abajo: ArrowDownward,
+  adelante: ArrowForward,
+  cerrar: Close,
+  colectivo: DirectionsBus,
+  ayuda: Help,
+  info: Info,
+  desplegar: KeyboardArrowDown,
+  descargar: MobileArrowDown,
+  privacidad: PrivacyTip,
+  frescura: Schedule,
+  favorito: Star,
+  subte: Subway,
+  tren: Train,
+  sinConexion: WifiOff,
+} as const;
+
+export type NombreIcono = keyof typeof iconos;
+
+interface Props {
+  nombre: NombreIcono;
+  tamano?: number;
+  class?: string;
+}
+
+const { nombre, tamano = 24, class: clase } = Astro.props;
+const Svg = iconos[nombre];
+---
+
+<Svg
+  width={tamano}
+  height={tamano}
+  class:list={['icono', clase]}
+  fill="currentColor"
+  aria-hidden="true"
+  focusable="false"
+/>

@@ -1,0 +1,397 @@
+---
+import BotonTienda from '../components/BotonTienda.astro';
+import Icono, { type NombreIcono } from '../components/Icono.astro';
+import Pictograma from '../components/Pictograma.astro';
+import Telefono from '../components/Telefono.astro';
+import type { Pantalla } from '../components/Captura.astro';
+import Base from '../layouts/Base.astro';
+import '../styles/landing.css';
+
+// Colores de línea: subte del GTFS oficial (DESIGN.md §2.3), trenes de docs/02c-colores-trenes.md.
+const subte = [
+  { letra: 'A', clase: 'linea--a' },
+  { letra: 'B', clase: 'linea--b' },
+  { letra: 'C', clase: 'linea--c' },
+  { letra: 'D', clase: 'linea--d' },
+  { letra: 'E', clase: 'linea--e' },
+  { letra: 'H', clase: 'linea--h' },
+  { letra: 'P', clase: 'linea--p', nombre: 'Premetro' },
+];
+const trenes = [
+  { siglas: 'R', nombre: 'Roca', clase: 'tren--roca' },
+  { siglas: 'S', nombre: 'Sarmiento', clase: 'tren--sarmiento' },
+  { siglas: 'M', nombre: 'Mitre', clase: 'tren--mitre' },
+  { siglas: 'SM', nombre: 'San Martín', clase: 'tren--san-martin' },
+  { siglas: 'BS', nombre: 'Belgrano Sur', clase: 'tren--belgrano-sur' },
+  { siglas: 'TC', nombre: 'Tren de la Costa', clase: 'tren--costa' },
+];
+
+interface Modo {
+  id: string;
+  pestana: string;
+  icono: NombreIcono;
+  pantalla: Pantalla;
+  alt: string;
+  titulo: string;
+  placas: { titulo: string; texto: string }[];
+}
+
+const modos: Modo[] = [
+  {
+    id: 'subte',
+    pestana: 'Subte',
+    icono: 'subte',
+    pantalla: 'subte',
+    alt: 'Pantalla Subtes de Transportate',
+    titulo: 'Cada línea, cada estación',
+    placas: [
+      {
+        titulo: 'Estado de las líneas',
+        texto: 'Mirá si cada línea funciona y leé las alertas vigentes.',
+      },
+      {
+        titulo: 'Próximos subtes',
+        texto: 'Elegí una estación y mirá cuándo llegan los próximos, en cada sentido.',
+      },
+      {
+        titulo: 'Con la hora del dato',
+        texto: 'Siempre sabés hace cuánto se actualizó lo que estás viendo.',
+      },
+    ],
+  },
+  {
+    id: 'colectivos',
+    pestana: 'Colectivos',
+    icono: 'colectivo',
+    pantalla: 'colectivos',
+    alt: 'Pantalla Colectivos de Transportate',
+    titulo: 'Tu línea en el mapa',
+    placas: [
+      {
+        titulo: 'Seguí una línea',
+        texto: 'Buscá una línea y seguila en el mapa.',
+      },
+      {
+        titulo: 'Paradas cerca tuyo',
+        texto:
+          'Encontrá las paradas cercanas y mirá cuándo llega el próximo colectivo, cuando la fuente lo informa.',
+      },
+    ],
+  },
+  {
+    id: 'trenes',
+    pestana: 'Trenes',
+    icono: 'tren',
+    pantalla: 'trenes',
+    alt: 'Pantalla Trenes de Transportate',
+    titulo: 'Ramales, estaciones y próximos trenes',
+    placas: [
+      {
+        titulo: 'Líneas y ramales',
+        texto: 'Las líneas de Trenes Argentinos, con sus ramales y estaciones.',
+      },
+      {
+        titulo: 'Próximos trenes por destino',
+        texto: 'Con la hora programada y la estimada.',
+      },
+      {
+        titulo: 'Alertas',
+        texto: 'Las alertas vigentes de cada línea, antes de salir.',
+      },
+    ],
+  },
+  {
+    id: 'favoritos',
+    pestana: 'Favoritos',
+    icono: 'favorito',
+    pantalla: 'favoritos',
+    alt: 'Pantalla Favoritos de Transportate',
+    titulo: 'Lo que usás todos los días, a un toque',
+    placas: [
+      {
+        titulo: 'Guardá lo tuyo',
+        texto:
+          'Guardá tus líneas, paradas y estaciones, ponéles un nombre y ordenalos como quieras.',
+      },
+      {
+        titulo: 'En Inicio',
+        texto: 'Aparecen en Inicio para verlos en un toque.',
+      },
+    ],
+  },
+];
+
+const preguntas = [
+  {
+    pregunta: '¿Es una app oficial?',
+    respuesta:
+      'No. Transportate es una app independiente. No es del Gobierno de la Ciudad de Buenos Aires ni de Trenes Argentinos.',
+  },
+  {
+    pregunta: '¿De dónde salen los datos? ¿Por qué a veces faltan?',
+    respuesta:
+      'Colectivos y subte vienen de los datos abiertos del Gobierno de la Ciudad; los trenes, de Trenes Argentinos a través de una API comunitaria no oficial. Si una fuente se demora o no responde, la app te muestra lo último que sabe y hace cuánto se actualizó. Cuando no hay datos, dice «Sin información» en lugar de inventar un estado.',
+  },
+  {
+    pregunta: '¿La app necesita mi ubicación?',
+    respuesta:
+      'No. Es opcional: sirve para ver las paradas cercanas. Sin permiso, buscás la parada o la línea a mano. Tu ubicación nunca sale del teléfono.',
+  },
+  {
+    pregunta: '¿Por qué no aparecen el Belgrano Norte y el Urquiza?',
+    respuesta:
+      'Porque la fuente de trenes que usamos no los incluye: los operan empresas privadas, fuera de Trenes Argentinos.',
+  },
+  {
+    pregunta: '¿Cómo borro mis favoritos?',
+    respuesta:
+      'De a uno, en Favoritos → Editar. Todos juntos, en Ajustes → «Borrar todos los favoritos». Si desinstalás la app, también se borran.',
+  },
+  {
+    pregunta: '¿Cuándo la puedo descargar?',
+    respuesta:
+      'Estamos terminando las pruebas para publicarla en App Store. La versión para Android todavía no tiene fecha.',
+  },
+];
+
+// Atribuciones de datos y mapa, tal como estaban en el sitio anterior. Van como HTML en cadenas
+// porque prettier-plugin-astro mueve el salto de línea entre un enlace y la puntuación que lo
+// sigue, y eso agrega un espacio visible («AR) .»).
+const atribuciones = [
+  'Colectivos y subte: datos del Gobierno de la Ciudad de Buenos Aires, de la <a href="https://api-transporte.buenosaires.gob.ar/">API de Transporte</a> y de <a href="https://data.buenosaires.gob.ar/">BA Data</a>, publicados bajo licencia <a href="https://creativecommons.org/licenses/by/2.5/ar/">Creative Commons Atribución 2.5 Argentina (CC BY 2.5 AR)</a>.',
+  'Trenes: datos de Trenes Argentinos (SOFSE) a través de una <a href="https://github.com/ariedro/api-trenes">API comunitaria no oficial</a>.',
+  'Mapa: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, © <a href="https://openmaptiles.org/">OpenMapTiles</a>, tiles de <a href="https://openfreemap.org/">OpenFreeMap</a>.',
+];
+
+// Ancho de la pantalla del teléfono (sin el marco) en cada layout, para `sizes`.
+const sizesHero = '(min-width: 64rem) 296px, (min-width: 40rem) 276px, 236px';
+const sizesModo = '(min-width: 52rem) 296px, 236px';
+---
+
+<Base
+  titulo="Transportate: subte, colectivos y trenes en tiempo real"
+  descripcion="Mirá cuándo llega tu subte, tu colectivo o tu tren en Buenos Aires, en tiempo real. App independiente, sin cuenta, sin publicidad y sin rastreo."
+  ruta="/"
+  actual="inicio"
+>
+  <section class="cartel" aria-labelledby="titulo">
+    <div class="cartel__cuerpo contenedor">
+      <div class="cartel__texto">
+        <div class="cartel__pictogramas" aria-hidden="true">
+          <Pictograma nombre="colectivo" tamano="grande" />
+          <Pictograma nombre="subte" tamano="grande" />
+          <Pictograma nombre="tren" tamano="grande" />
+        </div>
+        <h1 id="titulo">Mirá cuándo llega tu subte, tu colectivo o tu tren</h1>
+        <p class="cartel__apoyo">
+          En Buenos Aires, en tiempo real. Sin cuenta, sin publicidad y sin rastreo.
+        </p>
+        <div class="tiendas">
+          <BotonTienda tienda="appStore" lugar="inicio" />
+          <BotonTienda tienda="googlePlay" lugar="inicio" />
+        </div>
+      </div>
+      <div class="cartel__telefono">
+        <Telefono
+          pantalla="inicio"
+          alt="Pantalla de Inicio de Transportate"
+          sizes={sizesHero}
+          prioridad
+        />
+      </div>
+    </div>
+    <div class="franja">
+      <div class="franja__fila contenedor">
+        <p class="franja__grupo">
+          <span class="franja__rotulo">Subte</span>
+          <span class="franja__lineas">
+            {subte.map((l) => (
+              <span class:list={['linea', l.clase]}>
+                <span aria-hidden="true">{l.letra}</span>
+                <span class="oculto">{l.nombre ?? `Línea ${l.letra}`}</span>
+              </span>
+            ))}
+          </span>
+        </p>
+        <p class="franja__grupo">
+          <span class="franja__rotulo">Trenes</span>
+          <span class="franja__lineas">
+            {trenes.map((t) => (
+              <span class:list={['tren', t.clase]}>
+                <span aria-hidden="true">{t.siglas}</span>
+                <span class="oculto">{t.nombre}</span>
+              </span>
+            ))}
+          </span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion modos revelar" id="modos" aria-labelledby="titulo-modos" data-modos>
+    <div class="contenedor">
+      <div class="seccion__encabezado">
+        <h2 id="titulo-modos">Cómo funciona</h2>
+        <p>Cuatro pantallas, una pregunta: ¿cuándo llega?</p>
+      </div>
+
+      <div class="modos__pestanas" data-pestanas hidden>
+        {modos.map((modo, i) => (
+          <button
+            class="pestana"
+            type="button"
+            id={`pestana-${modo.id}`}
+            data-pestana={modo.id}
+            aria-selected={i === 0 ? 'true' : 'false'}
+          >
+            <Pictograma nombre={modo.icono} tamano="chico" />
+            <span>{modo.pestana}</span>
+            <Icono nombre="abajo" class="pestana__flecha" />
+          </button>
+        ))}
+      </div>
+
+      <div class="modos__paneles">
+        {modos.map((modo) => (
+          <section class="panel" id={`modo-${modo.id}`} data-panel={modo.id}>
+            <div class="panel__texto">
+              <h3>
+                <span class="panel__modo">{modo.pestana}</span>
+                <span class="panel__titulo">{modo.titulo}</span>
+              </h3>
+              <ul class="placas">
+                {modo.placas.map((placa) => (
+                  <li class="placa placa--modo">
+                    <h4>{placa.titulo}</h4>
+                    <p>{placa.texto}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div class="panel__telefono">
+              <Telefono
+                pantalla={modo.pantalla}
+                alt={modo.alt}
+                sizes={sizesModo}
+                class="telefono--modo"
+              />
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion principios" aria-labelledby="titulo-principios">
+    <div class="contenedor">
+      <div class="seccion__encabezado revelar">
+        <h2 id="titulo-principios">Lo que podés esperar</h2>
+        <p>Un dato con hora, una app que avisa cuando no sabe y nada que te siga.</p>
+      </div>
+
+      <div class="principios__grilla">
+        <article class="senal senal--azul revelar">
+          <Pictograma nombre="frescura" tamano="grande" />
+          <div class="senal__cuerpo">
+            <h3>Qué tan fresco es el dato</h3>
+            <p class="senal__mensaje">
+              Actualizado hace <strong class="senal__monumental">12 s</strong>
+            </p>
+            <p>Cada pantalla te dice hace cuánto llegó el dato, así sabés cuánto confiar en él.</p>
+          </div>
+        </article>
+
+        <article class="senal senal--navy revelar">
+          <Pictograma nombre="sinConexion" tamano="grande" />
+          <div class="senal__cuerpo">
+            <h3>Qué pasa sin señal</h3>
+            <p class="senal__mensaje senal__mensaje--cita">
+              «Sin conexión. Mostramos lo último guardado.»
+            </p>
+            <p>
+              En un andén sin señal, la app te muestra lo último que supo. Cuando no hay
+              información, te lo dice en lugar de inventar un horario.
+            </p>
+          </div>
+        </article>
+
+        <article class="senal senal--placa revelar">
+          <Pictograma nombre="privacidad" tamano="grande" />
+          <div class="senal__cuerpo">
+            <h3>Tu privacidad</h3>
+            <ul class="senal__lista">
+              <li>No hace falta registrarte.</li>
+              <li>Sin publicidad ni analíticas.</li>
+              <li>Tus favoritos quedan en tu teléfono.</li>
+              <li>Tu ubicación solo se usa con la app abierta y nunca sale de tu teléfono.</li>
+            </ul>
+            <p>
+              <a href="/privacidad">Leé la política de privacidad</a>
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion preguntas revelar" id="preguntas" aria-labelledby="titulo-preguntas">
+    <div class="contenedor preguntas__fila">
+      <div class="seccion__encabezado">
+        <h2 id="titulo-preguntas">Preguntas</h2>
+        <p>Respuestas cortas a lo que más se pregunta.</p>
+      </div>
+      <div class="acordeon">
+        {preguntas.map((p) => (
+          <details name="preguntas">
+            <summary>
+              <span>{p.pregunta}</span>
+              <Icono nombre="desplegar" class="acordeon__icono" />
+            </summary>
+            <div class="acordeon__respuesta">
+              <p>{p.respuesta}</p>
+            </div>
+          </details>
+        ))}
+        <a class="enlace-senal" href="/soporte">
+          <span>Más preguntas y contacto en Soporte</span>
+          <Icono nombre="adelante" />
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="cierre revelar" aria-labelledby="titulo-cierre">
+    <div class="cierre__fila contenedor">
+      <Pictograma nombre="descargar" tamano="grande" />
+      <div class="cierre__texto">
+        <h2 id="titulo-cierre">Primero en iPhone, después en Android</h2>
+        <p>Cuando esté publicada, la vas a encontrar acá.</p>
+      </div>
+      <div class="tiendas">
+        <BotonTienda tienda="appStore" lugar="cierre" />
+        <BotonTienda tienda="googlePlay" lugar="cierre" />
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion datos" aria-labelledby="titulo-datos">
+    <div class="contenedor datos__fila">
+      <h2 id="titulo-datos">De dónde salen los datos</h2>
+      <div class="datos__texto">
+        <ul>
+          {atribuciones.map((html) => (
+            <li set:html={html} />
+          ))}
+        </ul>
+        <p class="datos__aviso">
+          Los datos pueden tardar en actualizarse o faltar. La app siempre te muestra hace cuánto se
+          actualizaron: no los uses como única fuente para una decisión importante.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import '../scripts/modos';
+  </script>
+</Base>
