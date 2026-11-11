@@ -17,7 +17,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://transportate-proxy-production.nhsiciliano.workers.dev"
+        "EXPO_PUBLIC_API_URL": "https://api.transportate.ar"
       }
     },
     "preview-simulator": {
@@ -29,7 +29,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://transportate-proxy-production.nhsiciliano.workers.dev"
+        "EXPO_PUBLIC_API_URL": "https://api.transportate.ar"
       }
     }
   },

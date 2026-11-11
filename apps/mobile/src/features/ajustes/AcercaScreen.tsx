@@ -20,7 +20,7 @@ export const CC_LICENSE_URL = 'https://creativecommons.org/licenses/by/2.5/ar/';
 export const DATOS_ABIERTOS_URL = 'https://www.buenosaires.gob.ar/datosabiertos';
 export const TRENES_FUENTE_URL = 'https://github.com/ariedro/api-trenes';
 /** Sitio público (`site/`): App Store pide estas URLs de privacidad y soporte. */
-export const SITIO_URL = 'https://transportate-site.nhsiciliano.workers.dev';
+export const SITIO_URL = 'https://transportate.ar';
 export const PRIVACIDAD_URL = `${SITIO_URL}/privacidad`;
 export const SOPORTE_URL = `${SITIO_URL}/soporte`;
 

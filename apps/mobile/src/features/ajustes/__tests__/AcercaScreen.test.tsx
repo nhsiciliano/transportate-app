@@ -213,9 +213,9 @@ describe('AcercaScreen', () => {
     expect(open).toHaveBeenLastCalledWith(PRIVACIDAD_URL);
     await user.press(screen.getByRole('link', { name: 'Soporte y contacto' }));
     expect(open).toHaveBeenLastCalledWith(SOPORTE_URL);
-    expect(SITIO_URL).toBe('https://transportate-site.nhsiciliano.workers.dev');
+    expect(SITIO_URL).toBe('https://transportate.ar');
     for (const url of [PRIVACIDAD_URL, SOPORTE_URL]) {
-      expect(url).toMatch(/^https:\/\/transportate-site\.nhsiciliano\.workers\.dev\/[a-z]+$/);
+      expect(url).toMatch(/^https:\/\/transportate\.ar\/[a-z]+$/);
     }
     // El contacto vive en la web: la app no muestra ningún mail.
     expect(screen.queryByText(/@/)).toBeNull();

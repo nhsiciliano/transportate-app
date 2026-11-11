@@ -5,6 +5,10 @@
   "$schema": "../apps/proxy/node_modules/wrangler/config-schema.json",
   "name": "transportate-site",
   "compatibility_date": "2026-10-28",
+  // Dominio propio. Al declarar `routes`, `workers_dev` pasa a false por defecto: se deja en true
+  // a propósito, porque el build 1.0.0 (3) de TestFlight enlaza la URL de *.workers.dev.
+  "workers_dev": true,
+  "routes": [{ "pattern": "transportate.ar", "custom_domain": true }],
   "assets": {
     "directory": "./public",
     // Con el `html_handling` por defecto (`auto-trailing-slash`), `/privacidad` sirve

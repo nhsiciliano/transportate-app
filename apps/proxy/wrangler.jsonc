@@ -76,12 +76,13 @@
         "ENVIRONMENT": "preview",
       },
     },
-    // Worker `transportate-proxy-production`. Hasta tener dominio propio queda en
-    // *.workers.dev (la Cache API solo funciona con dominio o ruta propia). Al asignarlo:
-    // agregar `routes` con `custom_domain: true` y dejar `workers_dev` en true hasta que
-    // ningún build publicado apunte a workers.dev; recién ahí pasa a false (docs/10-deploy.md §4).
+    // Worker `transportate-proxy-production`, en `api.transportate.ar` (dominio propio: ahí la
+    // Cache API sí tiene efecto). `workers_dev` sigue en true mientras algún build instalado
+    // apunte a la URL de *.workers.dev (el 1.0.0 (3) de TestFlight); cuando ya no se use,
+    // pasa a false (docs/10-deploy.md §4). `routes` no se hereda: va dentro del entorno.
     "production": {
       "workers_dev": true,
+      "routes": [{ "pattern": "api.transportate.ar", "custom_domain": true }],
       "ratelimits": [
         {
           "name": "RATE_LIMITER",
