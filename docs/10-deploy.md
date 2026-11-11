@@ -52,10 +52,10 @@ pnpm --filter transportate-proxy run deploy --env production
 - También funciona al revés (deploy y después secrets): así se hizo el primer despliegue de `production`, el 2026-11-10. Mientras el Worker no existe, `secret list` falla con «not found»; entre el deploy y los secrets, los endpoints del GCBA responden con error.
 - Si alguna vez hace falta pasar un secret sin prompt (por ejemplo, para rotarlo), se canaliza por stdin para que no quede en el historial: `printf '%s' "$VALOR" | wrangler secret put GCBA_CLIENT_SECRET --env production`.
 
-**Verificación** (la URL es la que imprime `deploy`; `production` quedó en `https://transportate-proxy-production.nhsiciliano.workers.dev` desde el 2026-11-10):
+**Verificación** (`production` responde en `https://api.transportate.ar` desde el 2026-11-11 y, durante la transición de §4, también en `https://transportate-proxy-production.nhsiciliano.workers.dev`):
 
 ```sh
-BASE=https://transportate-proxy-production.nhsiciliano.workers.dev
+BASE=https://api.transportate.ar
 curl -s "$BASE/v1/health"                  # {"ok":true,"version":"…","environment":"production"}
 curl -s -D - -o /dev/null "$BASE/v1/subtes/estado" | grep -i -E '^HTTP|cache-control|etag|x-transportate'
 curl -s "$BASE/v1/transito/cortes"         # 503 upstream_unavailable (diferido, es lo esperado)
@@ -84,7 +84,11 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 
 ## 4. Dominio propio (necesario para que funcione el caché en producción)
 
-> **Estado (2026-11-10):** `production` vive hoy en `*.workers.dev` (`https://transportate-proxy-production.nhsiciliano.workers.dev`), sin dominio propio. Sirve para TestFlight con pocos testers; el dominio es **gate antes de abrir en App Store** ([`12-publicacion.md`](12-publicacion.md) §8).
+> **Estado (2026-11-11):** `production` responde en **`https://api.transportate.ar`** (dominio `transportate.ar`, registrado en nic.ar y delegado a Cloudflare; pasos 1 a 4 de la transición hechos). `https://transportate-proxy-production.nhsiciliano.workers.dev` sigue activa porque el build 1.0.0 (3) de TestFlight la lleva embebida. Faltan los pasos 5 a 7.
+>
+> **Medido ese día, y distinto de lo que dice el «Por qué» de abajo:** la Cache API **sí guardó en `workers.dev`**. `/v1/static/manifest` volvió con `CF-Cache-Status: HIT` y `Age` creciente en los dos hosts, y la entrada venció a los 300 s en ambos. El párrafo de abajo se escribió con la documentación de Cloudflare de ese momento; la página actual de la [Cache API](https://developers.cloudflare.com/workers/runtime-apis/cache/) solo asegura que funciona en dominios propios y no dice nada de `workers.dev`. El dominio sigue siendo el camino soportado.
+>
+> **Ojo con la zona:** en un dominio propio, el *Browser Cache TTL* de la zona (4 horas por defecto) reescribe el `Cache-Control` de lo que devuelve `cache.match` cuando su `max-age` es menor: el manifiesto salía con `max-age=14400` en vez de 300 (en el borde seguía venciendo a los 300 s; lo que cambiaba era lo que veía el cliente). Desde el commit `55d175d` la ruta estática arma sus propios headers y no reenvía los de la caché. Los feeds no pasan por ahí y no se vieron afectados.
 
 **Por qué:** la Cache API (`caches.default`) **no tiene efecto en `*.workers.dev`**, ni en previews ni en el editor del dashboard. En esos casos, `cache.put` no guarda nada y `cache.match` siempre falla. Fuente: [R2 + Cache API](https://developers.cloudflare.com/r2/examples/cache-api/). Sin dominio propio:
 - cada request de `/v1/static/*` lee R2 (operación clase B);
@@ -105,7 +109,7 @@ Las versiones viejas se pueden borrar de R2 después de un tiempo prudencial (po
 
 1. **Dominio activo.** El dominio como zona de Cloudflare, con DNS en Cloudflare.
 2. **Agregar la ruta, sin sacar `workers_dev`.** En `env.production`, `routes: [{ "pattern": "api.<dominio>", "custom_domain": true }]` y `workers_dev: true` (los builds viejos siguen llegando).
-3. **Redeploy:** `pnpm --filter transportate-proxy run deploy --env production`. Verificar con `curl https://api.<dominio>/v1/health`, y que la Cache API ya hace efecto (esperable: pedidos repetidos dentro del TTL devuelven el mismo `X-Transportate-Generated-At`; confirmarlo con `curl -D -`).
+3. **Redeploy:** `pnpm --filter transportate-proxy run deploy --env production`. Verificar con `curl https://api.<dominio>/v1/health`, y que la Cache API hace efecto con `curl -s -D - -o /dev/null https://api.<dominio>/v1/static/manifest` repetido: `Cache-Control: public, max-age=300` siempre, y un `ETag` estable. (`X-Transportate-Generated-At` **no sirve** para esto: es la hora de cada respuesta y cambia en cada pedido aunque el feed venga de la caché. Hasta el commit `55d175d` el segundo pedido mostraba además `CF-Cache-Status: HIT` y `Age`; ya no se reenvían.)
 4. **URL nueva en la app.** `build.<perfil>.env.EXPO_PUBLIC_API_URL` de `apps/mobile/eas.json` en `preview`, `preview-simulator` y `production` (§5).
 5. **Build nuevo → TestFlight → release.** Probar contra el dominio ([`12-publicacion.md`](12-publicacion.md) §4) y recién entonces liberar la versión.
 6. **Sitio de privacidad y soporte.** Pasa al dominio ([`§10`](#10-sitio-estático-transportate-site)); las URLs de Acerca de, de la ficha y de App Privacy cambian con ese build.

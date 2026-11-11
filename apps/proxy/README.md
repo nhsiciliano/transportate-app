@@ -73,7 +73,7 @@ wrangler r2 object put transportate-static/latest/manifest.json --file out/manif
 ```
 
 - El Worker lee de R2 a través de la **Cache API** (`caches.default`, clave = origen + path) y guarda en caché en segundo plano con `ctx.waitUntil`. El manifiesto se valida con `ManifestV1`; si es inválido, responde 503.
-- La Cache API **no tiene efecto en `*.workers.dev` ni en previews**: en producción hace falta una ruta o dominio propio. En local, `wrangler dev` usa un R2 simulado vacío, así que `/v1/static/manifest` responde 404 hasta que se cargue algo con `wrangler r2 object put … --local`.
+- La Cache API no tiene efecto en previews ni en el editor del dashboard; Cloudflare la asegura en dominios propios (producción usa `api.transportate.ar`; el 2026-11-11 se midió que también guardaba en `*.workers.dev`). La respuesta lleva siempre los headers propios (`Cache-Control`, `Content-Type`, `ETag`), no los de `cache.match`: en un dominio propio la zona le reescribe el `Cache-Control` (`docs/10-deploy.md` §4). En local, `wrangler dev` usa un R2 simulado vacío, así que `/v1/static/manifest` responde 404 hasta que se cargue algo con `wrangler r2 object put … --local`.
 
 ## Secrets
 
@@ -106,7 +106,7 @@ Guía completa: [`docs/10-deploy.md`](../../docs/10-deploy.md) (buckets, secrets
 - **CI:** `.github/workflows/deploy-proxy.yml`. Es manual (`workflow_dispatch` con `environment`), corre lint/typecheck/test y despliega con `cloudflare/wrangler-action@v4`. Necesita `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` en los secrets de GitHub.
 - **Verificación:** `curl -s $BASE/v1/health` devuelve el `environment` desplegado.
 - **Rollback:** `pnpm --filter transportate-proxy exec wrangler rollback --env production --message "<motivo>"`.
-- **Antes de abrir a usuarios:** asignar un **dominio propio** (`routes` con `custom_domain: true`), porque la Cache API no funciona en `*.workers.dev`.
+- **Dominio propio:** `production` responde en `https://api.transportate.ar` desde el 2026-11-11 (`routes` con `custom_domain: true`); `workers.dev` sigue activo hasta que se retire el build 1.0.0 (3) ([`docs/10-deploy.md`](../../docs/10-deploy.md) §4).
 
 ## Tests (`test/`)
 

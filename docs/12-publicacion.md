@@ -3,7 +3,7 @@
 Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, paso a paso. La mayor parte la hacés vos en App Store Connect y en una terminal; los agentes preparan el código, los docs y los borradores de la ficha.
 
 - **Alcance:** solo iPhone, solo iOS, solo Argentina. TestFlight primero y App Store después.
-- **Fuera de alcance de la fase:** Android / Google Play, dominio propio (solo se documenta la transición, §8), EAS Update, CI de EAS y video de App Preview.
+- **Fuera de alcance de la fase:** Android / Google Play, EAS Update, CI de EAS y video de App Preview. El dominio propio quedaba afuera el 2026-11-10; entró el 2026-11-11 (`transportate.ar`, §8).
 - **Fecha de la guía:** 2026-11-10. Las decisiones de abajo las tomaste ese día; el plan está en [`00-plan.md`](00-plan.md) (Fase 7) y la crónica, en [`bitacora.md`](bitacora.md).
 - **Reglas de esta guía:** no hay credenciales, mails ni rutas de tu máquina. El mail de contacto vive solo en la página de soporte del sitio; acá se lo llama «el mail de la página de soporte». La API Key de App Store Connect (`.p8`) **nunca va al repo**.
 
@@ -25,9 +25,9 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 
 | Tema | Decisión |
 |---|---|
-| Dominio propio | **No hay.** TestFlight sale contra `*.workers.dev`, donde la Cache API no funciona (cada pedido llega al GCBA, §8). El dominio es **gate antes de App Store**, o aceptás el riesgo de forma explícita |
-| Proxy | Ya desplegado: `https://transportate-proxy-production.nhsiciliano.workers.dev` (Worker `transportate-proxy-production`, 2026-11-10) |
-| Sitio de privacidad y soporte | Worker con static assets `transportate-site` en la misma cuenta (carpeta `site/`): `https://transportate-site.nhsiciliano.workers.dev/`, `/privacidad`, `/soporte`. Se despliega con `pnpm --filter transportate-proxy exec wrangler deploy -c ../../site/wrangler.jsonc` ([`10-deploy.md`](10-deploy.md) §10) |
+| Dominio propio | **`transportate.ar`** (desde el 2026-11-11; registrado en nic.ar, DNS en Cloudflare). El build 1.0.0 (3) de TestFlight salió antes, contra `*.workers.dev`; los builds siguientes usan `https://api.transportate.ar` (§8) |
+| Proxy | Worker `transportate-proxy-production`: `https://api.transportate.ar` (2026-11-11) y, mientras viva el build 1.0.0 (3), también `https://transportate-proxy-production.nhsiciliano.workers.dev` (2026-11-10) |
+| Sitio de privacidad y soporte | Worker con static assets `transportate-site` en la misma cuenta (carpeta `site/`): `https://transportate-site.nhsiciliano.workers.dev/`, `/privacidad`, `/soporte`. Desde el 2026-11-11 el sitio es un proyecto Astro con landing y su destino es `https://transportate.ar` (**todavía sin desplegar en el dominio**). Se despliega con `pnpm --filter transportate-site run deploy` ([`10-deploy.md`](10-deploy.md) §10) |
 | Dispositivos | Solo iPhone (`supportsTablet: false`) |
 | Versión | `1.0.0`; número de build remoto en EAS (`appVersionSource: remote` y `autoIncrement`) |
 | App Privacy | «No recopilamos datos» (justificación en [`05-privacidad.md`](05-privacidad.md) §9) |
@@ -52,7 +52,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
    - Derechos de contenido: la app **usa contenido de terceros** y tenés derecho a usarlo. Los datos de transporte del GCBA están bajo CC BY 2.5 AR (con atribución en Acerca de). Anotá que la API comunitaria de trenes no publica términos de uso: el dato se muestra con atribución y como no oficial.
 5. **Clasificación por edad.** Cuestionario con todo «No» / «Ninguno»: queda **4+**.
 6. **App Privacy.**
-   - URL de la política: `https://transportate-site.nhsiciliano.workers.dev/privacidad` (cuando haya dominio, la nueva; §8).
+   - URL de la política: `https://transportate-site.nhsiciliano.workers.dev/privacidad` (la cargada el 2026-11-10). Pasa a `https://transportate.ar/privacidad` cuando el sitio esté desplegado en el dominio (§8).
    - Respuesta: **«No, no recopilamos datos de esta app»** (*Data Not Collected*).
    - Justificación punto por punto: [`05-privacidad.md`](05-privacidad.md) §9. Si el cuestionario te lleva por otro camino, volvé a leerla antes de contestar.
 7. **API Key de App Store Connect** (*Users and Access* → *Integrations* → *Team Keys* → «+», rol **App Manager**):
@@ -160,7 +160,7 @@ transporte,subte,colectivo,bondi,tren,buenos aires,CABA,AMBA,paradas,arribos,map
 
 **URL de soporte:** `https://transportate-site.nhsiciliano.workers.dev/soporte`
 **URL de privacidad:** `https://transportate-site.nhsiciliano.workers.dev/privacidad`
-(con dominio propio, las URLs nuevas; §8)
+(son las cargadas el 2026-11-10. Con el sitio desplegado en el dominio pasan a `https://transportate.ar/soporte` y `https://transportate.ar/privacidad`; §8)
 
 **Novedades de la 1.0.0** (máx. 4000):
 
@@ -227,6 +227,8 @@ The subway arrival forecast may come unchanged from the source; when that happen
 
 ## 8. Gate de dominio y transición
 
+> **Estado (2026-11-11): gate resuelto.** El dominio es `transportate.ar`; el proxy responde en `https://api.transportate.ar` y `eas.json` ya apunta ahí (pasos 1 a 4 de abajo). Falta el build nuevo, el sitio en el dominio, las URLs de la ficha y de App Privacy, y retirar `workers.dev`. Lo que sigue se conserva como registro de la decisión; la medición de ese día mostró que la Cache API también guardaba en `workers.dev` ([`10-deploy.md`](10-deploy.md) §4).
+
 ### Qué implica abrir en App Store sin dominio
 
 En `*.workers.dev` la Cache API (`caches.default`) **no tiene efecto** ([`10-deploy.md`](10-deploy.md) §4). Con eso:
@@ -264,7 +266,7 @@ El sitio también pasa al dominio, y las URLs de Acerca de de ese build cambian 
 | **Nombre ocupado** en App Store Connect | Media / bajo | Alternativas: «Transportate BA» o «Transportate: subte y colectivos» (§2.3). El nombre bajo el ícono no cambia |
 | **Rechazo por la guía 4.2** (funcionalidad mínima) o por mostrar datos no oficiales | Baja / alto | Las notas del revisor (§6) explican fuentes y atribución; la app no se presenta como oficial; hay mapa, favoritos, 3 servicios y estados de error |
 | **Pronóstico del subte congelado** y Tránsito oculto | Alta / medio | Documentado en las notas (§6) y en [`01-api-transporte.md`](01-api-transporte.md); la app marca el dato viejo y no inventa horarios |
-| **Cache API inerte en `workers.dev`** | Cierta / medio | Gate de dominio antes de App Store (§8); mientras tanto, pocos testers y rate limit |
+| **Cache API inerte en `workers.dev`** | Resuelto el 2026-11-11 | El proxy tiene dominio propio (§8); además, ese día se midió que la Cache API guardaba también en `workers.dev` |
 | **Build sin URL del proxy** | Baja / alto | Las guardias de `app.config.ts` hacen fallar el build si falta una URL `https://` en los perfiles `preview*` y `production` |
 | **ITMS-91053** (APIs de razón requerida) | Media / bajo | Se agrega `ios.privacyManifests` y se vuelve a buildear (§3) |
 | **Revisión en iPad en modo compatibilidad** | Media / bajo | Revisores de Apple a veces prueban en iPad aunque la app sea solo iPhone. La app corre escalada; las notas lo aclaran si hace falta |
