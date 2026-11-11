@@ -61,3 +61,16 @@ Licencia: obra original creada para el proyecto Transportate, sin material de te
 
 Esta carpeta es la **fuente**. Expo no lee de acá: usa las copias de [`apps/mobile/assets/images/`](../../apps/mobile/assets/images/) (`icon.png`, `adaptive-icon.png`, `adaptive-icon-monochrome.png`, `splash-icon-light.png`, `splash-icon-dark.png`, `notification-icon.png`), referenciadas en `apps/mobile/app.config.ts`. Si regenerás la marca con `generate.py`, copiá de nuevo los PNG; la tabla de correspondencia está en [`apps/mobile/README.md`](../../apps/mobile/README.md#assets) y `apps/mobile/test/app-config.test.ts` verifica que `adaptive-background.txt` coincida con el fondo del ícono adaptativo.
 
+## Imagen para redes
+
+[`social/og-1200x630.png`](social/og-1200x630.png) es la imagen Open Graph para compartir Transportate: **1200 × 630 px**, RGB opaco, sRGB y menos de 300 KB. Usa el isotipo de `mark.svg` con escala uniforme, fondo navy, textos blancos y una placa azul de radio 6 para Buenos Aires; el contenido está centrado y deja más de 60 px de margen. [`social/og.svg`](social/og.svg) conserva la composición vectorial con textos convertidos a contornos.
+
+Desde la raíz del repo, en macOS con Swift instalado, sin descargar ni instalar paquetes:
+
+```sh
+swift design/brand/social/generate_og.swift
+swift design/brand/social/generate_og.swift --check
+```
+
+El generador carga directamente los TTF locales de `node_modules/.pnpm/@expo-google-fonts+fira-sans@0.4.1/node_modules/@expo-google-fonts/fira-sans/`: **Fira Sans 700** para Transportate, **400** para la descripción y **600** para Buenos Aires, con licencia SIL OFL. Verifica los nombres PostScript (`FiraSans-Bold`, `FiraSans-Regular`, `FiraSans-SemiBold`), imprime sus SHA-256 y comprueba que todos los caracteres tengan glifos antes de convertirlos en contornos y rasterizarlos; no utiliza fuentes de reemplazo. `--check` regenera en memoria y compara los archivos byte a byte (misma versión de macOS/Swift). El PNG solo contiene `IHDR`, `sRGB`, `IDAT` e `IEND`, sin metadatos personales; el SVG no necesita fuentes instaladas.
+
