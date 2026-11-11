@@ -26,4 +26,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## Decisiones abiertas
 
 - Revisión final (finish review) y DESIGN.md: las hace el coordinador. El brief de LANDING-1 prohíbe escribir `DESIGN.md` y `PRODUCT.md` desde esta tarea.
-- Capturas reales de las cinco pantallas, en claro y oscuro: pendientes (hoy hay marcadores).
+- Capturas reales de las cinco pantallas, en claro y oscuro: ya están (commit 96de448).
+
+## Accesos a las tiendas (LANDING-2, 2026-11-11)
+
+- Decisión del usuario: hoy, placas propias «Próximamente»; con la app aprobada, la insignia oficial negra de App Store (es-MX) en lugar de la placa de App Store, activada por la URL en `site/src/config/tiendas.ts`. Google Play no tiene insignia (no hay app Android).
+- Placas pulidas (`polish`): blancas sobre navy en los dos temas, 52 px de alto y el mismo ancho mínimo (18,5 rem) para que queden parejas al apilarse. Estructura de cartel de andén: destino (el nombre de la tienda, 700) y estado (pastilla «Próximamente» con reloj, o «Descargala» con flecha), como los StatusChip de la app. Sin pictograma de descarga, sin logos y sin la forma de insignia (negro con borde gris y dos líneas).
+- Insignia: 52 px de alto, espacio libre de 13 px, foco de 3 px por fuera, sin `.revelar`, sin hover y con `view-transition-name` propio sin animación; crédito de Apple en el pie de la landing solo cuando se muestra. En el cierre, la entrada por scroll va en el pictograma y el texto, solo con fundido.
+

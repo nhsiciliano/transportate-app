@@ -74,3 +74,9 @@ swift design/brand/social/generate_og.swift --check
 
 El generador carga directamente los TTF locales de `node_modules/.pnpm/@expo-google-fonts+fira-sans@0.4.1/node_modules/@expo-google-fonts/fira-sans/`: **Fira Sans 700** para Transportate, **400** para la descripción y **600** para Buenos Aires, con licencia SIL OFL. Verifica los nombres PostScript (`FiraSans-Bold`, `FiraSans-Regular`, `FiraSans-SemiBold`), imprime sus SHA-256 y comprueba que todos los caracteres tengan glifos antes de convertirlos en contornos y rasterizarlos; no utiliza fuentes de reemplazo. `--check` regenera en memoria y compara los archivos byte a byte (misma versión de macOS/Swift). El PNG solo contiene `IHDR`, `sRGB`, `IDAT` e `IEND`, sin metadatos personales; el SVG no necesita fuentes instaladas.
 
+## Insignias de tiendas
+
+[`tiendas/app-store-es-mx.svg`](tiendas/app-store-es-mx.svg) es la insignia oficial negra de Apple «Descárgalo en el App Store», en español de Latinoamérica (119,66407 × 40 de `viewBox`), bajada de las herramientas de marketing de Apple. Es arte de Apple: **no se modifica** (ni colores, ni proporciones, ni texto) y se usa según su [guía de marketing](https://developer.apple.com/app-store/marketing/guidelines/).
+
+Se usa **solo cuando la app está disponible en el App Store**: la landing la muestra cuando `site/src/config/tiendas.ts` tiene la URL de la ficha, con el crédito de Apple en el pie. Hasta entonces, el sitio usa placas propias «Próximamente». El sitio sirve una copia en `site/src/assets/tiendas/` con los `style="fill: …"` pasados a atributos `fill` por la CSP; el detalle está en [`site/README.md`](../../site/README.md#insignia-oficial-de-app-store). No hay insignia de Google Play: no existe app Android.
+
