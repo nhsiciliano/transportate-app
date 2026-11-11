@@ -15,8 +15,8 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 |---|---|---|---|
 | **B** | Proxy a producción en `workers.dev` | Coordinador | ✔ 2026-11-10 (`transportate-proxy-production`, secrets cargados, verificado con `curl`) |
 | **A** | Código y docs: URL por perfil de EAS, guardias de build, versión 1.0.0, solo iPhone, Acerca de (privacidad y soporte), sitio estático, estos documentos | Agentes | ✔ 2026-11-10 (en `main`; sitio `transportate-site` desplegado; proxy redesplegado en 1.0.0) |
-| **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos, con el coordinador en el navegador | En curso (2026-11-10): app creada (Apple ID `6833240838`, ya en `eas.json`), ficha de la 1.0.0, categorías, 4+, precio y disponibilidad cargados. Falta: publicar App Privacy, datos de contacto para revisión, copyright, API Key |
-| **D** | Build de producción y submit (§3) | Vos, con apoyo | Pendiente |
+| **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos, con el coordinador en el navegador | ✔ 2026-11-10: app creada (Apple ID `6833240838`), ficha de la 1.0.0, categorías, 4+, App Privacy publicada, gratis, solo Argentina, sin Mac con Apple silicon; API Key generada por EAS. Para la revisión faltan datos de contacto y copyright |
+| **D** | Build de producción y submit (§3) | Vos, con apoyo | ✔ 2026-11-10: build `production` 1.0.0 (3) terminado en EAS y subido a TestFlight con `--auto-submit` |
 | **E** | Prueba en TestFlight (§4) | Vos y testers | Pendiente |
 | **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | Pendiente |
 | **G** | Cierre: docs al día, bitácora | Agentes | Pendiente |
@@ -77,6 +77,8 @@ npx eas-cli@27.2.0 submit --platform ios --latest               # la primera vez
 ```
 
 - **Los comandos interactivos los corrés vos** en una terminal (`eas build` la primera vez pregunta por el login de Apple, el certificado y el perfil de aprovisionamiento; `eas submit` pide la API Key). Desde Claude Code: `! cd apps/mobile && npx eas-cli@27.2.0 build …`.
+- La primera vez, **`--non-interactive` no sirve**: corta con «Distribution Certificate is not validated for non-interactive builds» y aun así consume un número de build (por eso el primer build de tienda fue el 3).
+- Build y envío en una sola sesión: `npx eas-cli@27.2.0 build --platform ios --profile production --auto-submit`. En el paso de la API Key se puede elegir que **EAS la genere y la guarde**, sin crearla a mano en App Store Connect.
 - Correr `eas-cli` **desde la raíz** del repo deja un `app.json` vacío: borralo.
 - En `config` mirá tres cosas: `version` = `1.0.0`, `ios.supportsTablet` = `false` y `EXPO_PUBLIC_API_URL` con `https://`. Si falta la URL, el build falla al leer `app.config.ts`: es la guardia, no un error de EAS.
 - En TestFlight el build pasa de *Processing* a *Ready to Test* en **10 a 30 minutos**.

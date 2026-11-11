@@ -444,7 +444,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
 
-## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B y A cerradas; ola C en curso: app creada en App Store Connect y ficha base cargada**
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C y D cerradas: build 1.0.0 (3) en TestFlight; sigue la prueba (ola E)**
 
 Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
 
@@ -516,3 +516,15 @@ El usuario creó la app en App Store Connect (nombre «Transportate», es-MX, bu
 Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a 27-oct-2027). El aviso del Reglamento de Servicios Digitales (UE) no aplica mientras la app se ofrezca solo en Argentina.
 
 **Queda para el usuario:** publicar la respuesta de App Privacy; datos de contacto para la revisión (nombre, teléfono, mail) y copyright; API Key de App Store Connect (rol App Manager); decidir si la app se ofrece en Mac con Apple silicon (viene tildado por defecto). Capturas y build: olas D y F.
+
+**Cierre de la ola C (mismo día):** el usuario publicó la respuesta de App Privacy; se destildó «Ofrecer esta app» para Mac con Apple silicon (no se probó en Mac). La API Key no se creó a mano: la generó EAS en el primer envío.
+
+### Ola D — Build y submit (usuario + coordinador, 2026-11-10)
+
+- Intento sin prompts (`build --non-interactive --no-wait`): corta con «Distribution Certificate is not validated for non-interactive builds». No sube nada, pero **consume un número de build** (1 → 2).
+- El usuario corrió en una terminal `npx eas-cli@27.2.0 build --platform ios --profile production --auto-submit` desde `apps/mobile`: login de Apple, certificado de distribución reusado, perfil de App Store nuevo y API Key de App Store Connect generada y guardada por EAS.
+- Build `b0949995-1204-447e-9f69-75864835f187`: perfil `production`, distribución de tienda, **1.0.0 (3)**, commit `8316408`; terminó en unos 6 minutos y medio.
+- El envío automático lo dejó en TestFlight («Cargas de compilaciones» → 1.0.0 (3), «Procesando» a las 21:33). EAS creó el grupo interno «Team (Expo)».
+
+**Sigue:** ola E, prueba en TestFlight con [`12-publicacion.md`](12-publicacion.md) §4.
+
