@@ -18,7 +18,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 | **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos, con el coordinador en el navegador | ✔ 2026-11-10: app creada (Apple ID `6833240838`), ficha de la 1.0.0, categorías, 4+, App Privacy publicada, gratis, solo Argentina, sin Mac con Apple silicon; API Key generada por EAS. Para la revisión faltan datos de contacto y copyright |
 | **D** | Build de producción y submit (§3) | Vos, con apoyo | ✔ 2026-11-10: build `production` 1.0.0 (3) terminado en EAS y subido a TestFlight con `--auto-submit` |
 | **E** | Prueba en TestFlight (§4) | Vos y testers | ✔ 2026-11-11: build 1.0.0 (3) instalado desde TestFlight; **datos del día en las 4 tabs** (la URL del proxy quedó embebida) y el resto de la tabla de §4 sin fallas. Sin testers externos por ahora |
-| **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | Pendiente |
+| **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | En curso (2026-11-12): URLs de soporte y privacidad en `transportate.ar`, 10 capturas subidas, contacto del revisor, notas y copyright cargados; build 1.0.0 (4) contra `api.transportate.ar` en camino a TestFlight. Falta elegir la compilación en la versión y «Añadir a revisión» |
 | **G** | Cierre: docs al día, bitácora | Agentes | Pendiente |
 
 ### Decisiones (2026-11-10)
@@ -52,7 +52,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
    - Derechos de contenido: la app **usa contenido de terceros** y tenés derecho a usarlo. Los datos de transporte del GCBA están bajo CC BY 2.5 AR (con atribución en Acerca de). Anotá que la API comunitaria de trenes no publica términos de uso: el dato se muestra con atribución y como no oficial.
 5. **Clasificación por edad.** Cuestionario con todo «No» / «Ninguno»: queda **4+**.
 6. **App Privacy.**
-   - URL de la política: `https://transportate-site.nhsiciliano.workers.dev/privacidad` (la cargada el 2026-11-10). Pasa a `https://transportate.ar/privacidad` cuando el sitio esté desplegado en el dominio (§8).
+   - URL de la política: `https://transportate.ar/privacidad` (desde el 2026-11-12; el 2026-11-10 se había cargado la de `workers.dev`). Se edita en *Privacidad de la app* → *Política de privacidad* → *Editar*; no hizo falta volver a publicar las respuestas.
    - Respuesta: **«No, no recopilamos datos de esta app»** (*Data Not Collected*).
    - Justificación punto por punto: [`05-privacidad.md`](05-privacidad.md) §9. Si el cuestionario te lleva por otro camino, volvé a leerla antes de contestar.
 7. **API Key de App Store Connect** (*Users and Access* → *Integrations* → *Team Keys* → «+», rol **App Manager**):
@@ -78,6 +78,7 @@ npx eas-cli@27.2.0 submit --platform ios --latest               # la primera vez
 
 - **Los comandos interactivos los corrés vos** en una terminal (`eas build` la primera vez pregunta por el login de Apple, el certificado y el perfil de aprovisionamiento; `eas submit` pide la API Key). Desde Claude Code: `! cd apps/mobile && npx eas-cli@27.2.0 build …`.
 - La primera vez, **`--non-interactive` no sirve**: corta con «Distribution Certificate is not validated for non-interactive builds» y aun así consume un número de build (por eso el primer build de tienda fue el 3).
+- Con las credenciales y la API Key ya guardadas en EAS, sí funciona sin prompts: `npx eas-cli@27.2.0 build --platform ios --profile production --non-interactive --no-wait --auto-submit` (así salió el build 4, el 2026-11-12).
 - Build y envío en una sola sesión: `npx eas-cli@27.2.0 build --platform ios --profile production --auto-submit`. En el paso de la API Key se puede elegir que **EAS la genere y la guarde**, sin crearla a mano en App Store Connect.
 - Correr `eas-cli` **desde la raíz** del repo deja un `app.json` vacío: borralo.
 - En `config` mirá tres cosas: `version` = `1.0.0`, `ios.supportsTablet` = `false` y `EXPO_PUBLIC_API_URL` con `https://`. Si falta la URL, el build falla al leer `app.config.ts`: es la guardia, no un error de EAS.
@@ -158,9 +159,11 @@ transporte,subte,colectivo,bondi,tren,buenos aires,CABA,AMBA,paradas,arribos,map
 
 (99)
 
-**URL de soporte:** `https://transportate-site.nhsiciliano.workers.dev/soporte`
-**URL de privacidad:** `https://transportate-site.nhsiciliano.workers.dev/privacidad`
-(son las cargadas el 2026-11-10. Con el sitio desplegado en el dominio pasan a `https://transportate.ar/soporte` y `https://transportate.ar/privacidad`; §8)
+**URL de soporte:** `https://transportate.ar/soporte`
+**URL de privacidad:** `https://transportate.ar/privacidad`
+(cargadas el 2026-11-12; reemplazan a las de `transportate-site.nhsiciliano.workers.dev` del 2026-11-10)
+
+**URL de marketing** (opcional): vacía. Si se quiere, `https://transportate.ar`.
 
 **Novedades de la 1.0.0** (máx. 4000):
 
@@ -208,7 +211,7 @@ The subway arrival forecast may come unchanged from the source; when that happen
 
 ## 7. Capturas
 
-- **Obligatorias:** 6,9″ (**1320×2868**). Sin iPad (la app es solo iPhone). Apple escala las de 6,9″ para los otros tamaños de iPhone.
+- **Tamaño:** 6,9″ (**1320×2868**). Sin iPad (la app es solo iPhone). Desde noviembre de 2026 App Store Connect marca como **obligatorio** el iPhone de «pantalla mediana» (6,1″ / 6,3″: 1179×2556 o 1206×2622) y como opcional el de «pantalla grande» (6,5″ a 6,9″). Las de 6,9″ igual alcanzan: se suben a «pantalla grande» y la ranura obligatoria las toma reducidas («Uso de componentes existentes»).
 - **De dónde salen:** de un build `preview-simulator` (release para simulador, sin dev menu, con la URL del Worker de producción) instalado en un **simulador iPhone Pro Max**. Se instala y se arranca con `xcrun simctl`; el build se baja con `npx eas-cli@27.2.0 build:run` o desde la página del build en expo.dev.
 - **Cómo prepararlas:**
 
@@ -231,11 +234,12 @@ The subway arrival forecast may come unchanged from the source; when that happen
 - **Sin esquinas ni isla:** `xcrun simctl io <udid> screenshot --mask=ignored archivo.png` da el rectángulo completo de 1320×2868.
 - **Sin canal alfa:** `simctl` escribe PNG con alfa y App Store Connect los rechaza. Las copias de `design/store/ios/6.9/` se reescribieron opacas en sRGB (CoreGraphics, `CGImageAlphaInfo.noneSkipLast`). Comprobalo con `sips -g hasAlpha`.
 - **Favoritos:** `simctl` no toca la pantalla. Los favoritos se marcan a mano en el simulador, abierto desde **Device Hub** de Xcode 27 (`/Applications/Xcode.app/Contents/Applications/DeviceHub.app`; ya no hay `Simulator.app`).
-- **Dato fresco:** con la pantalla quieta, el simulador mostró el dato envejeciendo («hace 2 min»). Navegar a otra pantalla y volver por deep link lo refresca; la captura se saca unos 10 s después. No se verificó si en el simulador el refresco automático queda en pausa; en el iPhone (ola E) los datos se actualizan.
+- **Subidas el 2026-11-12:** las diez, en *Gestor de recursos multimedia* → iPhone → «pantalla grande», en este orden: las cinco en claro (Inicio, subte, colectivos, trenes, Favoritos) y después las cinco en oscuro. La ranura de «pantalla mediana» quedó cubierta con las mismas.
+- **Dato fresco:** con la pantalla quieta, el simulador mostró el dato envejeciendo («hace 2 min»). Navegar a otra pantalla y volver por deep link lo refresca; la captura se saca unos 10 s después. No se verificó si en el simulador el refresco automático queda en pausa; en el iPhone el usuario lo probó el 2026-11-12 con Inicio abierto y los datos se actualizan solos.
 
 ## 8. Gate de dominio y transición
 
-> **Estado (2026-11-11): gate resuelto.** El dominio es `transportate.ar`; el proxy responde en `https://api.transportate.ar` y `eas.json` ya apunta ahí (pasos 1 a 4 de abajo). El sitio también está en el dominio. Falta el build nuevo, las URLs de la ficha y de App Privacy, y retirar `workers.dev`. Lo que sigue se conserva como registro de la decisión; la medición de ese día mostró que la Cache API también guardaba en `workers.dev` ([`10-deploy.md`](10-deploy.md) §4).
+> **Estado (2026-11-11): gate resuelto.** El dominio es `transportate.ar`; el proxy responde en `https://api.transportate.ar` y `eas.json` ya apunta ahí (pasos 1 a 4 de abajo). El sitio también está en el dominio. El 2026-11-12 se cargaron las URLs de la ficha y de App Privacy y se lanzó el build 1.0.0 (4). Falta retirar `workers.dev` cuando el build 3 deje de usarse. Lo que sigue se conserva como registro de la decisión; la medición de ese día mostró que la Cache API también guardaba en `workers.dev` ([`10-deploy.md`](10-deploy.md) §4).
 
 ### Qué implica abrir en App Store sin dominio
 
