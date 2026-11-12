@@ -18,7 +18,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 | **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos, con el coordinador en el navegador | ✔ 2026-11-10: app creada (Apple ID `6833240838`), ficha de la 1.0.0, categorías, 4+, App Privacy publicada, gratis, solo Argentina, sin Mac con Apple silicon; API Key generada por EAS. Para la revisión faltan datos de contacto y copyright |
 | **D** | Build de producción y submit (§3) | Vos, con apoyo | ✔ 2026-11-10: build `production` 1.0.0 (3) terminado en EAS y subido a TestFlight con `--auto-submit` |
 | **E** | Prueba en TestFlight (§4) | Vos y testers | ✔ 2026-11-11: build 1.0.0 (3) instalado desde TestFlight; **datos del día en las 4 tabs** (la URL del proxy quedó embebida) y el resto de la tabla de §4 sin fallas. Sin testers externos por ahora |
-| **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | En curso (2026-11-12): URLs de soporte y privacidad en `transportate.ar`, 10 capturas subidas, contacto del revisor, notas y copyright cargados; build 1.0.0 (4) contra `api.transportate.ar` en camino a TestFlight. Falta elegir la compilación en la versión y «Añadir a revisión» |
+| **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | En curso (2026-11-12): URLs de soporte y privacidad en `transportate.ar`, 10 capturas subidas, URL de marketing, contacto del revisor, notas y copyright cargados; build 1.0.0 (4) contra `api.transportate.ar` elegido como compilación de la versión. Falta solo «Añadir a revisión» |
 | **G** | Cierre: docs al día, bitácora | Agentes | Pendiente |
 
 ### Decisiones (2026-11-10)
@@ -82,7 +82,8 @@ npx eas-cli@27.2.0 submit --platform ios --latest               # la primera vez
 - Build y envío en una sola sesión: `npx eas-cli@27.2.0 build --platform ios --profile production --auto-submit`. En el paso de la API Key se puede elegir que **EAS la genere y la guarde**, sin crearla a mano en App Store Connect.
 - Correr `eas-cli` **desde la raíz** del repo deja un `app.json` vacío: borralo.
 - En `config` mirá tres cosas: `version` = `1.0.0`, `ios.supportsTablet` = `false` y `EXPO_PUBLIC_API_URL` con `https://`. Si falta la URL, el build falla al leer `app.config.ts`: es la guardia, no un error de EAS.
-- En TestFlight el build pasa de *Processing* a *Ready to Test* en **10 a 30 minutos**.
+- En TestFlight el build pasa de *Processing* a *Ready to Test* en **10 a 30 minutos** (el build 4 tardó unos 10 desde el envío).
+- **El ícono de la app en App Store Connect sale de la compilación:** mientras la versión no tiene una elegida (*Compilación* → *Añadir compilación* → *Guardar*), el encabezado muestra un ícono vacío. No se sube aparte.
 - El build **no pide la declaración de cifrado**: `ITSAppUsesNonExemptEncryption: false` está en `app.config.ts` (la app solo usa HTTPS estándar).
 - Si llega un mail con **ITMS-91053** (declaración de APIs de razón requerida), se agrega `ios.privacyManifests` en `app.config.ts` con las categorías que indique el mail y se vuelve a buildear.
 - El número de build lo asigna EAS (`autoIncrement` en `production`, versión remota): no se edita a mano.
@@ -163,7 +164,7 @@ transporte,subte,colectivo,bondi,tren,buenos aires,CABA,AMBA,paradas,arribos,map
 **URL de privacidad:** `https://transportate.ar/privacidad`
 (cargadas el 2026-11-12; reemplazan a las de `transportate-site.nhsiciliano.workers.dev` del 2026-11-10)
 
-**URL de marketing** (opcional): vacía. Si se quiere, `https://transportate.ar`.
+**URL de marketing** (opcional): `https://transportate.ar` (cargada el 2026-11-12).
 
 **Novedades de la 1.0.0** (máx. 4000):
 

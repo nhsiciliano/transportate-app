@@ -444,7 +444,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
 
-## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C, D y E cerradas; dominio `transportate.ar` activo; ola F en curso: ficha lista y build 1.0.0 (4) en camino, falta el envío a revisión**
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C, D y E cerradas; dominio `transportate.ar` activo; ola F en curso: ficha lista con el build 1.0.0 (4), falta el envío a revisión**
 
 Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
 
@@ -570,4 +570,6 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - **App Store Connect** (coordinador en el navegador): URL de soporte → `https://transportate.ar/soporte`; URL de la política → `https://transportate.ar/privacidad` (App Privacy sigue publicada, sin repetir el cuestionario); las diez capturas subidas. El usuario ya había cargado el contacto del revisor, las notas y el copyright; la publicación quedó en manual.
 - **Cambio en App Store Connect:** el tamaño de captura obligatorio pasó a ser el iPhone de «pantalla mediana» (6,1″ / 6,3″). Las de 6,9″ se suben a «pantalla grande» y cubren el obligatorio, reducidas. Anotado en [`12-publicacion.md`](12-publicacion.md) §7.
 
-**Sigue:** cuando el build 4 termine de procesarse, elegirlo como compilación de la versión 1.0.0 y, con el visto bueno del usuario, «Añadir a revisión». Después, la ola G.
+- El build 4 terminó en EAS, se subió a Apple y quedó **elegido como compilación de la versión 1.0.0**; con eso apareció el ícono de la app en App Store Connect (sale de la compilación, no se carga aparte). El usuario cargó la URL de marketing (`https://transportate.ar`).
+
+**Sigue:** «Añadir a revisión», solo con el pedido expreso del usuario. Después, la ola G.
