@@ -18,8 +18,8 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 | **C** | App Store Connect: app, ficha base, App Privacy, API Key (§2) | Vos, con el coordinador en el navegador | ✔ 2026-11-10: app creada (Apple ID `6833240838`), ficha de la 1.0.0, categorías, 4+, App Privacy publicada, gratis, solo Argentina, sin Mac con Apple silicon; API Key generada por EAS. Para la revisión faltan datos de contacto y copyright |
 | **D** | Build de producción y submit (§3) | Vos, con apoyo | ✔ 2026-11-10: build `production` 1.0.0 (3) terminado en EAS y subido a TestFlight con `--auto-submit` |
 | **E** | Prueba en TestFlight (§4) | Vos y testers | ✔ 2026-11-11: build 1.0.0 (3) instalado desde TestFlight; **datos del día en las 4 tabs** (la URL del proxy quedó embebida) y el resto de la tabla de §4 sin fallas. Sin testers externos por ahora |
-| **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | En curso (2026-11-12): URLs de soporte y privacidad en `transportate.ar`, 10 capturas subidas, URL de marketing, contacto del revisor, notas y copyright cargados; build 1.0.0 (4) contra `api.transportate.ar` elegido como compilación de la versión. Falta solo «Añadir a revisión» |
-| **G** | Cierre: docs al día, bitácora | Agentes | Pendiente |
+| **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | ✔ 2026-11-13: versión 1.0.0 (build 4, contra `api.transportate.ar`) **aprobada y publicada en App Store** (`https://apps.apple.com/ar/app/transportate/id6833240838`). Vos la enviaste a revisión y la publicaste (la publicación era manual) |
+| **G** | Cierre: docs al día, bitácora | Agentes | En curso: docs y landing actualizados el 2026-11-13; falta redesplegar el sitio y retirar `workers.dev` cuando el build 3 deje de usarse (§8) |
 
 ### Decisiones (2026-11-10)
 

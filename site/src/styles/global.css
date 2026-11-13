@@ -409,6 +409,11 @@ a:hover {
   font-size: 0.9375rem;
 }
 
+.pie__copyright {
+  color: var(--texto-sec);
+  font-size: 0.875rem;
+}
+
 @media (min-width: 48rem) {
   .pie__fila {
     grid-template-columns: auto 1fr;
@@ -416,7 +421,8 @@ a:hover {
     column-gap: 48px;
   }
 
-  .pie__aviso {
+  .pie__aviso,
+  .pie__copyright {
     grid-column: 1 / -1;
   }
 }

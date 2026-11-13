@@ -32,5 +32,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 - Decisión del usuario: hoy, placas propias «Próximamente»; con la app aprobada, la insignia oficial negra de App Store (es-MX) en lugar de la placa de App Store, activada por la URL en `site/src/config/tiendas.ts`. Google Play no tiene insignia (no hay app Android).
 - Placas pulidas (`polish`): blancas sobre navy en los dos temas, 52 px de alto y el mismo ancho mínimo (18,5 rem) para que queden parejas al apilarse. Estructura de cartel de andén: destino (el nombre de la tienda, 700) y estado (pastilla «Próximamente» con reloj, o «Descargala» con flecha), como los StatusChip de la app. Sin pictograma de descarga, sin logos y sin la forma de insignia (negro con borde gris y dos líneas).
+- **2026-11-13, app publicada:** `appStore` con la URL de la ficha (insignia activa en cartel y cierre), cierre y pregunta de descarga reescritos, pictograma del cierre en placa amarilla de la marca (64 a 96 px, único acento de la banda) y «© 2026 OnionDev» en el pie.
 - Insignia: 52 px de alto, espacio libre de 13 px, foco de 3 px por fuera, sin `.revelar`, sin hover y con `view-transition-name` propio sin animación; crédito de Apple en el pie de la landing solo cuando se muestra. En el cierre, la entrada por scroll va en el pictograma y el texto, solo con fundido.
 

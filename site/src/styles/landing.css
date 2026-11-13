@@ -744,6 +744,20 @@
   padding-block: clamp(40px, 7vw, 88px);
 }
 
+/* Placa amarilla de la marca, el único acento del cierre: sobre la banda navy el cuadrado oscuro
+   de los demás pictogramas casi no se veía. Navy sobre amarillo: 11,1:1. */
+.cierre .pictograma {
+  inline-size: clamp(64px, 48px + 4vw, 96px);
+  block-size: clamp(64px, 48px + 4vw, 96px);
+  background: var(--amarillo);
+  color: var(--pictograma);
+}
+
+.cierre .pictograma .icono {
+  inline-size: 62.5%;
+  block-size: 62.5%;
+}
+
 .cierre h2 {
   max-inline-size: 16ch;
   font-size: clamp(2rem, 1.3rem + 2.8vw, 3.5rem);

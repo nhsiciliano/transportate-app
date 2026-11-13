@@ -9,6 +9,6 @@ export interface Tiendas {
 }
 
 export const tiendas: Tiendas = {
-  appStore: null,
+  appStore: 'https://apps.apple.com/ar/app/transportate/id6833240838',
   googlePlay: null,
 };

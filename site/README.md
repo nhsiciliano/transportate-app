@@ -127,7 +127,7 @@ Es `run deploy` y no `deploy`: `pnpm deploy` es un comando propio de pnpm. Ver [
 
 ## Accesos a las tiendas
 
-`src/config/tiendas.ts` tiene `{ appStore: null, googlePlay: null }`, y `BotonTienda.astro` dibuja cada acceso según eso (cartel y cierre de la landing):
+`src/config/tiendas.ts` tiene la URL de cada tienda o `null`, y `BotonTienda.astro` dibuja cada acceso según eso (cartel y cierre de la landing). **Desde el 2026-11-13 la app está publicada en App Store**: `appStore` apunta a `https://apps.apple.com/ar/app/transportate/id6833240838` y `googlePlay` sigue en `null`.
 
 | Tienda | Sin URL (`null`) | Con URL |
 |---|---|---|
@@ -136,7 +136,9 @@ Es `run deploy` y no `deploy`: `pnpm deploy` es un comando propio de pnpm. Ver [
 
 Las placas propias son blancas sobre la banda navy (en claro y en oscuro), 52 px de alto, con el nombre de la tienda en 700 y una pastilla de estado como las de la app (reloj y «Próximamente», o «Descargala» y flecha). No llevan logos de Apple ni de Google ni imitan la forma de las insignias. El aviso es un popover declarativo, sin JavaScript: abre con clic o Enter y cierra con Esc o con su botón.
 
-Para activar App Store cuando la app esté aprobada, poné la URL de la ficha (por ejemplo `appStore: 'https://apps.apple.com/ar/app/…/id…'`) y construí. Revisá también la pregunta «¿Cuándo la puedo descargar?», el aviso y el cierre de `index.astro`, que hablan de la publicación.
+Al activar una tienda (poner la URL de su ficha y construir) hay que revisar también los textos de `index.astro` que hablan de la publicación: la pregunta «¿Dónde la puedo descargar?» y el párrafo del cierre. Así se hizo con App Store el 2026-11-13; cuando exista la app Android, toca de nuevo (y el aviso de Google Play en `BotonTienda.astro`).
+
+En el cierre («Primero en iPhone, después en Android») el pictograma va en una **placa amarilla** de la marca (`.cierre .pictograma` en `landing.css`, de 64 a 96 px, navy sobre amarillo, 11,1:1): el cuadrado oscuro de los demás pictogramas casi no se veía sobre la banda navy. El pie cierra con «© 2026 OnionDev» en las cuatro páginas.
 
 ### Insignia oficial de App Store
 

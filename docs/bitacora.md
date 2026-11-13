@@ -444,7 +444,7 @@ Tab nueva **Trenes**, espejo de Subtes y sin mapa, con una fuente que no es del 
 | 8 | Pasar los componentes compartidos de `features/subtes` a `shared/ui` (tarea 6.8) | Posterior | Abierto |
 | 9 | Medir en workerd la latencia, los subrequests y la CPU de un refresco total, y evaluar la capa B para trenes | Fase 5/6 | Abierto |
 
-## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C, D y E cerradas; dominio `transportate.ar` activo; ola F en curso: ficha lista con el build 1.0.0 (4), falta el envío a revisión**
+## Fase 7 — Publicación en iOS (TestFlight → App Store) · **olas B, A, C, D y E cerradas; dominio `transportate.ar` activo; ola F cerrada: versión 1.0.0 (build 4) publicada en App Store el 2026-11-13; ola G en curso**
 
 Plan aprobado por el usuario el 2026-11-10. Decisiones: sin dominio propio por ahora (TestFlight contra `*.workers.dev`; el dominio queda como gate antes de App Store), sitio de privacidad y soporte como Worker con assets en la misma cuenta de Cloudflare, solo iPhone, versión 1.0.0, App Privacy «No recopilamos datos», contacto por mail en la página de soporte, disponibilidad solo en Argentina. Olas: B (proxy), A (código y docs), C (App Store Connect), D (build y submit), E (TestFlight), F (App Store), G (docs).
 
@@ -572,4 +572,11 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 
 - El build 4 terminó en EAS, se subió a Apple y quedó **elegido como compilación de la versión 1.0.0**; con eso apareció el ícono de la app en App Store Connect (sale de la compilación, no se carga aparte). El usuario cargó la URL de marketing (`https://transportate.ar`).
 
-**Sigue:** «Añadir a revisión», solo con el pedido expreso del usuario. Después, la ola G.
+### Publicada en App Store (2026-11-13)
+
+- El usuario envió la versión 1.0.0 (build 4) a revisión; Apple la aprobó y el usuario la publicó. Ficha pública: `https://apps.apple.com/ar/app/transportate/id6833240838` (la búsqueda de iTunes ya la devuelve, con las capturas subidas). **Ola F cerrada.**
+- Landing, a pedido del usuario (coordinador, sin delegar): `appStore` con la URL de la ficha, que activa la **insignia oficial** en el cartel y en el cierre y el crédito de Apple en el pie; cierre («Ya está en App Store. La versión para Android todavía no tiene fecha.») y pregunta «¿Dónde la puedo descargar?» reescritos; pictograma del cierre en placa amarilla de la marca, más grande (el cuadrado oscuro casi no se veía sobre la banda navy); «© 2026 OnionDev» en el pie.
+- Política de privacidad, por pedido expreso del usuario: «Apple distribuye la app (App Store)», sin «y TestFlight». El resto del párrafo y la fecha de vigencia no cambiaron (no cambia qué datos se tratan); el fixture de `verificar-dist.mjs` se actualizó.
+- Verificado: build, `verificar-dist` (insignia en regla, 9 fallas sembradas detectadas), typecheck, lint y formato; capturas a 1440 y 500 px en claro.
+
+**Sigue:** redesplegar el sitio (`pnpm --filter transportate-site run deploy`, lo corre el usuario) y la ola G: `workers_dev: false` en proxy y sitio cuando el build 3 deje de usarse.
