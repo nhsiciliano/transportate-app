@@ -579,4 +579,6 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - Política de privacidad, por pedido expreso del usuario: «Apple distribuye la app (App Store)», sin «y TestFlight». Después pidió sacar también las dos oraciones que seguían (la de los comentarios de TestFlight y la que remitía a la política de privacidad de Apple y a los Ajustes del iPhone): el ítem de Apple queda en esas dos oraciones y la política ya no nombra TestFlight. La fecha de vigencia no cambió (no cambia qué datos se tratan); el fixture de `verificar-dist.mjs` se actualizó.
 - Verificado: build, `verificar-dist` (insignia en regla, 9 fallas sembradas detectadas), typecheck, lint y formato; capturas a 1440 y 500 px en claro.
 
-**Sigue:** redesplegar el sitio (`pnpm --filter transportate-site run deploy`, lo corre el usuario) y la ola G: `workers_dev: false` en proxy y sitio cuando el build 3 deje de usarse.
+- El usuario probó los cambios en local (Worker real con `wrangler dev`) y **redesplegó el sitio** (versión `78042820`). Verificado con `curl` en `https://transportate.ar`: insignia con enlace a la ficha en el cartel y en el cierre, textos nuevos, copyright en el pie, política sin TestFlight, CSP estricta y 404 propio.
+
+**Sigue:** la ola G: `workers_dev: false` en proxy y sitio cuando el build 3 deje de usarse.

@@ -19,7 +19,7 @@ Guía operativa de la Fase 7: cómo llevar Transportate a producción en iOS, pa
 | **D** | Build de producción y submit (§3) | Vos, con apoyo | ✔ 2026-11-10: build `production` 1.0.0 (3) terminado en EAS y subido a TestFlight con `--auto-submit` |
 | **E** | Prueba en TestFlight (§4) | Vos y testers | ✔ 2026-11-11: build 1.0.0 (3) instalado desde TestFlight; **datos del día en las 4 tabs** (la URL del proxy quedó embebida) y el resto de la tabla de §4 sin fallas. Sin testers externos por ahora |
 | **F** | Ficha, capturas y envío a revisión (§5, §6, §7); gate de dominio (§8) | Vos y agentes | ✔ 2026-11-13: versión 1.0.0 (build 4, contra `api.transportate.ar`) **aprobada y publicada en App Store** (`https://apps.apple.com/ar/app/transportate/id6833240838`). Vos la enviaste a revisión y la publicaste (la publicación era manual) |
-| **G** | Cierre: docs al día, bitácora | Agentes | En curso: docs y landing actualizados el 2026-11-13; falta redesplegar el sitio y retirar `workers.dev` cuando el build 3 deje de usarse (§8) |
+| **G** | Cierre: docs al día, bitácora | Agentes | En curso: docs y landing actualizados y sitio redesplegado el 2026-11-13; falta retirar `workers.dev` cuando el build 3 deje de usarse (§8) |
 
 ### Decisiones (2026-11-10)
 
