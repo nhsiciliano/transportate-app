@@ -67,3 +67,11 @@ Transportate
 - Conviene enviarlo junto con el pedido al GCBA ([`solicitud-gtfs-gcba.md`](solicitud-gtfs-gcba.md)), que sigue sin enviar: son dos puertas al mismo dato. Ese borrador todavía dice `[Proyecto]` y sus mediciones son del 2026-11-01; completarlo y reverificarlo antes de mandarlo.
 - Si hay respuesta con un GTFS nuevo: agregarlo a `CANDIDATOS` en `tools/gtfs-cruce/cruce.mjs`, correr el cruce, actualizar `01b` y reemplazar el ADR-0006 por uno nuevo. Si la autorización trae condiciones (atribución, límites, vigencia), anotarlas en `05-privacidad.md` y en Acerca de antes de usar el dato.
 - Qué destraba en la app: elección de sentido, arribos en todas las paradas, horario programado como respaldo y, más adelante, paradas del Gran Buenos Aires.
+
+## Versión corta para formularios (máximo 750 caracteres)
+
+Para canales de contacto con límite de texto. Son 721 caracteres con `[Nombre]` sin completar; si el formulario ya pide el nombre aparte, se puede quitar.
+
+```text
+Hola. Escribo por Transportate (https://transportate.ar), una app independiente y no oficial, publicada en App Store, que muestra en tiempo real subte, colectivos y trenes de Buenos Aires, sin publicidad, sin cuentas y sin datos personales. Usamos los datos abiertos de la API de Transporte de la Ciudad, pero el GTFS de colectivos publicado es de 2021 y sus identificadores ya no coinciden con el tiempo real. Solicitamos: 1) el GTFS estático vigente de colectivos del AMBA; 2) la autorización por escrito que exigen los términos de Cuándo SUBO para usar esa información, con atribución y en las condiciones que indiquen. Si corresponde otro canal o trámite, les agradecemos que nos lo indiquen. Muchas gracias. [Nombre]
+```

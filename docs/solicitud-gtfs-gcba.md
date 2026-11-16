@@ -51,3 +51,11 @@ Saludos cordiales,
 - El correo no menciona datos personales de usuarios ni credenciales. No adjuntar el `.env`.
 - Si hay respuesta con un GTFS nuevo: agregarlo a `CANDIDATOS` en `tools/gtfs-cruce/cruce.mjs`, correr el cruce, actualizar `01b` y reemplazar el ADR-0006 por uno nuevo.
 - Canal alternativo si no hay respuesta: formulario de contacto de BA Data en <https://data.buenosaires.gob.ar>.
+
+## Versión corta para formularios (máximo 750 caracteres)
+
+Para el formulario de contacto del sitio del Gobierno de la Ciudad. Son 733 caracteres con `[Nombre]` sin completar; si el formulario ya pide el nombre aparte, se puede quitar. Redactada el 2026-11-16: no menciona `/subtes/forecastGTFS` porque ese día su marca de tiempo volvió a actualizarse (falta confirmar si los arribos volvieron).
+
+```text
+Hola. Escribo por Transportate (https://transportate.ar), una app independiente y no oficial, publicada en App Store, que usa la API de Transporte con credenciales propias y atribución (CC BY 2.5 AR). Solicitamos el GTFS estático vigente de colectivos, el que corresponde al tiempo real de /colectivos/tripUpdates: el que sirve la API es de 2021 y solo el 40 % de las paradas del tiempo real figura en él. Además consultamos: 1) el portal indica que los datasets con formato API y GTFS están suspendidos, pero la API responde: ¿cuál es su estado y hay cambios o una versión 2.0 previstos?; 2) ¿existen límites de uso que debamos respetar? Consultamos la API desde un servidor con caché para reducir la carga. Muchas gracias. [Nombre]
+```
