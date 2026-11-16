@@ -582,3 +582,9 @@ Comprobado de paso: el acuerdo de apps gratuitas está **activo** (29-oct-2026 a
 - El usuario probó los cambios en local (Worker real con `wrangler dev`) y **redesplegó el sitio** (versión `78042820`). Verificado con `curl` en `https://transportate.ar`: insignia con enlace a la ficha en el cartel y en el cierre, textos nuevos, copyright en el pie, política sin TestFlight, CSP estricta y 404 propio.
 
 **Sigue:** la ola G: `workers_dev: false` en proxy y sitio cuando el build 3 deje de usarse.
+
+### Cuándo SUBO: relevamiento y pedido de datos (2026-11-16)
+
+- El usuario pidió ver qué se puede aprovechar de Cuándo SUBO, la app de colectivos de Nación Servicios (SUBE). Tiene lo que a Transportate le falta en colectivos: elección de sentido, arribos en todas las paradas, horario programado como respaldo, recordatorios, filtro de líneas en la parada y reporte de problemas; cubre 219 líneas del AMBA y nueve ciudades del interior, sin subte, trenes ni ruteo.
+- **Sus datos no se pueden usar sin permiso:** los términos exigen consentimiento previo y por escrito de Nación Servicios. No se consume su interfaz ni se extraen datos de la app. La versión web corre sobre OneBusAway; no se probó su API.
+- Por decisión del usuario, por ahora solo se redactó el pedido: [`solicitud-datos-nacion-servicios.md`](solicitud-datos-nacion-servicios.md) (**borrador, sin enviar**, con el destinatario a confirmar). Las funciones locales (filtro en la parada, reporte hacia Soporte, accesos rápidos, recordatorio) quedaron propuestas, sin planificar.

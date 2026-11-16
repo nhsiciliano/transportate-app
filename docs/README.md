@@ -43,6 +43,7 @@ Leyenda: ✅ escrito · 🚧 se escribe al cierre de la fase en curso · ⏳ fas
 | [`fuentes/`](fuentes/) | Materiales de origen: `api-transporte-v1.raml` (spec RAML oficial) y `transporte-3-openapi.json` (spec OpenAPI del portal 3scale) | ✅ |
 | [`../tools/api-probe/`](../tools/api-probe/README.md) | Script reproducible del sondeo de la API (`node probe.mjs`) y `last-run.json` | ✅ |
 | [`solicitud-gtfs-gcba.md`](solicitud-gtfs-gcba.md) | Borrador de correo (sin enviar) al GCBA pidiendo el GTFS vigente de colectivos y consultando el estado de la API | ✅ |
+| [`solicitud-datos-nacion-servicios.md`](solicitud-datos-nacion-servicios.md) | Borrador de correo (sin enviar) a Nación Servicios pidiendo el GTFS vigente de colectivos del AMBA y la autorización de uso de los datos de Cuándo SUBO | ✅ |
 | [`../apps/proxy/test/fixtures/`](../apps/proxy/test/fixtures/README.md) | 32 fixtures reales (pb, json, geojson, errores) para los tests del proxy | ✅ |
 
 ### Diseño de la solución
